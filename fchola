@@ -1,0 +1,15 @@
+import datetime
+
+hora_inicio = datetime.datetime.now()
+
+def hola():
+    print("hola")  
+
+def obtener_tiempo_transcurrido_formateado():
+    segundos_transcurridos=0
+    while(segundos_transcurridos<15):
+        print(segundos_transcurridos)
+        segundos_transcurridos= (datetime.datetime.now() - hora_inicio).total_seconds()
+
+obtener_tiempo_transcurrido_formateado()
+hola()
