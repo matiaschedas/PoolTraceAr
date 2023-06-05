@@ -1,5 +1,6 @@
 import datetime
 import threading
+import time
 
 class HiloEjemplo(threading.Thread):
     def __init__(self, bloqueo):
@@ -16,6 +17,7 @@ class HiloEjemplo(threading.Thread):
                     break
             print(segundos_transcurridos)
             segundos_transcurridos = (datetime.datetime.now() - self.hora_inicio).total_seconds()
+            time.sleep(0.1)
 
     def detener_hilo(self):
         with self.bloqueo:
