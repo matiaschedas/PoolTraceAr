@@ -44,7 +44,7 @@ class VentanaVideo(QMainWindow):
     def __init__(self):
         super().__init__()
         webcams = obtener_webcams()
-        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
@@ -56,7 +56,7 @@ class VentanaVideo(QMainWindow):
         #inicioHilos()
 
         self.labelCamara = self.crear_label("Camara:",1290, 5, 50, 30)
-        self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30)
+        self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.actualizar_video()
 
@@ -68,19 +68,19 @@ class VentanaVideo(QMainWindow):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
-
-
+    
     def closeEvent(self, event):
         pararHilos()
         event.accept()
 
-    def crear_combobox(self, opciones, posX, posY, largo, ancho):
+    def crear_combobox(self, opciones, posX, posY, largo, ancho, default):
         # Crear instancia de QComboBox
         combo_box = QComboBox(self)
         # Configurar opciones del ComboBox
         combo_box.addItems(opciones)
         # Establecer posición y tamaño del ComboBox
         combo_box.setGeometry(posX, posY, largo, ancho)
+        combo_box.setCurrentIndex(default)
         return combo_box
     
     def crear_label(self, texto, posX, posY, largo, ancho):
