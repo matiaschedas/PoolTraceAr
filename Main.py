@@ -52,12 +52,11 @@ class VentanaVideo(QMainWindow):
         self.label = QLabel(self)
         self.setCentralWidget(self.label)
 
-
-        #inicioHilos()
-
         self.labelCamara = self.crear_label("Camara:",1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
+
+        inicioHilos()
         self.actualizar_video()
 
     def cambio_camara(self,index):
