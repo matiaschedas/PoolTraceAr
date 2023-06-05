@@ -11,5 +11,3 @@ def obtener_tiempo_transcurrido_formateado():
         print(segundos_transcurridos)
         segundos_transcurridos= (datetime.datetime.now() - hora_inicio).total_seconds()
 
-obtener_tiempo_transcurrido_formateado()
-hola()
