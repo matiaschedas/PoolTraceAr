@@ -44,12 +44,15 @@ class VentanaVideo(QMainWindow):
     def __init__(self):
         super().__init__()
         webcams = obtener_webcams()
+        self.setWindowTitle("PoolTraceAR")
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.frame_count = 0
         self.label = QLabel(self)
+        self.label.setGeometry(0, 0, 1280, 720)
+        
         self.setCentralWidget(self.label)
 
         self.labelCamara = self.crear_label("Camara:",1290, 5, 50, 30)
@@ -63,12 +66,15 @@ class VentanaVideo(QMainWindow):
         opcion = self.comboCamaras.itemText(index)
         print(f"opcion seleccionada: {opcion}")
         numero = int(re.search(r'\d+', opcion).group())
+        self.cap.release()
         self.cap = cv2.VideoCapture(numero, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
     
     def closeEvent(self, event):
+        if self.cap is not None:
+             self.cap.release()
         pararHilos()
         event.accept()
 
