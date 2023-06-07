@@ -20,6 +20,9 @@ def inicioHilos():
 def pararHilos():
     hilo1.detener_hilo()
 
+def parar_de_actualizar(self):
+    self.seguirActualizando = False
+
 def obtener_webcams():
         webcams = []
         index = 0
@@ -45,6 +48,7 @@ class VentanaVideo(QMainWindow):
         super().__init__()
         webcams = obtener_webcams()
         self.setWindowTitle("PoolTraceAR")
+        self.seguirActualizando = True
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -73,6 +77,7 @@ class VentanaVideo(QMainWindow):
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
     
     def closeEvent(self, event):
+        parar_de_actualizar(self)
         if self.cap is not None:
              self.cap.release()
         pararHilos()
@@ -96,15 +101,39 @@ class VentanaVideo(QMainWindow):
         return label
         
     def actualizar_video(self):
+        if not self.seguirActualizando:
+            return
         ret, frame = self.cap.read()
-        if ret:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
-            imagen = QPixmap.fromImage(imagen)
-            self.label.setPixmap(imagen)
-            
+        roi_x1, roi_y1 = 100, 100
+        roi_x2, roi_y2 = 1110, 600
+        roi = frame[roi_y1:roi_y2, roi_x1:roi_x2]
+        cv2.rectangle(frame, (roi_x1, roi_y1), (roi_x2, roi_y2), (0, 255, 0), 2)
+
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 17, param1=100, param2=12, minRadius=5, maxRadius=10)
+
+        if circles is not None:
+            circles = np.round(circles[0, :]).astype("int")
+            for (x, y, r) in circles:
+                mean_val = np.mean(gray[y - r:y + r, x - r:x + r])
+                white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
+                circle_area = np.pi * r * r
+                white_ratio = white_pixels / circle_area
+                cv2.circle(frame, (x + roi_x1, y + roi_y1), r + 10, (0, 255, 0), 2)
+                # if white_ratio > 0.5:
+                #     cv2.putText(frame, f"Rayada {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
+                #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                # else:
+                #     cv2.putText(frame, f"Lisa {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
+                #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
+        imagen = QPixmap.fromImage(imagen)
+        self.label.setPixmap(imagen)
+
         self.frame_count += 1
-        
         # Establecer el tiempo de espera en base a los fps del video
         tiempo_espera = 5
         QTimer.singleShot(tiempo_espera, self.actualizar_video)

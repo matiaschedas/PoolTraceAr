@@ -13,7 +13,7 @@ class VentanaVideo(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.cap = cv2.VideoCapture(2, cv2.CAP_DSHOW)
+        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
