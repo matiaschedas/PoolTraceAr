@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import threading
 import re
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer
 
@@ -49,6 +49,18 @@ class VentanaVideo(QMainWindow):
         webcams = obtener_webcams()
         self.setWindowTitle("PoolTraceAR")
         self.seguirActualizando = True
+
+        self.verVerticesROI = False
+        self.verROI = False
+        self.XIROI = 0
+        self.YIROI = 0
+        self.XDROI = 0
+        self.YDROI = 0
+        self.moverVertices = False
+        self.verticeSeleccionado = None
+        self.inicio = True
+        self.creandoROI = False
+
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
@@ -59,11 +71,14 @@ class VentanaVideo(QMainWindow):
         
         self.setCentralWidget(self.label)
 
+        #creacion de interfaz
         self.labelCamara = self.crear_label("Camara:",1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
+        self.botonROI = self.crear_boton("Configurar ROI", 1290,80,100,30)
+        self.botonROI.clicked.connect(self.crear_ROI)
 
-        inicioHilos()
+        #inicioHilos()
         self.actualizar_video()
 
     def cambio_camara(self,index):
@@ -99,15 +114,65 @@ class VentanaVideo(QMainWindow):
         label.setText(texto)
         label.setGeometry(posX, posY, largo, ancho)
         return label
+    
+    def crear_boton(self, texto, x, y, ancho, alto):
+        boton = QPushButton(texto, self)
+        boton.setGeometry(x, y, ancho, alto)
+        return boton
+    
+    def mousePressEvent(self, event):
+        # Verificar si se hizo clic dentro de los vértices del ROI
+        if self.verVerticesROI:
+            vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI)]
+            for i, vertice in enumerate(vertices):
+                distancia = np.sqrt((event.x() - vertice[0])**2 + (event.y() - vertice[1])**2)
+                if distancia <= 10:  # Si la distancia es menor o igual a 10 píxeles, se considera seleccionado
+                    self.verticeSeleccionado = i
+                    self.moverVertices = True
+                    break
+        
+
+    def mouseMoveEvent(self, event):
+        if self.moverVertices and self.verticeSeleccionado is not None:
+            print(f"moviendo vertice: {self.verticeSeleccionado}")
+            # Actualizar la posición del vértice seleccionado según la posición del mouse
+            if  self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 :
+                self.XIROI = event.x()
+                self.YIROI = event.y()
+            elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10:
+                self.XDROI = event.x()
+                self.YDROI = event.y()
+
+    
+    def crear_ROI(self):
+        if self.creandoROI == False:
+            self.creandoROI=True
+        elif self.creandoROI ==True:
+            self.creandoROI = False
+        
+        if self.creandoROI:
+            self.verROI = True
+            self.verVerticesROI = True
+        else:
+            self.verROI = False
+            self.verVerticesROI = False
+       
         
     def actualizar_video(self):
         if not self.seguirActualizando:
             return
-        ret, frame = self.cap.read()
-        roi_x1, roi_y1 = 100, 100
-        roi_x2, roi_y2 = 1110, 600
-        roi = frame[roi_y1:roi_y2, roi_x1:roi_x2]
-        cv2.rectangle(frame, (roi_x1, roi_y1), (roi_x2, roi_y2), (0, 255, 0), 2)
+        ret, self.frame = self.cap.read()
+        if self.inicio:
+                self.XIROI, self.YIROI = 100, 100
+                self.XDROI, self.YDROI = 1110, 600
+                self.inicio=False
+
+        roi = self.frame[self.YIROI:self.YDROI, self.XIROI:self.XDROI]
+        if self.verROI:
+            cv2.rectangle(self.frame, (self.XIROI, self.YIROI), (self.XDROI, self.YDROI), (0, 255, 0), 2)
+        if self.verVerticesROI:
+            cv2.circle(self.frame, (self.XIROI, self.YIROI), 10, (0, 255, 0), 2)
+            cv2.circle(self.frame, (self.XDROI, self.YDROI), 10, (0, 255, 0), 2)
 
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -120,7 +185,7 @@ class VentanaVideo(QMainWindow):
                 white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
                 circle_area = np.pi * r * r
                 white_ratio = white_pixels / circle_area
-                cv2.circle(frame, (x + roi_x1, y + roi_y1), r + 10, (0, 255, 0), 2)
+                cv2.circle(self.frame, (x +  self.XIROI, y + self.YIROI), r + 10, (0, 255, 0), 2)
                 # if white_ratio > 0.5:
                 #     cv2.putText(frame, f"Rayada {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
                 #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
@@ -128,7 +193,7 @@ class VentanaVideo(QMainWindow):
                 #     cv2.putText(frame, f"Lisa {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
                 #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
         imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
         imagen = QPixmap.fromImage(imagen)
         self.label.setPixmap(imagen)
