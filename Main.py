@@ -122,6 +122,7 @@ class VentanaVideo(QMainWindow):
     
     def mousePressEvent(self, event):
         # Verificar si se hizo clic dentro de los vértices del ROI
+        self.verticeSeleccionado = None
         if self.verVerticesROI:
             vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI)]
             for i, vertice in enumerate(vertices):
