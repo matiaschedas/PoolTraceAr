@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import threading
 import re
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer
 
@@ -50,6 +50,7 @@ class VentanaVideo(QMainWindow):
         self.setWindowTitle("PoolTraceAR")
         self.seguirActualizando = True
 
+        #Parametros del ROI
         self.verVerticesROI = False
         self.verROI = False
         self.XIROI = 0
@@ -60,6 +61,9 @@ class VentanaVideo(QMainWindow):
         self.verticeSeleccionado = None
         self.inicio = True
         self.creandoROI = False
+
+        #Parametros de reglas de juego
+        self.BolaEnMano = False
 
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -79,6 +83,10 @@ class VentanaVideo(QMainWindow):
         self.botonROI = self.crear_boton("Configurar ROI", 1290,80,100,30)
         self.botonROI.clicked.connect(self.crear_ROI)
 
+        self.labelBolaEnMano = self.crear_label("Bola en mano: ",5,820,100,25)
+        self.checkBolaEnMano = self.crear_checkbox(80,820,50,30)
+        self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
+
         #inicioHilos()
         self.actualizar_video()
 
@@ -91,6 +99,7 @@ class VentanaVideo(QMainWindow):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+
     
     def closeEvent(self, event):
         parar_de_actualizar(self)
@@ -98,6 +107,22 @@ class VentanaVideo(QMainWindow):
              self.cap.release()
         pararHilos()
         event.accept()
+
+    def bola_en_mano(self):
+        estado_actual = self.checkBolaEnMano.isChecked()
+        if estado_actual == True:
+            self.BolaEnMano = True
+            print("hay bola en mano")
+        else:
+            self.BolaEnMano = False
+            print("No hay bola en mano")
+        
+    
+
+    def crear_checkbox(self, posX, posY, largo, ancho):
+        checkbox = QCheckBox(self)
+        checkbox.setGeometry(posX, posY, largo, ancho)
+        return checkbox
 
     def crear_combobox(self, opciones, posX, posY, largo, ancho, default):
         # Crear instancia de QComboBox
