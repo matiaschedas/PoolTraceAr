@@ -221,7 +221,12 @@ class VentanaVideo(QMainWindow):
             #grafica los huecos (troneras):
             mitadMesa = self.distancia_media_entre_puntos(self.XIROI,self.XDROI)
             troneras = [(self.XIROI-15,self.YIROI-15),(self.XDROI+15,self.YDROI+15),(self.XIROI-15, self.YDROI+15), (self.XDROI+15, self.YIROI-15),(self.XIROI+mitadMesa,self.YIROI-15),(self.XIROI+mitadMesa,self.YDROI+15)]
-            
+            self.tronera1 = (self.XIROI-15,self.YIROI-15)
+            self.tronera2 = (self.XDROI+15,self.YDROI+15)
+            self.tronera3 = (self.XIROI-15, self.YDROI+15)
+            self.tronera4 = (self.XDROI+15, self.YIROI-15)
+            self.tronera5 = (self.XIROI+mitadMesa,self.YIROI-15)
+            self.tronera6 = (self.XIROI+mitadMesa,self.YDROI+15)
             for tronera in troneras:
                 cv2.circle(self.frame, tronera, 20 , (255,255,0),2)
 
