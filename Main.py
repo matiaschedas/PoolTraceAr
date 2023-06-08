@@ -44,23 +44,23 @@ def obtener_webcams():
         return webcams
 
 class VentanaVideo(QMainWindow):
-    def __init__(self):
+    def __init__(self, ventanaProyeccion):
         super().__init__()
         webcams = obtener_webcams()
         self.setWindowTitle("PoolTraceAR")
         self.seguirActualizando = True
+        self.ventanaProyeccion = ventanaProyeccion
 
         #Parametros del ROI
         self.verVerticesROI = False
         self.verROI = False
-        self.XIROI = 0
-        self.YIROI = 0
-        self.XDROI = 0
-        self.YDROI = 0
+        self.XIROI, self.YIROI = 100, 100
+        self.XDROI, self.YDROI = 1110, 600
         self.moverVertices = False
         self.verticeSeleccionado = None
         self.inicio = True
         self.creandoROI = False
+        
 
         #Parametros de reglas de juego
         self.BolaEnMano = False
@@ -70,10 +70,11 @@ class VentanaVideo(QMainWindow):
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.frame_count = 0
+
         self.label = QLabel(self)
         self.label.setGeometry(0, 0, 1280, 720)
         self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        
+
         self.setCentralWidget(self.label)
 
         #creacion de interfaz
@@ -82,6 +83,8 @@ class VentanaVideo(QMainWindow):
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.botonROI = self.crear_boton("Configurar ROI", 1290,80,100,30)
         self.botonROI.clicked.connect(self.crear_ROI)
+        self.botonProyectar = self.crear_boton("Proyectar",1290,125,100,30)
+        self.botonProyectar.clicked.connect(self.proyectar)
 
         self.labelBolaEnMano = self.crear_label("Bola en mano: ",5,820,100,25)
         self.checkBolaEnMano = self.crear_checkbox(80,820,50,30)
@@ -89,6 +92,7 @@ class VentanaVideo(QMainWindow):
 
         #inicioHilos()
         self.actualizar_video()
+
 
     def cambio_camara(self,index):
         opcion = self.comboCamaras.itemText(index)
@@ -100,7 +104,9 @@ class VentanaVideo(QMainWindow):
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
 
-    
+    def proyectar(self):
+        self.ventanaProyeccion.show()
+
     def closeEvent(self, event):
         parar_de_actualizar(self)
         if self.cap is not None:
@@ -188,6 +194,7 @@ class VentanaVideo(QMainWindow):
     def actualizar_video(self):
         if not self.seguirActualizando:
             return
+        
         ret, self.frame = self.cap.read()
         if self.inicio:
                 self.XIROI, self.YIROI = 100, 100
@@ -205,7 +212,7 @@ class VentanaVideo(QMainWindow):
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         
         circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
-
+        self.ventanaProyeccion.limpiar_circulos()
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
             for (x, y, r) in circles:
@@ -214,6 +221,7 @@ class VentanaVideo(QMainWindow):
                 circle_area = np.pi * r * r
                 white_ratio = white_pixels / circle_area
                 cv2.circle(self.frame, (x +  self.XIROI, y + self.YIROI), r + 12, (0, 255, 0), 3)
+                self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI, y + self.YIROI, r + 12, (0, 255, 0), 3)
                 # if white_ratio > 0.5:
                 #     cv2.putText(frame, f"Rayada {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
                 #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
@@ -232,13 +240,37 @@ class VentanaVideo(QMainWindow):
         QTimer.singleShot(tiempo_espera, self.actualizar_video)
 
 
+class VentanaVideo2(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.label = QLabel(self)
+        self.label.setGeometry(0, 0, 1280, 720)
+        self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+    def dibujar_circulos(self, x, y, r, color, grosor): 
+        self.frame = self.frame.copy()
+        cv2.circle(self.frame, (x, y), r, color, grosor)
+        frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+        imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
+        imagen = QPixmap.fromImage(imagen)
+        self.label.setPixmap(imagen)
+
+    def limpiar_circulos(self):
+        self.frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+    
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    ventana = VentanaVideo()
+    ventana2 = VentanaVideo2()
+    ventana2.setFixedSize(1280,720)
+
+    ventana = VentanaVideo(ventana2)
     ventana.setFixedSize(1400,850)
     ventana.show()
+    #ventana2.show()
     
     sys.exit(app.exec_())
 
