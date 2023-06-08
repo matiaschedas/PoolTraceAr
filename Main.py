@@ -183,10 +183,10 @@ class VentanaVideo(QMainWindow):
         if self.moverVertices and self.verticeSeleccionado is not None:
             print(f"moviendo vertice: {self.verticeSeleccionado}")
             # Actualizar la posición del vértice seleccionado según la posición del mouse
-            if  self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 and event.y() > 1 and event.x() > 1 :
+            if  self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 and event.y() > 1 and event.x() > 1 and event.x() < 1280 and event.y() < 720:
                 self.XIROI = event.x()
                 self.YIROI = event.y()
-            elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() >1 :
+            elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() >1 and event.x() < 1280 and event.y() < 720:
                 self.XDROI = event.x()
                 self.YDROI = event.y()
 
@@ -215,7 +215,7 @@ class VentanaVideo(QMainWindow):
                 self.XDROI, self.YDROI = 1110, 600
                 self.inicio=False
 
-        roi = self.frame[self.YIROI:self.YDROI, self.XIROI:self.XDROI]
+        roi = self.frame[self.YIROI+5:self.YDROI-5, self.XIROI+5:self.XDROI-5]
         if self.verROI:
             cv2.rectangle(self.frame, (self.XIROI, self.YIROI), (self.XDROI, self.YDROI), (0, 255, 0), 2)
             #grafica los huecos (troneras):
