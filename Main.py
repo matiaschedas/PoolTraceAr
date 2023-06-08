@@ -68,6 +68,7 @@ class VentanaVideo(QMainWindow):
         self.frame_count = 0
         self.label = QLabel(self)
         self.label.setGeometry(0, 0, 1280, 720)
+        self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         
         self.setCentralWidget(self.label)
 
@@ -137,10 +138,10 @@ class VentanaVideo(QMainWindow):
         if self.moverVertices and self.verticeSeleccionado is not None:
             print(f"moviendo vertice: {self.verticeSeleccionado}")
             # Actualizar la posición del vértice seleccionado según la posición del mouse
-            if  self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 :
+            if  self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 and event.y() > 1 and event.x() > 1 :
                 self.XIROI = event.x()
                 self.YIROI = event.y()
-            elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10:
+            elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() >1 :
                 self.XDROI = event.x()
                 self.YDROI = event.y()
 
@@ -177,7 +178,8 @@ class VentanaVideo(QMainWindow):
 
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
-        circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 17, param1=100, param2=12, minRadius=5, maxRadius=10)
+        
+        circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
 
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
@@ -186,7 +188,7 @@ class VentanaVideo(QMainWindow):
                 white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
                 circle_area = np.pi * r * r
                 white_ratio = white_pixels / circle_area
-                cv2.circle(self.frame, (x +  self.XIROI, y + self.YIROI), r + 10, (0, 255, 0), 2)
+                cv2.circle(self.frame, (x +  self.XIROI, y + self.YIROI), r + 12, (0, 255, 0), 3)
                 # if white_ratio > 0.5:
                 #     cv2.putText(frame, f"Rayada {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
                 #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
@@ -210,7 +212,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     ventana = VentanaVideo()
-    ventana.setFixedSize(1400,720)
+    ventana.setFixedSize(1400,850)
     ventana.show()
     
     sys.exit(app.exec_())
