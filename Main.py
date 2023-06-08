@@ -1,4 +1,5 @@
 import sys
+import math
 from PyQt5 import QtGui
 import cv2
 import numpy as np
@@ -60,7 +61,15 @@ class VentanaVideo(QMainWindow):
         self.verticeSeleccionado = None
         self.inicio = True
         self.creandoROI = False
-        
+
+        #coordenadas de huecos(troneras):
+        self.tronera1 = [0, 0]
+        self.tronera2 = [0, 0]
+        self.tronera3 = [0, 0]
+        self.tronera4 = [0, 0]
+        self.tronera5 = [0, 0]
+        self.tronera6 = [0, 0]
+      
 
         #Parametros de reglas de juego
         self.BolaEnMano = False
@@ -103,6 +112,11 @@ class VentanaVideo(QMainWindow):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+
+    
+    def distancia_media_entre_puntos(self, x1, x2):
+        distancia = (x2 - x1)
+        return math.floor(distancia/2)
 
     def proyectar(self):
         self.ventanaProyeccion.show()
@@ -204,6 +218,13 @@ class VentanaVideo(QMainWindow):
         roi = self.frame[self.YIROI:self.YDROI, self.XIROI:self.XDROI]
         if self.verROI:
             cv2.rectangle(self.frame, (self.XIROI, self.YIROI), (self.XDROI, self.YDROI), (0, 255, 0), 2)
+            #grafica los huecos (troneras):
+            mitadMesa = self.distancia_media_entre_puntos(self.XIROI,self.XDROI)
+            troneras = [(self.XIROI-15,self.YIROI-15),(self.XDROI+15,self.YDROI+15),(self.XIROI-15, self.YDROI+15), (self.XDROI+15, self.YIROI-15),(self.XIROI+mitadMesa,self.YIROI-15),(self.XIROI+mitadMesa,self.YDROI+15)]
+            
+            for tronera in troneras:
+                cv2.circle(self.frame, tronera, 20 , (255,255,0),2)
+
         if self.verVerticesROI:
             cv2.circle(self.frame, (self.XIROI, self.YIROI), 10, (0, 255, 0), 2)
             cv2.circle(self.frame, (self.XDROI, self.YDROI), 10, (0, 255, 0), 2)
@@ -212,6 +233,7 @@ class VentanaVideo(QMainWindow):
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         
         circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
+        #limpiar ventana de proyeccion:
         self.ventanaProyeccion.limpiar_circulos()
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
@@ -220,7 +242,9 @@ class VentanaVideo(QMainWindow):
                 white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
                 circle_area = np.pi * r * r
                 white_ratio = white_pixels / circle_area
+                #se dibujan los circulos en la interfaz:
                 cv2.circle(self.frame, (x +  self.XIROI, y + self.YIROI), r + 12, (0, 255, 0), 3)
+                #se dibujan los mismos circulos en la ventana de proyeccion
                 self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI, y + self.YIROI, r + 12, (0, 255, 0), 3)
                 # if white_ratio > 0.5:
                 #     cv2.putText(frame, f"Rayada {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
