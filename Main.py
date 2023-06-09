@@ -5,14 +5,18 @@ import cv2
 import numpy as np
 import threading
 import re
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer
 
 from fchola import HiloEjemplo
 
+#bloqueo del hilo1 desde el main
 bloqueo = threading.Lock()
 hilo1 = HiloEjemplo(bloqueo)
+
+ResolucionX = 1280
+ResolucionY= 720
 
 
 def inicioHilos():
@@ -75,30 +79,49 @@ class VentanaVideo(QMainWindow):
         self.BolaEnMano = False
 
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.frame_count = 0
 
         self.label = QLabel(self)
-        self.label.setGeometry(0, 0, 1280, 720)
-        self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.label.setGeometry(0, 0, ResolucionX, ResolucionY)
+        #elf.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.label.move(0, 0) 
 
         self.setCentralWidget(self.label)
 
         #creacion de interfaz
+
+      
+
         self.labelCamara = self.crear_label("Camara:",1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
-        self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.botonROI = self.crear_boton("Configurar ROI", 1290,80,100,30)
-        self.botonROI.clicked.connect(self.crear_ROI)
         self.botonProyectar = self.crear_boton("Proyectar",1290,125,100,30)
+
         self.botonProyectar.clicked.connect(self.proyectar)
+        self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
+        self.botonROI.clicked.connect(self.crear_ROI)
 
         self.labelBolaEnMano = self.crear_label("Bola en mano: ",5,820,100,25)
         self.checkBolaEnMano = self.crear_checkbox(80,820,50,30)
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
+        
+        self.widget = QWidget()
+        self.layout = QGridLayout(self.widget)
+        self.layout.setContentsMargins(0, 0, 0, 0) 
+        #nro fila, nro de col, cant filas, cant columnas
+        self.layout.addWidget(self.label, 0, 0, 1, 2)
+        self.layout.addWidget(self.labelCamara, 1, 0)
+        self.layout.addWidget(self.comboCamaras, 2, 0)
+        self.layout.addWidget(self.botonROI, 3, 0)
+        self.layout.addWidget(self.botonProyectar, 3, 1)
+        self.layout.addWidget(self.labelBolaEnMano, 4, 0)
+        self.layout.addWidget(self.checkBolaEnMano, 5, 0)
 
+
+        self.setCentralWidget(self.widget)
         #inicioHilos()
         self.actualizar_video()
 
@@ -109,8 +132,8 @@ class VentanaVideo(QMainWindow):
         numero = int(re.search(r'\d+', opcion).group())
         self.cap.release()
         self.cap = cv2.VideoCapture(numero, cv2.CAP_DSHOW)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
 
     
@@ -183,10 +206,10 @@ class VentanaVideo(QMainWindow):
         if self.moverVertices and self.verticeSeleccionado is not None:
             print(f"moviendo vertice: {self.verticeSeleccionado}")
             # Actualizar la posición del vértice seleccionado según la posición del mouse
-            if  self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 and event.y() > 1 and event.x() > 1 and event.x() < 1280 and event.y() < 720:
+            if  self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 and event.y() > 1 and event.x() > 1 and event.x() < ResolucionX and event.y() < ResolucionY:
                 self.XIROI = event.x()
                 self.YIROI = event.y()
-            elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() >1 and event.x() < 1280 and event.y() < 720:
+            elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() >1 and event.x() < ResolucionX and event.y() < ResolucionY:
                 self.XDROI = event.x()
                 self.YDROI = event.y()
 
@@ -265,7 +288,7 @@ class VentanaVideo(QMainWindow):
 
         self.frame_count += 1
         # Establecer el tiempo de espera en base a los fps del video
-        tiempo_espera = 5
+        tiempo_espera = 13
         QTimer.singleShot(tiempo_espera, self.actualizar_video)
 
 
@@ -273,9 +296,9 @@ class VentanaVideo2(QMainWindow):
     def __init__(self):
         super().__init__()
         self.label = QLabel(self)
-        self.label.setGeometry(0, 0, 1280, 720)
+        self.label.setGeometry(0, 0, ResolucionX, ResolucionY)
         self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+        self.frame = np.zeros((ResolucionY, ResolucionX, 3), dtype=np.uint8)
 
     def dibujar_circulos(self, x, y, r, color, grosor): 
         self.frame = self.frame.copy()
@@ -286,7 +309,7 @@ class VentanaVideo2(QMainWindow):
         self.label.setPixmap(imagen)
 
     def limpiar_circulos(self):
-        self.frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+        self.frame = np.zeros((ResolucionY, ResolucionX, 3), dtype=np.uint8)
 
     
 
@@ -294,10 +317,11 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     ventana2 = VentanaVideo2()
-    ventana2.setFixedSize(1280,720)
+    ventana2.setFixedSize(ResolucionX,ResolucionY)
 
     ventana = VentanaVideo(ventana2)
-    ventana.setFixedSize(1400,850)
+    ventana.setMinimumSize(800, 600)  # Establece el tamaño mínimo deseado
+    ventana.setMaximumSize(1400, 850)
     ventana.show()
     #ventana2.show()
     
