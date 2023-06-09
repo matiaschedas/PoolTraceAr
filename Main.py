@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import threading
 import re
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer
 
@@ -90,6 +90,10 @@ class VentanaVideo(QMainWindow):
         self.label.move(0, 0) 
 
         self.setCentralWidget(self.label)
+        self.label.setScaledContents(True)  # Escalar el contenido para ajustarse al QLabel
+
+        # Establecer la política de expansión
+        self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         #creacion de interfaz
 
@@ -321,7 +325,7 @@ if __name__ == "__main__":
 
     ventana = VentanaVideo(ventana2)
     ventana.setMinimumSize(800, 600)  # Establece el tamaño mínimo deseado
-    ventana.setMaximumSize(1400, 850)
+    ventana.setMaximumSize(1920, 1080)
     ventana.show()
     #ventana2.show()
     
