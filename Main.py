@@ -89,11 +89,11 @@ class VentanaVideo(QMainWindow):
         #elf.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.label.move(0, 0) 
 
-        self.setCentralWidget(self.label)
-        self.label.setScaledContents(True)  # Escalar el contenido para ajustarse al QLabel
+        # self.setCentralWidget(self.label)
+        # self.label.setScaledContents(True)  # Escalar el contenido para ajustarse al QLabel
 
-        # Establecer la política de expansión
-        self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # # Establecer la política de expansión
+        # self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         #creacion de interfaz
 
