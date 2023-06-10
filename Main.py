@@ -17,7 +17,8 @@ hilo1 = HiloEjemplo(bloqueo)
 
 ResolucionX = 1280
 ResolucionY= 720
-
+circles_prev = None
+movimientoDetectado = False
 
 def inicioHilos():
     hilo1.start()
@@ -65,6 +66,7 @@ class VentanaVideo(QMainWindow):
         self.verticeSeleccionado = None
         self.inicio = True
         self.creandoROI = False
+        self.cargarCoordenadas = True
 
         #coordenadas de huecos(troneras):
         self.tronera1 = [0, 0]
@@ -77,6 +79,7 @@ class VentanaVideo(QMainWindow):
 
         #Parametros de reglas de juego
         self.BolaEnMano = False
+        self.hayMovimiento = False
 
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
@@ -230,9 +233,12 @@ class VentanaVideo(QMainWindow):
         else:
             self.verROI = False
             self.verVerticesROI = False
-       
+    
+    def hay_movimiento(self,movimiento):
+        self.hayMovimiento = movimiento
         
     def actualizar_video(self):
+       
         if not self.seguirActualizando:
             return
         
@@ -267,23 +273,45 @@ class VentanaVideo(QMainWindow):
         circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
         #limpiar ventana de proyeccion:
         self.ventanaProyeccion.limpiar_circulos()
+        global circles_prev
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
             for (x, y, r) in circles:
-                mean_val = np.mean(gray[y - r:y + r, x - r:x + r])
-                white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
-                circle_area = np.pi * r * r
-                white_ratio = white_pixels / circle_area
+                # mean_val = np.mean(gray[y - r:y + r, x - r:x + r])
+                # white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
+                # circle_area = np.pi * r * r
+                # white_ratio = white_pixels / circle_area
                 #se dibujan los circulos en la interfaz:
-                cv2.circle(self.frame, (x +  self.XIROI, y + self.YIROI), r + 12, (0, 255, 0), 3)
+                cv2.circle(self.frame, (x +  self.XIROI + 3, y + self.YIROI + 3), r + 12, (0, 255, 0), 3)
                 #se dibujan los mismos circulos en la ventana de proyeccion
-                self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI, y + self.YIROI, r + 12, (0, 255, 0), 3)
-                # if white_ratio > 0.5:
-                #     cv2.putText(frame, f"Rayada {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
-                #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                # else:
-                #     cv2.putText(frame, f"Lisa {white_ratio:.1f}", (x + roi_x1 + 10, y + roi_y1),
-                #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI + 3, y + self.YIROI + 3, r + 12, (0, 255, 0), 3)
+                coordenadas = (x +  self.XIROI + 3, y + self.YIROI + 3)
+
+        #detectar si hay movimiento de alguna bola:
+        if  self.frame_count % 10 == 0:
+            print(f"movimiento: {self.hayMovimiento}")
+            global  movimientoDetectado
+            if circles_prev is not None and circles is not None:
+                movimientoDetectado = False
+                index=0
+                for (x, y, r) in circles:
+                    try:
+                        circuloAnterior = circles_prev[index]
+                    except IndexError:
+                        movimientoDetectado = True
+                        break    
+                    (prev_x, prev_y, prev_r) = circuloAnterior
+                    distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
+                    if distance > 5:  # Umbral para considerar movimiento
+                        movimientoDetectado = True
+                        break
+                    if movimientoDetectado:
+                        break
+                    index+=1
+            circles_prev = circles 
+        
+        self.hay_movimiento(movimientoDetectado)
+                       
 
         frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
         imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
