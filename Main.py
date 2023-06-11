@@ -288,26 +288,22 @@ class VentanaVideo(QMainWindow):
                 coordenadas = (x +  self.XIROI + 3, y + self.YIROI + 3)
 
         #detectar si hay movimiento de alguna bola:
-        if  self.frame_count % 10 == 0:
+        if  self.frame_count % 5 == 0:
             print(f"movimiento: {self.hayMovimiento}")
             global  movimientoDetectado
             if circles_prev is not None and circles is not None:
                 movimientoDetectado = False
                 index=0
                 for (x, y, r) in circles:
-                    try:
-                        circuloAnterior = circles_prev[index]
-                    except IndexError:
-                        movimientoDetectado = True
-                        break    
-                    (prev_x, prev_y, prev_r) = circuloAnterior
-                    distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
-                    if distance > 5:  # Umbral para considerar movimiento
-                        movimientoDetectado = True
-                        break
-                    if movimientoDetectado:
-                        break
-                    index+=1
+                    for(prev_x, prev_y, prev_r) in circles_prev:
+                        distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
+                        if distance < 6:  # Umbral para considerar movimiento
+                            movimientoDetectado = False
+                            break
+                        else:
+                            movimientoDetectado = True
+            else:
+                movimientoDetectado = False
             circles_prev = circles 
         
         self.hay_movimiento(movimientoDetectado)
@@ -355,7 +351,6 @@ if __name__ == "__main__":
     ventana.setMinimumSize(800, 600)  # Establece el tamaño mínimo deseado
     ventana.setMaximumSize(1920, 1080)
     ventana.show()
-    #ventana2.show()
     
     sys.exit(app.exec_())
 
