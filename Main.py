@@ -9,17 +9,21 @@ import time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer
-
 from fchola import HiloEjemplo
+
+import pyautogui
+
+screen_width, screen_height = pyautogui.size()
+
+ResolucionX = (int)(screen_width*0.8)
+ResolucionY= (int)(screen_height*0.8)
+
+circles_prev = None
+movimientoDetectado = False
 
 #bloqueo del hilo1 desde el main
 bloqueo = threading.Lock()
 hilo1 = HiloEjemplo(bloqueo)
-
-ResolucionX = 1280
-ResolucionY= 720
-circles_prev = None
-movimientoDetectado = False
 
 def inicioHilos():
     hilo1.start()
@@ -32,23 +36,14 @@ def parar_de_actualizar(self):
 
 def obtener_webcams():
         webcams = []
-        index = 0
-
-        while True:
+        for index in range ( 10 ):
             cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
-            if not cap.isOpened():
-                break
-
-            _, frame = cap.read()
-            if frame is not None:
+            if cap.isOpened():
                 webcam_name = f"Webcam {index}"
                 webcams.append(webcam_name)
-            
-            cap.release()
-            index += 1
-
-        cap.release()
+                cap.release()               
         return webcams
+
 
 class VentanaVideo(QMainWindow):
     def __init__(self, ventanaProyeccion):
@@ -58,7 +53,7 @@ class VentanaVideo(QMainWindow):
         self.seguirActualizando = True
         self.ventanaProyeccion = ventanaProyeccion
 
-        #Parametros del ROI
+        #region Parametros del ROI
         self.verVerticesROI = False
         self.verROI = False
         self.XIROI, self.YIROI = 100, 100
@@ -68,25 +63,29 @@ class VentanaVideo(QMainWindow):
         self.inicio = True
         self.creandoROI = False
         self.cargarCoordenadas = True
+        #endregion
 
-        #coordenadas de huecos(troneras):
+        #region coordenadas de huecos(troneras):
         self.tronera1 = [0, 0]
         self.tronera2 = [0, 0]
         self.tronera3 = [0, 0]
         self.tronera4 = [0, 0]
         self.tronera5 = [0, 0]
         self.tronera6 = [0, 0]
-      
+        #endregion
 
-        #Parametros de reglas de juego
+        #region Parametros de reglas de juego
         self.BolaEnMano = False
         self.hayMovimiento = False
-
+        #endregion
+        
+        #region Configuraciones opencv
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.frame_count = 0
+        #endregion
 
         self.label = QLabel(self)
         self.label.setGeometry(0, 0, ResolucionX, ResolucionY)
@@ -100,10 +99,8 @@ class VentanaVideo(QMainWindow):
         # # Establecer la política de expansión
         # self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+
         #creacion de interfaz
-
-      
-
         self.labelCamara = self.crear_label("Camara:",1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.botonROI = self.crear_boton("Configurar ROI", 1290,80,100,30)
@@ -245,29 +242,30 @@ class VentanaVideo(QMainWindow):
             return
         
         ret, self.frame = self.cap.read()
-        if self.inicio:
-                self.XIROI, self.YIROI = 100, 100
-                self.XDROI, self.YDROI = 1110, 600
-                self.inicio=False
+        if self.frame is not None:
+            if self.inicio:
+                    self.XIROI, self.YIROI = 100, 100
+                    self.XDROI, self.YDROI = 1110, 600
+                    self.inicio=False
 
-        roi = self.frame[self.YIROI+5:self.YDROI-5, self.XIROI+5:self.XDROI-5]
-        if self.verROI:
-            cv2.rectangle(self.frame, (self.XIROI, self.YIROI), (self.XDROI, self.YDROI), (0, 255, 0), 2)
-            #grafica los huecos (troneras):
-            mitadMesa = self.distancia_media_entre_puntos(self.XIROI,self.XDROI)
-            troneras = [(self.XIROI-15,self.YIROI-15),(self.XDROI+15,self.YDROI+15),(self.XIROI-15, self.YDROI+15), (self.XDROI+15, self.YIROI-15),(self.XIROI+mitadMesa,self.YIROI-15),(self.XIROI+mitadMesa,self.YDROI+15)]
-            self.tronera1 = (self.XIROI-15,self.YIROI-15)
-            self.tronera2 = (self.XDROI+15,self.YDROI+15)
-            self.tronera3 = (self.XIROI-15, self.YDROI+15)
-            self.tronera4 = (self.XDROI+15, self.YIROI-15)
-            self.tronera5 = (self.XIROI+mitadMesa,self.YIROI-15)
-            self.tronera6 = (self.XIROI+mitadMesa,self.YDROI+15)
-            for tronera in troneras:
-                cv2.circle(self.frame, tronera, 20 , (255,255,0),2)
+            roi = self.frame[self.YIROI+5:self.YDROI-5, self.XIROI+5:self.XDROI-5]
+            if self.verROI:
+                cv2.rectangle(self.frame, (self.XIROI, self.YIROI), (self.XDROI, self.YDROI), (0, 255, 0), 2)
+                #grafica los huecos (troneras):
+                mitadMesa = self.distancia_media_entre_puntos(self.XIROI,self.XDROI)
+                troneras = [(self.XIROI-15,self.YIROI-15),(self.XDROI+15,self.YDROI+15),(self.XIROI-15, self.YDROI+15), (self.XDROI+15, self.YIROI-15),(self.XIROI+mitadMesa,self.YIROI-15),(self.XIROI+mitadMesa,self.YDROI+15)]
+                self.tronera1 = (self.XIROI-15,self.YIROI-15)
+                self.tronera2 = (self.XDROI+15,self.YDROI+15)
+                self.tronera3 = (self.XIROI-15, self.YDROI+15)
+                self.tronera4 = (self.XDROI+15, self.YIROI-15)
+                self.tronera5 = (self.XIROI+mitadMesa,self.YIROI-15)
+                self.tronera6 = (self.XIROI+mitadMesa,self.YDROI+15)
+                for tronera in troneras:
+                    cv2.circle(self.frame, tronera, 20 , (255,255,0),2)
 
-        if self.verVerticesROI:
-            cv2.circle(self.frame, (self.XIROI, self.YIROI), 10, (0, 255, 0), 2)
-            cv2.circle(self.frame, (self.XDROI, self.YDROI), 10, (0, 255, 0), 2)
+            if self.verVerticesROI:
+                cv2.circle(self.frame, (self.XIROI, self.YIROI), 10, (0, 255, 0), 2)
+                cv2.circle(self.frame, (self.XDROI, self.YDROI), 10, (0, 255, 0), 2)
 
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (17, 17), 0)
@@ -327,7 +325,7 @@ class VentanaVideo(QMainWindow):
         QTimer.singleShot(tiempo_espera, self.actualizar_video)
 
 
-class VentanaVideo2(QMainWindow):
+class VentanaProyeccion(QMainWindow):
     def __init__(self):
         super().__init__()
         self.label = QLabel(self)
@@ -351,12 +349,17 @@ class VentanaVideo2(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    ventana2 = VentanaVideo2()
-    ventana2.setFixedSize(ResolucionX,ResolucionY)
+    ventanaProyeccion = VentanaProyeccion()
+    ventanaProyeccion.setFixedSize(ResolucionX,ResolucionY)
+    ventanaProyeccion.setWindowTitle("Proyeccion")
+    ventanaProyeccion.setGeometry(100, 100, ResolucionX, ResolucionY)  # Establecer posición y tamaño inicial de la ventana
+    # Cambiar el tamaño de la ventana
+    ventanaProyeccion.resize(ResolucionX, ResolucionY)
 
-    ventana = VentanaVideo(ventana2)
+    ventana = VentanaVideo(ventanaProyeccion)
     ventana.setMinimumSize(800, 600)  # Establece el tamaño mínimo deseado
-    ventana.setMaximumSize(1920, 1080)
+    ventana.setMaximumSize(screen_width, screen_height)
+    ventana.resize(ResolucionX, ResolucionY)
     ventana.show()
     
     sys.exit(app.exec_())
