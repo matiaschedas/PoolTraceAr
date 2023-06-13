@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import threading
 import re
+import time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer
@@ -91,6 +92,7 @@ class VentanaVideo(QMainWindow):
         self.label.setGeometry(0, 0, ResolucionX, ResolucionY)
         #elf.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.label.move(0, 0) 
+        self.tiempo_inicio = time.time()
 
         # self.setCentralWidget(self.label)
         # self.label.setScaledContents(True)  # Escalar el contenido para ajustarse al QLabel
@@ -268,9 +270,9 @@ class VentanaVideo(QMainWindow):
             cv2.circle(self.frame, (self.XDROI, self.YDROI), 10, (0, 255, 0), 2)
 
         gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        blur = cv2.GaussianBlur(gray, (17, 17), 0)
         
-        circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
+        circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 100, param1=10, param2=30, minRadius=3, maxRadius=12)
         #limpiar ventana de proyeccion:
         self.ventanaProyeccion.limpiar_circulos()
         global circles_prev
@@ -285,11 +287,10 @@ class VentanaVideo(QMainWindow):
                 cv2.circle(self.frame, (x +  self.XIROI + 3, y + self.YIROI + 3), r + 12, (0, 255, 0), 3)
                 #se dibujan los mismos circulos en la ventana de proyeccion
                 self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI + 3, y + self.YIROI + 3, r + 12, (0, 255, 0), 3)
-                coordenadas = (x +  self.XIROI + 3, y + self.YIROI + 3)
 
         #detectar si hay movimiento de alguna bola:
-        if  self.frame_count % 5 == 0:
-            print(f"movimiento: {self.hayMovimiento}")
+        if  self.frame_count % 4 == 0:
+            #print(f"movimiento: {self.hayMovimiento}")
             global  movimientoDetectado
             if circles_prev is not None and circles is not None:
                 movimientoDetectado = False
@@ -308,7 +309,13 @@ class VentanaVideo(QMainWindow):
         
         self.hay_movimiento(movimientoDetectado)
                        
+        tiempo_actual = time.time()
+        tiempo_transcurrido = tiempo_actual - self.tiempo_inicio
 
+        # Calcular los FPS
+        fps = self.frame_count / tiempo_transcurrido
+        if(self.frame_count%60==0):
+            print(fps)
         frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
         imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
         imagen = QPixmap.fromImage(imagen)
@@ -316,7 +323,7 @@ class VentanaVideo(QMainWindow):
 
         self.frame_count += 1
         # Establecer el tiempo de espera en base a los fps del video
-        tiempo_espera = 13
+        tiempo_espera = 1
         QTimer.singleShot(tiempo_espera, self.actualizar_video)
 
 
