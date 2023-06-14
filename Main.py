@@ -8,7 +8,7 @@ import re
 import time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
 
 import pyautogui
@@ -17,6 +17,17 @@ screen_width, screen_height = pyautogui.size()
 
 ResolucionX = (int)(screen_width*0.8)
 ResolucionY= (int)(screen_height*0.8)
+resoluciones = [
+    (7680, 4320),
+    (3840, 2160),
+    (2560, 1440),
+    (1920, 1080),
+    (1280, 720),
+    (854, 480),
+    (640, 360),
+    (426, 240)
+]
+
 
 circles_prev = None
 movimientoDetectado = False
@@ -41,15 +52,16 @@ def obtener_webcams():
             if cap.isOpened():
                 webcam_name = f"Webcam {index}"
                 webcams.append(webcam_name)
-                cap.release()               
+                cap.release()
         return webcams
 
 
 class VentanaVideo(QMainWindow):
     def __init__(self, ventanaProyeccion):
         super().__init__()
-        webcams = obtener_webcams()
         self.setWindowTitle("PoolTraceAR")
+
+        webcams = obtener_webcams()
         self.seguirActualizando = True
         self.ventanaProyeccion = ventanaProyeccion
 
@@ -87,6 +99,8 @@ class VentanaVideo(QMainWindow):
         self.frame_count = 0
         #endregion
 
+        #region Configuracion de la ventana
+        self.setMinimumSize(800, 600)  # Establece el tamaño mínimo deseado
         self.label = QLabel(self)
         self.label.setGeometry(0, 0, ResolucionX, ResolucionY)
         #elf.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
@@ -98,9 +112,9 @@ class VentanaVideo(QMainWindow):
 
         # # Establecer la política de expansión
         # self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        #endregion
 
-
-        #creacion de interfaz
+        #region creacion de interfaz
         self.labelCamara = self.crear_label("Camara:",1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.botonROI = self.crear_boton("Configurar ROI", 1290,80,100,30)
@@ -125,24 +139,75 @@ class VentanaVideo(QMainWindow):
         self.layout.addWidget(self.botonProyectar, 3, 1)
         self.layout.addWidget(self.labelBolaEnMano, 4, 0)
         self.layout.addWidget(self.checkBolaEnMano, 5, 0)
-
-
         self.setCentralWidget(self.widget)
+        #endregion
+        self.resize_timer = QTimer()
+        self.resize_timer.setSingleShot(True)
+        self.resize_timer.timeout.connect(self.on_resize_timeout)
         #inicioHilos()
         self.actualizar_video()
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Resize:
+            if event.spontaneous():
+                # Código que se ejecuta al inicio del evento de redimensionamiento
+                print("Inicio del evento de redimensionamiento")
+                self.cap.release()
+
+        return super().eventFilter(obj, event)
+        
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        minimum_size = self.minimumSize()
+        if event.size().width() < minimum_size.width() or self.size().height() < minimum_size.height():
+            # Restaurar el tamaño anterior de la ventana
+            self.setFixedSize(minimum_size)
+
+         # Reiniciar el temporizador en cada redimensionamiento
+        self.resize_timer.start(500)  # Establecer un tiempo de espera adecuado
+        self.cap.release()    
+        global ResolucionX,ResolucionY
+        ResolucionX = event.size().width()
+        ResolucionY = event.size().height()    
 
 
+    def encontrar_resolucion(self,resoluciones, ResolucionX, ResolucionY):
+                for i in range(len(resoluciones)):
+                    ancho_actual, alto_actual = resoluciones[i]
+
+                    if i < len(resoluciones) - 1 and i > 0:
+                        ancho_siguiente, alto_siguiente = resoluciones[i + 1]
+                        ancho_anterior, alto_anterior = resoluciones[i - 1]
+
+                        if ResolucionX > ancho_siguiente and ResolucionX < ancho_anterior and ResolucionY > alto_siguiente and ResolucionY < alto_anterior:
+                            return resoluciones[i]
+
+                return None
+    def on_resize_timeout(self):
+        # Código a ejecutar cuando finaliza el evento de redimensionamiento
+        print("Final del evento de redimensionamiento")
+        global ResolucionX,ResolucionY, resoluciones
+        resolucion_encontrada = self.encontrar_resolucion(resoluciones, ResolucionX, ResolucionY)
+        ResolucionX = resolucion_encontrada[0]
+        ResolucionY = resolucion_encontrada[1]
+        self.cambio_camara(self.comboCamaras.currentIndex())
+
+        
+    
     def cambio_camara(self,index):
         opcion = self.comboCamaras.itemText(index)
         print(f"opcion seleccionada: {opcion}")
         numero = int(re.search(r'\d+', opcion).group())
-        self.cap.release()
-        self.cap = cv2.VideoCapture(numero, cv2.CAP_DSHOW)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
-        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+        try:
+            self.cap.release()
+            self.cap = cv2.VideoCapture(numero, cv2.CAP_DSHOW)
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
+            self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+            self.actualizar_video()
+        except Exception as ex:
+            print ("Error")
+            self.cap.release()
 
-    
     def distancia_media_entre_puntos(self, x1, x2):
         distancia = (x2 - x1)
         return math.floor(distancia/2)
@@ -165,8 +230,6 @@ class VentanaVideo(QMainWindow):
         else:
             self.BolaEnMano = False
             print("No hay bola en mano")
-        
-    
 
     def crear_checkbox(self, posX, posY, largo, ancho):
         checkbox = QCheckBox(self)
@@ -206,7 +269,6 @@ class VentanaVideo(QMainWindow):
                     self.verticeSeleccionado = i
                     self.moverVertices = True
                     break
-        
 
     def mouseMoveEvent(self, event):
         if self.moverVertices and self.verticeSeleccionado is not None:
@@ -218,7 +280,6 @@ class VentanaVideo(QMainWindow):
             elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() >1 and event.x() < ResolucionX and event.y() < ResolucionY:
                 self.XDROI = event.x()
                 self.YDROI = event.y()
-
     
     def crear_ROI(self):
         if self.creandoROI == False:
@@ -243,6 +304,8 @@ class VentanaVideo(QMainWindow):
         
         ret, self.frame = self.cap.read()
         if self.frame is not None:
+            global ResolucionX,ResolucionY
+            self.frame = cv2.resize(self.frame, (ResolucionX, ResolucionY), interpolation = cv2.INTER_LINEAR)
             if self.inicio:
                     self.XIROI, self.YIROI = 100, 100
                     self.XDROI, self.YDROI = 1110, 600
@@ -267,62 +330,62 @@ class VentanaVideo(QMainWindow):
                 cv2.circle(self.frame, (self.XIROI, self.YIROI), 10, (0, 255, 0), 2)
                 cv2.circle(self.frame, (self.XDROI, self.YDROI), 10, (0, 255, 0), 2)
 
-        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-        blur = cv2.GaussianBlur(gray, (17, 17), 0)
-        
-        circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 100, param1=10, param2=30, minRadius=3, maxRadius=12)
-        #limpiar ventana de proyeccion:
-        self.ventanaProyeccion.limpiar_circulos()
-        global circles_prev
-        if circles is not None:
-            circles = np.round(circles[0, :]).astype("int")
-            for (x, y, r) in circles:
-                # mean_val = np.mean(gray[y - r:y + r, x - r:x + r])
-                # white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
-                # circle_area = np.pi * r * r
-                # white_ratio = white_pixels / circle_area
-                #se dibujan los circulos en la interfaz:
-                cv2.circle(self.frame, (x +  self.XIROI + 3, y + self.YIROI + 3), r + 12, (0, 255, 0), 3)
-                #se dibujan los mismos circulos en la ventana de proyeccion
-                self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI + 3, y + self.YIROI + 3, r + 12, (0, 255, 0), 3)
-
-        #detectar si hay movimiento de alguna bola:
-        if  self.frame_count % 4 == 0:
-            #print(f"movimiento: {self.hayMovimiento}")
-            global  movimientoDetectado
-            if circles_prev is not None and circles is not None:
-                movimientoDetectado = False
-                index=0
+            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            blur = cv2.GaussianBlur(gray, (17, 17), 0)
+            
+            circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 100, param1=10, param2=30, minRadius=3, maxRadius=12)
+            #limpiar ventana de proyeccion:
+            self.ventanaProyeccion.limpiar_circulos()
+            global circles_prev
+            if circles is not None:
+                circles = np.round(circles[0, :]).astype("int")
                 for (x, y, r) in circles:
-                    for(prev_x, prev_y, prev_r) in circles_prev:
-                        distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
-                        if distance < 6:  # Umbral para considerar movimiento
-                            movimientoDetectado = False
-                            break
-                        else:
-                            movimientoDetectado = True
-            else:
-                movimientoDetectado = False
-            circles_prev = circles 
-        
-        self.hay_movimiento(movimientoDetectado)
-                       
-        tiempo_actual = time.time()
-        tiempo_transcurrido = tiempo_actual - self.tiempo_inicio
+                    # mean_val = np.mean(gray[y - r:y + r, x - r:x + r])
+                    # white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
+                    # circle_area = np.pi * r * r
+                    # white_ratio = white_pixels / circle_area
+                    #se dibujan los circulos en la interfaz:
+                    cv2.circle(self.frame, (x +  self.XIROI + 3, y + self.YIROI + 3), r + 12, (0, 255, 0), 3)
+                    #se dibujan los mismos circulos en la ventana de proyeccion
+                    self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI + 3, y + self.YIROI + 3, r + 12, (0, 255, 0), 3)
 
-        # Calcular los FPS
-        fps = self.frame_count / tiempo_transcurrido
-        if(self.frame_count%60==0):
-            print(fps)
-        frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-        imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
-        imagen = QPixmap.fromImage(imagen)
-        self.label.setPixmap(imagen)
+            #detectar si hay movimiento de alguna bola:
+            if  self.frame_count % 4 == 0:
+                #print(f"movimiento: {self.hayMovimiento}")
+                global  movimientoDetectado
+                if circles_prev is not None and circles is not None:
+                    movimientoDetectado = False
+                    index=0
+                    for (x, y, r) in circles:
+                        for(prev_x, prev_y, prev_r) in circles_prev:
+                            distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
+                            if distance < 6:  # Umbral para considerar movimiento
+                                movimientoDetectado = False
+                                break
+                            else:
+                                movimientoDetectado = True
+                else:
+                    movimientoDetectado = False
+                circles_prev = circles 
+            
+            self.hay_movimiento(movimientoDetectado)
+                        
+            tiempo_actual = time.time()
+            tiempo_transcurrido = tiempo_actual - self.tiempo_inicio
 
-        self.frame_count += 1
-        # Establecer el tiempo de espera en base a los fps del video
-        tiempo_espera = 1
-        QTimer.singleShot(tiempo_espera, self.actualizar_video)
+            # Calcular los FPS
+            fps = self.frame_count / tiempo_transcurrido
+            if(self.frame_count%60==0):
+                print(fps)
+            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+            imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
+            imagen = QPixmap.fromImage(imagen)
+            self.label.setPixmap(imagen)
+
+            self.frame_count += 1
+            # Establecer el tiempo de espera en base a los fps del video
+            tiempo_espera = 1
+            QTimer.singleShot(tiempo_espera, self.actualizar_video)
 
 
 class VentanaProyeccion(QMainWindow):
@@ -356,8 +419,7 @@ if __name__ == "__main__":
     # Cambiar el tamaño de la ventana
     ventanaProyeccion.resize(ResolucionX, ResolucionY)
 
-    ventana = VentanaVideo(ventanaProyeccion)
-    ventana.setMinimumSize(800, 600)  # Establece el tamaño mínimo deseado
+    ventana = VentanaVideo(ventanaProyeccion)    
     ventana.setMaximumSize(screen_width, screen_height)
     ventana.resize(ResolucionX, ResolucionY)
     ventana.show()
