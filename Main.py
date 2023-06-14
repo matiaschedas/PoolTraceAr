@@ -6,7 +6,7 @@ import numpy as np
 import threading
 import re
 import time
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy, QLineEdit
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
@@ -130,6 +130,10 @@ class VentanaVideo(QMainWindow):
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.botonROI = self.crear_boton("Configurar ROI", 1290,80,100,30)
         self.botonProyectar = self.crear_boton("Proyectar",1290,125,100,30)
+        self.fpsText = QLineEdit(self)
+        self.fpsText.setReadOnly(True)
+        self.labelFps = self.crear_label("FPS: ",5,820,100,25)
+        self.labelFps.setAlignment(Qt.AlignCenter) 
 
         self.botonProyectar.clicked.connect(self.proyectar)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
@@ -150,6 +154,8 @@ class VentanaVideo(QMainWindow):
         self.layout.addWidget(self.botonProyectar, 3, 1)
         self.layout.addWidget(self.labelBolaEnMano, 4, 0)
         self.layout.addWidget(self.checkBolaEnMano, 5, 0)
+        self.layout.addWidget(self.labelFps,6,4,1,10)
+        self.layout.addWidget(self.fpsText,6,10,1,10)
         self.setCentralWidget(self.widget)
         #endregion
         self.resize_timer = QTimer()
@@ -413,8 +419,9 @@ class VentanaVideo(QMainWindow):
 
             # Calcular los FPS
             fps = self.frame_count / tiempo_transcurrido
+            fps_str = "{:.2f}".format(fps)
             if(self.frame_count%60==0):
-                print(fps)
+                self.fpsText.setText(fps_str)
             frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
             imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
             imagen = QPixmap.fromImage(imagen)
