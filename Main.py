@@ -10,24 +10,16 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushB
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
-
+import win32con
+import win32gui
 import pyautogui
 
 screen_width, screen_height = pyautogui.size()
 
 ResolucionX = (int)(screen_width*0.8)
 ResolucionY= (int)(screen_height*0.8)
-resoluciones = [
-    (7680, 4320),
-    (3840, 2160),
-    (2560, 1440),
-    (1920, 1080),
-    (1280, 720),
-    (854, 480),
-    (640, 360),
-    (426, 240)
-]
-
+resoluciones = [(426, 240),(640, 360),(800, 450),(896, 504),(912, 513),(928, 522),(960,540),(1024, 576),(1080, 608),(1136, 640),(1200, 675),(1248, 702),(1280, 720),(1440, 810),(1480, 832),(1520, 855),(1560, 877),(1584, 891),(1600, 900),(1680, 945),(1920, 1080),(2560, 1440)]
+tamPanelBotones=113
 
 circles_prev = None
 movimientoDetectado = False
@@ -55,15 +47,30 @@ def obtener_webcams():
                 cap.release()
         return webcams
 
+# Obtener el identificador de la ventana de PyQt5
+def get_win_id(window):
+    if sys.platform == 'win32':
+        return window.winId()
+    return None
+
+# Configurar el estilo de la ventana para mostrar el botón de maximizar de Windows
+def enable_maximize_button(window):
+    if sys.platform == 'win32':
+        hwnd = get_win_id(window)
+        if hwnd:
+            style = win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE)
+            win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, style | win32con.WS_MAXIMIZEBOX)
 
 class VentanaVideo(QMainWindow):
     def __init__(self, ventanaProyeccion):
         super().__init__()
         self.setWindowTitle("PoolTraceAR")
+        self.init_ui()
 
         webcams = obtener_webcams()
         self.seguirActualizando = True
         self.ventanaProyeccion = ventanaProyeccion
+        self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
 
         #region Parametros del ROI
         self.verVerticesROI = False
@@ -102,10 +109,11 @@ class VentanaVideo(QMainWindow):
         #region Configuracion de la ventana
         self.setMinimumSize(800, 600)  # Establece el tamaño mínimo deseado
         self.label = QLabel(self)
-        self.label.setGeometry(0, 0, ResolucionX, ResolucionY)
+        self.label.setGeometry(0, 0, ResolucionX, ResolucionY-tamPanelBotones)
         #elf.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.label.move(0, 0) 
         self.tiempo_inicio = time.time()
+        
 
         # self.setCentralWidget(self.label)
         # self.label.setScaledContents(True)  # Escalar el contenido para ajustarse al QLabel
@@ -146,6 +154,20 @@ class VentanaVideo(QMainWindow):
         self.resize_timer.timeout.connect(self.on_resize_timeout)
         #inicioHilos()
         self.actualizar_video()
+        
+    def init_ui(self):
+        # Configurar la ventana para mostrar el botón de maximizar de Windows
+        enable_maximize_button(self)
+
+    def event(self, event):
+        if event.type() == QEvent.WindowStateChange:
+            if self.windowState() & Qt.WindowMaximized:
+              ResolucionX = self.size().width()
+              ResolucionY = self.size().height()
+              print(f"resMX: {ResolucionX} resMY: {ResolucionY}")    
+        return super().event(event)
+    
+    #Metodo para realizar el ajuste de resolucion en el evento de maximizar/desmaximizar la ventana
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Resize:
             if event.spontaneous():
@@ -171,17 +193,15 @@ class VentanaVideo(QMainWindow):
 
 
     def encontrar_resolucion(self,resoluciones, ResolucionX, ResolucionY):
+                print(f"resX: {ResolucionX} resY: {ResolucionY}")
                 for i in range(len(resoluciones)):
-                    ancho_actual, alto_actual = resoluciones[i]
-
-                    if i < len(resoluciones) - 1 and i > 0:
-                        ancho_siguiente, alto_siguiente = resoluciones[i + 1]
-                        ancho_anterior, alto_anterior = resoluciones[i - 1]
-
-                        if ResolucionX > ancho_siguiente and ResolucionX < ancho_anterior and ResolucionY > alto_siguiente and ResolucionY < alto_anterior:
-                            return resoluciones[i]
-
+                        ancho, alto = resoluciones[i]
+                        if ResolucionX > ancho and ResolucionY-tamPanelBotones> alto:
+                            elegida = resoluciones[i]
+                        else:
+                            return elegida
                 return None
+    
     def on_resize_timeout(self):
         # Código a ejecutar cuando finaliza el evento de redimensionamiento
         print("Final del evento de redimensionamiento")
@@ -189,6 +209,7 @@ class VentanaVideo(QMainWindow):
         resolucion_encontrada = self.encontrar_resolucion(resoluciones, ResolucionX, ResolucionY)
         ResolucionX = resolucion_encontrada[0]
         ResolucionY = resolucion_encontrada[1]
+        print(f"res seleccionada: {ResolucionX}x{ResolucionY}")
         self.cambio_camara(self.comboCamaras.currentIndex())
 
         
@@ -375,8 +396,8 @@ class VentanaVideo(QMainWindow):
 
             # Calcular los FPS
             fps = self.frame_count / tiempo_transcurrido
-            if(self.frame_count%60==0):
-                print(fps)
+            # if(self.frame_count%60==0):
+            #     print(fps)
             frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
             imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
             imagen = QPixmap.fromImage(imagen)
