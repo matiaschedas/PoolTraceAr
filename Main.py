@@ -18,7 +18,10 @@ screen_width, screen_height = pyautogui.size()
 
 ResolucionX = (int)(screen_width*0.8)
 ResolucionY= (int)(screen_height*0.8)
-resoluciones = [(426, 240),(640, 360),(800, 450),(896, 504),(912, 513),(928, 522),(960,540),(1024, 576),(1080, 608),(1136, 640),(1200, 675),(1248, 702),(1280, 720),(1440, 810),(1480, 832),(1520, 855),(1560, 877),(1584, 891),(1600, 900),(1680, 945),(1920, 1080),(2560, 1440)]
+resoluciones = [(426, 240),(640, 360),(800, 450),(896, 504),(912, 513),(928, 522),(960,540),(1024, 576),(1136, 640),(1200, 675),(1248, 702),(1280, 720),(1440, 810),(1520, 855),(1560, 877),(1584, 891),(1600, 900),(1680, 945),(1920, 1080)]
+radios = [(4,8),(4,8),(4,8),(7,10),(10,13),(12,15),(14,17)]
+radioMin=4
+radioMax=16
 tamPanelBotones=113
 
 circles_prev = None
@@ -202,16 +205,34 @@ class VentanaVideo(QMainWindow):
                             return elegida
                 return None
     
+    def encontrar_radio(self,resolucion_encontrada):
+        global resoluciones, radios
+        indiceResolucion = resoluciones.index(resolucion_encontrada)
+        n = 3 #proporcion entre la cantidad de resoluciones y radios
+        indice_radio = indiceResolucion // n
+        if indice_radio>len(radios):
+            indice_radio=len(radios)
+        radio = radios[indice_radio]
+        return radio
+
     def on_resize_timeout(self):
         # Código a ejecutar cuando finaliza el evento de redimensionamiento
         print("Final del evento de redimensionamiento")
-        global ResolucionX,ResolucionY, resoluciones
+        global ResolucionX,ResolucionY, resoluciones, radioMax, radioMin
         resolucion_encontrada = self.encontrar_resolucion(resoluciones, ResolucionX, ResolucionY)
         ResolucionX = resolucion_encontrada[0]
         ResolucionY = resolucion_encontrada[1]
+        if self.frame is not None:
+            self.frame = cv2.resize(self.frame, (ResolucionX, ResolucionY), interpolation = cv2.INTER_LINEAR)
+            ventanaProyeccion.frame = cv2.resize(ventanaProyeccion.frame, (1920, 1080), interpolation = cv2.INTER_LINEAR)
+        radioElegido = self.encontrar_radio(resolucion_encontrada)
+        radioMin = radioElegido[0]
+        radioMax = radioElegido[1]
+        print(f"radio elegido: {radioMin} - {radioMax}")
         print(f"res seleccionada: {ResolucionX}x{ResolucionY}")
         self.cambio_camara(self.comboCamaras.currentIndex())
 
+    
         
     
     def cambio_camara(self,index):
@@ -241,6 +262,7 @@ class VentanaVideo(QMainWindow):
         if self.cap is not None:
              self.cap.release()
         pararHilos()
+        self.ventanaProyeccion.close()
         event.accept()
 
     def bola_en_mano(self):
@@ -325,8 +347,6 @@ class VentanaVideo(QMainWindow):
         
         ret, self.frame = self.cap.read()
         if self.frame is not None:
-            global ResolucionX,ResolucionY
-            self.frame = cv2.resize(self.frame, (ResolucionX, ResolucionY), interpolation = cv2.INTER_LINEAR)
             if self.inicio:
                     self.XIROI, self.YIROI = 100, 100
                     self.XDROI, self.YDROI = 1110, 600
@@ -352,42 +372,39 @@ class VentanaVideo(QMainWindow):
                 cv2.circle(self.frame, (self.XDROI, self.YDROI), 10, (0, 255, 0), 2)
 
             gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (17, 17), 0)
+            blur = cv2.GaussianBlur(gray, (1, 1), 0)
+            #cv2.imshow('Imagen con Desenfoque',blur)
             
-            circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 100, param1=10, param2=30, minRadius=3, maxRadius=12)
+            circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 15, param1=17, param2=18, minRadius=radioMin, maxRadius=radioMax)
             #limpiar ventana de proyeccion:
             self.ventanaProyeccion.limpiar_circulos()
             global circles_prev
             if circles is not None:
                 circles = np.round(circles[0, :]).astype("int")
                 for (x, y, r) in circles:
-                    # mean_val = np.mean(gray[y - r:y + r, x - r:x + r])
-                    # white_pixels = np.sum(gray[y - r:y + r, x - r:x + r] > mean_val)
-                    # circle_area = np.pi * r * r
-                    # white_ratio = white_pixels / circle_area
                     #se dibujan los circulos en la interfaz:
-                    cv2.circle(self.frame, (x +  self.XIROI + 3, y + self.YIROI + 3), r + 12, (0, 255, 0), 3)
+                    cv2.circle(self.frame, (x +  self.XIROI + 3, y + self.YIROI + 3), r, (0, 255, 0), 3)
                     #se dibujan los mismos circulos en la ventana de proyeccion
                     self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI + 3, y + self.YIROI + 3, r + 12, (0, 255, 0), 3)
 
             #detectar si hay movimiento de alguna bola:
-            if  self.frame_count % 4 == 0:
-                #print(f"movimiento: {self.hayMovimiento}")
-                global  movimientoDetectado
-                if circles_prev is not None and circles is not None:
-                    movimientoDetectado = False
-                    index=0
-                    for (x, y, r) in circles:
-                        for(prev_x, prev_y, prev_r) in circles_prev:
-                            distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
-                            if distance < 6:  # Umbral para considerar movimiento
-                                movimientoDetectado = False
-                                break
-                            else:
-                                movimientoDetectado = True
-                else:
-                    movimientoDetectado = False
-                circles_prev = circles 
+            # if  self.frame_count % 4 == 0:
+            #     #print(f"movimiento: {self.hayMovimiento}")
+            #     global  movimientoDetectado
+            #     if circles_prev is not None and circles is not None:
+            #         movimientoDetectado = False
+            #         index=0
+            #         for (x, y, r) in circles:
+            #             for(prev_x, prev_y, prev_r) in circles_prev:
+            #                 distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
+            #                 if distance < 6:  # Umbral para considerar movimiento
+            #                     movimientoDetectado = False
+            #                     break
+            #                 else:
+            #                     movimientoDetectado = True
+            #     else:
+            #         movimientoDetectado = False
+            #     circles_prev = circles 
             
             self.hay_movimiento(movimientoDetectado)
                         
@@ -396,8 +413,8 @@ class VentanaVideo(QMainWindow):
 
             # Calcular los FPS
             fps = self.frame_count / tiempo_transcurrido
-            # if(self.frame_count%60==0):
-            #     print(fps)
+            if(self.frame_count%60==0):
+                print(fps)
             frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
             imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
             imagen = QPixmap.fromImage(imagen)
@@ -413,20 +430,21 @@ class VentanaProyeccion(QMainWindow):
     def __init__(self):
         super().__init__()
         self.label = QLabel(self)
-        self.label.setGeometry(0, 0, ResolucionX, ResolucionY)
+        self.label.setGeometry(0, 0, 1920, 1080)
         self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.frame = np.zeros((ResolucionY, ResolucionX, 3), dtype=np.uint8)
+        self.frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        self.frame = cv2.resize(self.frame, (1920, 1080), interpolation = cv2.INTER_LINEAR)
 
     def dibujar_circulos(self, x, y, r, color, grosor): 
         self.frame = self.frame.copy()
         cv2.circle(self.frame, (x, y), r, color, grosor)
         frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-        imagen = QImage(frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
+        imagen = QImage(frame_rgb.data, 1920, 1080, QImage.Format_RGB888)
         imagen = QPixmap.fromImage(imagen)
         self.label.setPixmap(imagen)
 
     def limpiar_circulos(self):
-        self.frame = np.zeros((ResolucionY, ResolucionX, 3), dtype=np.uint8)
+        self.frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
     
 
@@ -436,9 +454,9 @@ if __name__ == "__main__":
     ventanaProyeccion = VentanaProyeccion()
     ventanaProyeccion.setFixedSize(ResolucionX,ResolucionY)
     ventanaProyeccion.setWindowTitle("Proyeccion")
-    ventanaProyeccion.setGeometry(100, 100, ResolucionX, ResolucionY)  # Establecer posición y tamaño inicial de la ventana
+    ventanaProyeccion.setGeometry(100, 100, 1920, 1080)  # Establecer posición y tamaño inicial de la ventana
     # Cambiar el tamaño de la ventana
-    ventanaProyeccion.resize(ResolucionX, ResolucionY)
+    #ventanaProyeccion.resize(ResolucionX, ResolucionY)
 
     ventana = VentanaVideo(ventanaProyeccion)    
     ventana.setMaximumSize(screen_width, screen_height)
