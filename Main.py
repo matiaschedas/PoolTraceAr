@@ -7,7 +7,7 @@ import threading
 import re
 import time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy, QLineEdit
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QImage, QPixmap, QIntValidator
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
 import win32con
@@ -19,10 +19,12 @@ screen_width, screen_height = pyautogui.size()
 ResolucionX = (int)(screen_width*0.8)
 ResolucionY= (int)(screen_height*0.8)
 resoluciones = [(426, 240),(640, 360),(800, 450),(896, 504),(912, 513),(928, 522),(960,540),(1024, 576),(1136, 640),(1200, 675),(1248, 702),(1280, 720),(1440, 810),(1520, 855),(1560, 877),(1584, 891),(1600, 900),(1680, 945),(1920, 1080)]
-radios = [(4,8),(4,8),(4,8),(7,10),(10,13),(12,15),(14,17)]
+radios = [(5,9),(9,12),(12,15),(15,19),(19,22),(22,25),(25,28),(28,31)]
 radioMin=4
 radioMax=16
-tamPanelBotones=113
+tamPanelBotones=140
+Param1 = 50
+Param2 = 50
 
 circles_prev = None
 movimientoDetectado = False
@@ -127,6 +129,8 @@ class VentanaVideo(QMainWindow):
 
         #region creacion de interfaz
         self.labelCamara = self.crear_label("Camara:",1290, 5, 50, 30)
+        self.labelParam1 = self.crear_label("Param 1(10-100):",1290,5,50,30)
+        self.labelParam2 = self.crear_label("Param 2(10-30):",1290,5,50,30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.botonROI = self.crear_boton("Configurar ROI", 1290,80,100,30)
         self.botonProyectar = self.crear_boton("Proyectar",1290,125,100,30)
@@ -134,6 +138,13 @@ class VentanaVideo(QMainWindow):
         self.fpsText.setReadOnly(True)
         self.labelFps = self.crear_label("FPS: ",5,820,100,25)
         self.labelFps.setAlignment(Qt.AlignCenter) 
+        self.Param1Text = QLineEdit(self)
+        self.Param1Text.setValidator(QIntValidator())
+        self.Param1Text.textChanged.connect(self.cambio_parametro1)
+        
+        self.Param2Text = QLineEdit(self)
+        self.Param2Text.setValidator(QIntValidator())
+        self.Param2Text.textChanged.connect(self.cambio_parametro2)
 
         self.botonProyectar.clicked.connect(self.proyectar)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
@@ -143,13 +154,29 @@ class VentanaVideo(QMainWindow):
         self.checkBolaEnMano = self.crear_checkbox(80,820,50,30)
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
         
+        #Layout:
         self.widget = QWidget()
         self.layout = QGridLayout(self.widget)
         self.layout.setContentsMargins(0, 0, 0, 0) 
+        #configuracion de columnas:
+        self.layout.setColumnStretch(0, 0)
+        self.layout.setColumnStretch(1, 0)
+        self.layout.setColumnStretch(2, 1)
+        self.layout.setColumnStretch(3, 0)
+        self.layout.setColumnStretch(4, 1)
+        self.layout.setColumnStretch(10,0)
+        self.Param1Text.setMaximumWidth(50)
+        self.Param2Text.setMaximumWidth(50)
+        self.fpsText.setMaximumWidth(50)
+
         #nro fila, nro de col, cant filas, cant columnas
-        self.layout.addWidget(self.label, 0, 0, 1, 2)
+        self.layout.addWidget(self.label, 0, 0, 1, 3)
         self.layout.addWidget(self.labelCamara, 1, 0)
+        self.layout.addWidget(self.labelParam1,1,1)
+        self.layout.addWidget(self.labelParam2,1,2)
         self.layout.addWidget(self.comboCamaras, 2, 0)
+        self.layout.addWidget(self.Param1Text,2,1,1,10)
+        self.layout.addWidget(self.Param2Text,2,2,1,10)
         self.layout.addWidget(self.botonROI, 3, 0)
         self.layout.addWidget(self.botonProyectar, 3, 1)
         self.layout.addWidget(self.labelBolaEnMano, 4, 0)
@@ -167,6 +194,18 @@ class VentanaVideo(QMainWindow):
     def init_ui(self):
         # Configurar la ventana para mostrar el botón de maximizar de Windows
         enable_maximize_button(self)
+    
+    def cambio_parametro1(self, text):
+        if int(text) > 9 and int(text) < 101: 
+            global Param1
+            Param1 = text
+            print(f"Param1: {Param1}")
+
+    def cambio_parametro2(self, text):
+        if int(text) > 9 and int(text) < 31: 
+            global Param2
+            Param2 = text
+            print(f"Param2: {Param2}")
 
     def event(self, event):
         if event.type() == QEvent.WindowStateChange:
@@ -380,8 +419,8 @@ class VentanaVideo(QMainWindow):
             gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
             blur = cv2.GaussianBlur(gray, (1, 1), 0)
             #cv2.imshow('Imagen con Desenfoque',blur)
-            
-            circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 15, param1=17, param2=18, minRadius=radioMin, maxRadius=radioMax)
+            global Param1, Param2
+            circles = cv2.HoughCircles(blur, cv2.HOUGH_GRADIENT, 1, 15, param1=int(Param1), param2=int(Param2), minRadius=radioMin, maxRadius=radioMax)
             #limpiar ventana de proyeccion:
             self.ventanaProyeccion.limpiar_circulos()
             global circles_prev
@@ -389,28 +428,28 @@ class VentanaVideo(QMainWindow):
                 circles = np.round(circles[0, :]).astype("int")
                 for (x, y, r) in circles:
                     #se dibujan los circulos en la interfaz:
-                    cv2.circle(self.frame, (x +  self.XIROI + 3, y + self.YIROI + 3), r, (0, 255, 0), 3)
+                    cv2.circle(self.frame, (x +  self.XIROI + 3, y + self.YIROI + 3), r, (0, 255, 0), 1)
                     #se dibujan los mismos circulos en la ventana de proyeccion
                     self.ventanaProyeccion.dibujar_circulos(x +  self.XIROI + 3, y + self.YIROI + 3, r + 12, (0, 255, 0), 3)
 
             #detectar si hay movimiento de alguna bola:
-            # if  self.frame_count % 4 == 0:
-            #     #print(f"movimiento: {self.hayMovimiento}")
-            #     global  movimientoDetectado
-            #     if circles_prev is not None and circles is not None:
-            #         movimientoDetectado = False
-            #         index=0
-            #         for (x, y, r) in circles:
-            #             for(prev_x, prev_y, prev_r) in circles_prev:
-            #                 distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
-            #                 if distance < 6:  # Umbral para considerar movimiento
-            #                     movimientoDetectado = False
-            #                     break
-            #                 else:
-            #                     movimientoDetectado = True
-            #     else:
-            #         movimientoDetectado = False
-            #     circles_prev = circles 
+            if  self.frame_count % 4 == 0:
+                #print(f"movimiento: {self.hayMovimiento}")
+                global  movimientoDetectado
+                if circles_prev is not None and circles is not None:
+                    movimientoDetectado = False
+                    index=0
+                    for (x, y, r) in circles:
+                        for(prev_x, prev_y, prev_r) in circles_prev:
+                            distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
+                            if distance < 6:  # Umbral para considerar movimiento
+                                movimientoDetectado = False
+                                break
+                            else:
+                                movimientoDetectado = True
+                else:
+                    movimientoDetectado = False
+                circles_prev = circles 
             
             self.hay_movimiento(movimientoDetectado)
                         
