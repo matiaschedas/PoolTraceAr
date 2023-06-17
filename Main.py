@@ -81,7 +81,7 @@ class VentanaVideo(QMainWindow):
         self.verVerticesROI = False
         self.verROI = False
         self.XIROI, self.YIROI = 100, 100
-        self.XDROI, self.YDROI = 1110, 600
+        self.XDROI, self.YDROI = 150, 150
         self.moverVertices = False
         self.verticeSeleccionado = None
         self.inicio = True
@@ -270,6 +270,8 @@ class VentanaVideo(QMainWindow):
         if self.frame is not None:
             self.frame = cv2.resize(self.frame, (ResolucionX, ResolucionY), interpolation = cv2.INTER_LINEAR)
             ventanaProyeccion.frame = cv2.resize(ventanaProyeccion.frame, (1920, 1080), interpolation = cv2.INTER_LINEAR)
+        self.XIROI, self.YIROI = 10, 10
+        self.XDROI, self.YDROI = ResolucionY-int(ResolucionY/2), ResolucionY-int(ResolucionY/2)
         radioElegido = self.encontrar_radio(resolucion_encontrada)
         radioMin = radioElegido[0]
         radioMax = radioElegido[1]
@@ -394,7 +396,7 @@ class VentanaVideo(QMainWindow):
         if self.frame is not None:
             if self.inicio:
                     self.XIROI, self.YIROI = 100, 100
-                    self.XDROI, self.YDROI = 1110, 600
+                    self.XDROI, self.YDROI = 150, 150
                     self.inicio=False
 
             roi = self.frame[self.YIROI+5:self.YDROI-5, self.XIROI+5:self.XDROI-5]
@@ -402,19 +404,20 @@ class VentanaVideo(QMainWindow):
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI), (self.XDROI, self.YDROI), (0, 255, 0), 2)
                 #grafica los huecos (troneras):
                 mitadMesa = self.distancia_media_entre_puntos(self.XIROI,self.XDROI)
-                troneras = [(self.XIROI-15,self.YIROI-15),(self.XDROI+15,self.YDROI+15),(self.XIROI-15, self.YDROI+15), (self.XDROI+15, self.YIROI-15),(self.XIROI+mitadMesa,self.YIROI-15),(self.XIROI+mitadMesa,self.YDROI+15)]
-                self.tronera1 = (self.XIROI-15,self.YIROI-15)
-                self.tronera2 = (self.XDROI+15,self.YDROI+15)
-                self.tronera3 = (self.XIROI-15, self.YDROI+15)
-                self.tronera4 = (self.XDROI+15, self.YIROI-15)
-                self.tronera5 = (self.XIROI+mitadMesa,self.YIROI-15)
-                self.tronera6 = (self.XIROI+mitadMesa,self.YDROI+15)
+                radioTronera = radioMax+3
+                desplazamiento = int(math.sqrt(((radioTronera)**2)/2))
+                troneras = [(self.XIROI-desplazamiento,self.YIROI-desplazamiento),(self.XDROI+desplazamiento,self.YDROI+desplazamiento),(self.XIROI-desplazamiento, self.YDROI+desplazamiento), (self.XDROI+desplazamiento, self.YIROI-desplazamiento),(self.XIROI+mitadMesa,self.YIROI-desplazamiento),(self.XIROI+mitadMesa,self.YDROI+desplazamiento)]
+                self.tronera2 = (self.XDROI+desplazamiento,self.YDROI+desplazamiento)
+                self.tronera3 = (self.XIROI-desplazamiento, self.YDROI+desplazamiento)
+                self.tronera4 = (self.XDROI+desplazamiento, self.YIROI-desplazamiento)
+                self.tronera5 = (self.XIROI+mitadMesa,self.YIROI-desplazamiento)
+                self.tronera6 = (self.XIROI+mitadMesa,self.YDROI+desplazamiento)
                 for tronera in troneras:
-                    cv2.circle(self.frame, tronera, 20 , (255,255,0),2)
+                    cv2.circle(self.frame, tronera, radioTronera , (255,255,0),2)
 
             if self.verVerticesROI:
-                cv2.circle(self.frame, (self.XIROI, self.YIROI), 10, (0, 255, 0), 2)
-                cv2.circle(self.frame, (self.XDROI, self.YDROI), 10, (0, 255, 0), 2)
+                cv2.circle(self.frame, (self.XIROI, self.YIROI), 8, (0, 255, 0), 2)
+                cv2.circle(self.frame, (self.XDROI, self.YDROI), 8, (0, 255, 0), 2)
 
             gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
             blur = cv2.GaussianBlur(gray, (1, 1), 0)
