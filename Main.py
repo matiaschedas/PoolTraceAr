@@ -480,6 +480,7 @@ class VentanaProyeccion(QMainWindow):
         self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.frame = np.zeros((1080, 1920, 3), dtype=np.uint8)
         self.frame = cv2.resize(self.frame, (1920, 1080), interpolation = cv2.INTER_LINEAR)
+        self.resize(1920,1080)
 
     def dibujar_circulos(self, x, y, r, color, grosor): 
         self.frame = self.frame.copy()
@@ -498,9 +499,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     ventanaProyeccion = VentanaProyeccion()
-    ventanaProyeccion.setFixedSize(ResolucionX,ResolucionY)
+    #ventanaProyeccion.setFixedSize(ResolucionX,ResolucionY)
     ventanaProyeccion.setWindowTitle("Proyeccion")
-    ventanaProyeccion.setGeometry(100, 100, 1920, 1080)  # Establecer posición y tamaño inicial de la ventana
+    #ventanaProyeccion.setGeometry(100, 100, 1920, 1080)  # Establecer posición y tamaño inicial de la ventana
     # Cambiar el tamaño de la ventana
     #ventanaProyeccion.resize(ResolucionX, ResolucionY)
 
