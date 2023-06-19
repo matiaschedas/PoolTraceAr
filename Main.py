@@ -56,6 +56,7 @@ def inicioHilos():
 
 def pararHilos():
     hilo1.detener_hilo()
+    hiloProyeccion.detener_hilo()
 
 
 def parar_de_actualizar(self):
@@ -587,8 +588,7 @@ class HiloProyeccion(threading.Thread):
     def run(self):
         while not self.detener:
             time.sleep(0.1)
-            # limpiar ventana de proyeccion:
-            self.ventanaProyeccion.limpiar_circulos()
+            # limpiar ventana de proyeccion:            self.ventanaProyeccion.limpiar_circulos()
             
             self.circles = asyncio.run(self.ventanaPrincipal.getCircles())
             if self.circles is not None and self.ventanaPrincipal.frame is not None:                
