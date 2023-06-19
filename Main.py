@@ -177,6 +177,7 @@ class ControlWindow(QMainWindow):
         self.dp_text.setValidator(QIntValidator())
         self.dp_text.setText(str(self.dp))
         self.dp_text.textChanged.connect(self.onDpTextChange)
+        self.dp_text.setFixedWidth(30)
         layout.addWidget(self.dp_text)
 
         self.minDist_label = QLabel("minDist")
@@ -191,6 +192,7 @@ class ControlWindow(QMainWindow):
         self.minDist_text.setValidator(QIntValidator())
         self.minDist_text.setText(str(self.minDist))
         self.minDist_text.textChanged.connect(self.onMinDistTextChange)
+        self.minDist_text.setFixedWidth(30)
         layout.addWidget(self.minDist_text)
 
         cannyThreshold_label = QLabel("cannyThreshold")
@@ -205,6 +207,7 @@ class ControlWindow(QMainWindow):
         self.cannyThreshold_text.setValidator(QIntValidator())
         self.cannyThreshold_text.setText(str(self.cannyThreshold))
         self.cannyThreshold_text.textChanged.connect(self.onCannyThresholdTextChange)
+        self.cannyThreshold_text.setFixedWidth(30)
         layout.addWidget(self.cannyThreshold_text)
 
         votesThreshold_label = QLabel("votesThreshold")
@@ -219,6 +222,7 @@ class ControlWindow(QMainWindow):
         self.votesThreshold_text.setValidator(QIntValidator())
         self.votesThreshold_text.setText(str(self.votesThreshold))
         self.votesThreshold_text.textChanged.connect(self.onVotesThresholdTextChange)
+        self.votesThreshold_text.setFixedWidth(30)
         layout.addWidget(self.votesThreshold_text)
 
         minRadius_label = QLabel("minRadius")
@@ -233,6 +237,7 @@ class ControlWindow(QMainWindow):
         self.minRadius_text.setValidator(QIntValidator())
         self.minRadius_text.setText(str(self.minRadius))
         self.minRadius_text.textChanged.connect(self.onMinRadiusTextChange)
+        self.minRadius_text.setFixedWidth(30)
         layout.addWidget(self.minRadius_text)
 
         maxRadius_label = QLabel("maxRadius")
@@ -247,6 +252,7 @@ class ControlWindow(QMainWindow):
         self.maxRadius_text.setValidator(QIntValidator())
         self.maxRadius_text.setText(str(self.maxRadius))
         self.maxRadius_text.textChanged.connect(self.onMaxRadiusTextChange)
+        self.maxRadius_text.setFixedWidth(30)
         layout.addWidget(self.maxRadius_text)
 
         maxCircles_label = QLabel("maxCircles")
@@ -261,6 +267,7 @@ class ControlWindow(QMainWindow):
         self.maxCircles_text.setValidator(QIntValidator())
         self.maxCircles_text.setText(str(self.maxCircles))
         self.maxCircles_text.textChanged.connect(self.onMaxCirclesTextChange)
+        self.maxCircles_text.setFixedWidth(30)
         layout.addWidget(self.maxCircles_text)
 
         widget = QWidget()
@@ -369,12 +376,12 @@ class ControlWindow(QMainWindow):
             self.maxCircles_slider.setValue(self.maxCircles)
 
 class VentanaVideo(QMainWindow):
-    def __init__(self, ventanaProyeccion: VentanaProyeccion):
+    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow):
         super().__init__()
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
         self.setWindowTitle("PoolTraceAR")
-        self.controlWindow = ControlWindow(self)
+        self.controlWindow = ventanaParametros
         self.controlWindow.dpChanged.connect(self.onDpChanged)
         self.controlWindow.minDistChanged.connect(self.onMinDistChanged)
         self.controlWindow.cannyThresholdChanged.connect(self.onCannyThresholdChanged)
@@ -442,10 +449,6 @@ class VentanaVideo(QMainWindow):
 
         # region creacion de interfaz
         self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
-        self.labelParam1 = self.crear_label("Param 1:", 1290, 5, 50, 30)
-        self.labelParam2 = self.crear_label("Param 2:", 1290, 5, 50, 30)
-        self.labelRadioMax = self.crear_label("Radio Max:", 1290, 5, 50, 30)
-        self.labelRadioMin = self.crear_label("Radio Min:", 1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.botonROI = self.crear_boton("Configurar ROI", 1290, 80, 100, 30)
         self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
@@ -885,8 +888,8 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     ventanaProyeccion = VentanaProyeccion()
-
-    ventana = VentanaVideo(ventanaProyeccion)
+    ventanaParametros = ControlWindow()
+    ventana = VentanaVideo(ventanaProyeccion,ventanaParametros)
 
     ventana.show()
     ventana.controlWindow.show()
