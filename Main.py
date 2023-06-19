@@ -31,6 +31,7 @@ tamPanelBotones = 140
 Param1 = 50
 Param2 = 50
 
+
 circles_prev = None
 movimientoDetectado = False
 
@@ -66,6 +67,7 @@ def inicioHilos():
 
 def pararHilos():
     hilo1.detener_hilo()
+    hiloProyeccion.detener_hilo()
 
 
 def parar_de_actualizar(self):
@@ -380,7 +382,7 @@ class VentanaVideo(QMainWindow):
         self.controlWindow.minRadiusChanged.connect(self.onMinRadiusChanged)
         self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
         self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
-        self.controlWindow.show()
+        
         self.init_ui()
         self.circlesProyeccion = None
 
@@ -440,9 +442,10 @@ class VentanaVideo(QMainWindow):
 
         # region creacion de interfaz
         self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
-        self.labelParam1 = self.crear_label(
-            "Param 1(10-100):", 1290, 5, 50, 30)
-        self.labelParam2 = self.crear_label("Param 2(10-30):", 1290, 5, 50, 30)
+        self.labelParam1 = self.crear_label("Param 1:", 1290, 5, 50, 30)
+        self.labelParam2 = self.crear_label("Param 2:", 1290, 5, 50, 30)
+        self.labelRadioMax = self.crear_label("Radio Max:", 1290, 5, 50, 30)
+        self.labelRadioMin = self.crear_label("Radio Min:", 1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.botonROI = self.crear_boton("Configurar ROI", 1290, 80, 100, 30)
         self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
@@ -450,20 +453,12 @@ class VentanaVideo(QMainWindow):
         self.fpsText.setReadOnly(True)
         self.labelFps = self.crear_label("FPS: ", 5, 820, 100, 25)
         self.labelFps.setAlignment(Qt.AlignCenter)
-        self.Param1Text = QLineEdit(self)
-        self.Param1Text.setValidator(QIntValidator())
-        self.Param1Text.textChanged.connect(self.cambio_parametro1)
-
-        self.Param2Text = QLineEdit(self)
-        self.Param2Text.setValidator(QIntValidator())
-        self.Param2Text.textChanged.connect(self.cambio_parametro2)
 
         self.botonProyectar.clicked.connect(self.proyectar)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.botonROI.clicked.connect(self.crear_ROI)
 
-        self.labelBolaEnMano = self.crear_label(
-            "Bola en mano: ", 5, 820, 100, 25)
+        self.labelBolaEnMano = self.crear_label("Bola en mano: ", 5, 820, 100, 25)
         self.checkBolaEnMano = self.crear_checkbox(80, 820, 50, 30)
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
 
@@ -478,18 +473,12 @@ class VentanaVideo(QMainWindow):
         self.layout.setColumnStretch(3, 0)
         self.layout.setColumnStretch(4, 1)
         self.layout.setColumnStretch(10, 0)
-        self.Param1Text.setMaximumWidth(50)
-        self.Param2Text.setMaximumWidth(50)
         self.fpsText.setMaximumWidth(50)
 
         # nro fila, nro de col, cant filas, cant columnas
         self.layout.addWidget(self.label, 0, 0, 1, 3)
-        self.layout.addWidget(self.labelCamara, 1, 0)
-        self.layout.addWidget(self.labelParam1, 1, 1)
-        self.layout.addWidget(self.labelParam2, 1, 2)
+        self.layout.addWidget(self.labelCamara, 1, 0)        
         self.layout.addWidget(self.comboCamaras, 2, 0)
-        self.layout.addWidget(self.Param1Text, 2, 1, 1, 10)
-        self.layout.addWidget(self.Param2Text, 2, 2, 1, 10)
         self.layout.addWidget(self.botonROI, 3, 0)
         self.layout.addWidget(self.botonProyectar, 3, 1)
         self.layout.addWidget(self.labelBolaEnMano, 4, 0)
@@ -551,18 +540,6 @@ class VentanaVideo(QMainWindow):
     def init_ui(self):
         # Configurar la ventana para mostrar el botón de maximizar de Windows
         enable_maximize_button(self)
-
-    def cambio_parametro1(self, text):
-        if int(text) > 9 and int(text) < 101:
-            global Param1
-            Param1 = text
-            print(f"Param1: {Param1}")
-
-    def cambio_parametro2(self, text):
-        if int(text) > 9 and int(text) < 31:
-            global Param2
-            Param2 = text
-            print(f"Param2: {Param2}")
 
     def event(self, event):
         if event.type() == QEvent.WindowStateChange:
@@ -637,6 +614,10 @@ class VentanaVideo(QMainWindow):
         radioMax = radioElegido[1]
         print(f"radio elegido: {radioMin} - {radioMax}")
         print(f"res seleccionada: {ResolucionX}x{ResolucionY}")
+
+        global hough
+        hough = cv2.cuda.createHoughCirclesDetector(
+        dp=1, minDist=25, cannyThreshold=int(Param1), votesThreshold=int(Param2), minRadius=int(radioMin), maxRadius=int(radioMax), maxCircles=100)
         self.cambio_camara(self.comboCamaras.currentIndex())
 
     def cambio_camara(self, index):
@@ -764,7 +745,7 @@ class VentanaVideo(QMainWindow):
                 # grafica los huecos (troneras):
                 mitadMesa = self.distancia_media_entre_puntos(
                     self.XIROI, self.XDROI)
-                radioTronera = radioMax+3
+                radioTronera = int(radioMax)+3
                 desplazamiento = int(math.sqrt(((radioTronera)**2)/2))
                 troneras = [(self.XIROI-desplazamiento, self.YIROI-desplazamiento), (self.XDROI+desplazamiento, self.YDROI+desplazamiento), (self.XIROI-desplazamiento, self.YDROI+desplazamiento),
                             (self.XDROI+desplazamiento, self.YIROI-desplazamiento), (self.XIROI+mitadMesa, self.YIROI-desplazamiento), (self.XIROI+mitadMesa, self.YDROI+desplazamiento)]
@@ -845,7 +826,6 @@ class VentanaVideo(QMainWindow):
             if current_time - previous_time >= 1:
                 fps_str = "{:.2f}".format(self.frame_count - frames_previos)
                 self.fpsText.setText(fps_str)
-                print(self.frame_count-frames_previos)
                 frames_previos = self.frame_count
                 previous_time = current_time
 
@@ -879,10 +859,9 @@ class HiloProyeccion(threading.Thread):
 
     def run(self):
         while not self.detener:
-            time.sleep(0.1)
+            time.sleep(0.0167)
             # limpiar ventana de proyeccion:
             self.ventanaProyeccion.limpiar_circulos()
-            
             self.circles = asyncio.run(self.ventanaPrincipal.getCircles())
             if self.circles is not None and self.ventanaPrincipal.frame is not None:                
                 height, width, _ = self.ventanaPrincipal.frame.shape
@@ -892,7 +871,7 @@ class HiloProyeccion(threading.Thread):
                 for (x, y, r) in self.circles:
                     # se dibujan los circulos en la interfaz:
                     self.ventanaProyeccion.dibujar_circulos(
-                        x + xiroi, y + yiroi, r+2, (0, 255, 0), 3)
+                        x + xiroi, y + yiroi, r+3, (0, 255, 0), 2)
             self.ventanaProyeccion.dibujar()
             if self.detener:
                 break
@@ -910,6 +889,7 @@ if __name__ == "__main__":
     ventana = VentanaVideo(ventanaProyeccion)
 
     ventana.show()
+    ventana.controlWindow.show()
     bloqueo = threading.Lock()
     hiloProyeccion = HiloProyeccion(bloqueo,ventanaProyeccion,ventana)
     hiloProyeccion.start()
