@@ -8,10 +8,9 @@ import re
 import datetime
 import asyncio
 import time
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy, QLineEdit, QVBoxLayout, QSlider
-from PyQt5.QtGui import QImage, QPixmap, QIntValidator
-from PyQt5.QtCore import Qt, QTimer, QEvent, pyqtSignal, QObject
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
 from Clases.ControlWindow import ControlWindow
 import win32con
@@ -41,13 +40,19 @@ bloqueo = threading.Lock()
 hilo1 = HiloEjemplo(bloqueo)
 
 
-dp = 1 #El inverso de la resolución de acumulador. Por defecto es 1.
-minDist = 25 #La distancia mínima entre los centros de los círculos detectados. Por defecto es 25.
-cannyThreshold = 10 #El umbral para la detección de bordes utilizando el algoritmo de Canny. Por defecto es 10.
-votesThreshold = 10 #El umbral de votos requeridos para la detección de círculos. Por defecto es 10.
-minRadius = 14 #El radio mínimo de los círculos a detectar. Por defecto es 14.
-maxRadius = 16 #El radio máximo de los círculos a detectar. Por defecto es 16.
-maxCircles = 100 #El número máximo de círculos a detectar. Por defecto es 100.
+dp = 1  # El inverso de la resolución de acumulador. Por defecto es 1.
+# La distancia mínima entre los centros de los círculos detectados. Por defecto es 25.
+minDist = 25
+# El umbral para la detección de bordes utilizando el algoritmo de Canny. Por defecto es 10.
+cannyThreshold = 10
+# El umbral de votos requeridos para la detección de círculos. Por defecto es 10.
+votesThreshold = 10
+# El radio mínimo de los círculos a detectar. Por defecto es 14.
+minRadius = 14
+# El radio máximo de los círculos a detectar. Por defecto es 16.
+maxRadius = 16
+# El número máximo de círculos a detectar. Por defecto es 100.
+maxCircles = 100
 
 hough = cv2.cuda.createHoughCirclesDetector(
     dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
@@ -63,7 +68,8 @@ frames_previos = 0
 
 
 def inicioHilos():
-    hilo1.start()
+    # hilo1.start()
+    hiloProyeccion.start()
 
 
 def pararHilos():
@@ -138,21 +144,68 @@ class VentanaProyeccion(QMainWindow):
     def limpiar_circulos(self):
         self.frame = np.zeros((resXProy, resYProy, 3), dtype=np.uint8)
 
-class VentanaVideo(QMainWindow):
-    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow):
+
+class HiloProyeccion(threading.Thread):
+    def __init__(self, bloqueo, ventanaProyeccion: VentanaProyeccion):
         super().__init__()
+        self.detener = False
+        self.bloqueo = bloqueo
+        self.hora_inicio = datetime.datetime.now()
+        self.ventanaProyeccion = ventanaProyeccion
+        self.actualizar_interfaz = False
+        self.circles = None
+        self.height = None
+        self.width = None
+
+    def run(self):
+        while not self.detener:
+            time.sleep(0.0167)
+            # limpiar ventana de proyeccion:
+            self.ventanaProyeccion.limpiar_circulos()
+            if self.circles is not None and self.height is not None and self.width is not None:
+                self.ventanaProyeccion.re_init_frame(self.height, self.width)
+                for (x, y, r) in self.circles:
+                    # se dibujan los circulos en la interfaz:
+                    self.ventanaProyeccion.dibujar_circulos(
+                        x + self.xiroi, y + self.yiroi, r+3, (0, 255, 0), 2)
+            self.ventanaProyeccion.dibujar()
+            if self.detener:
+                break
+
+    def actualizar_circles(self, circles):
+        self.circles = circles
+
+    def actualizar_proporcion_interfaz(self, height, width):
+        self.height = height
+        self.width = width
+
+    def actualizar_roi(self, xiroi, yiroi):
+        self.xiroi = xiroi
+        self.yiroi = yiroi
+
+    def detener_hilo(self):
+        with self.bloqueo:
+            self.detener = True
+
+
+class VentanaVideo(QMainWindow):
+    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion):
+        super().__init__()
+        self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
         self.setWindowTitle("PoolTraceAR")
         self.controlWindow = ventanaParametros
         self.controlWindow.dpChanged.connect(self.onDpChanged)
         self.controlWindow.minDistChanged.connect(self.onMinDistChanged)
-        self.controlWindow.cannyThresholdChanged.connect(self.onCannyThresholdChanged)
-        self.controlWindow.votesThresholdChanged.connect(self.onVotesThresholdChanged)
+        self.controlWindow.cannyThresholdChanged.connect(
+            self.onCannyThresholdChanged)
+        self.controlWindow.votesThresholdChanged.connect(
+            self.onVotesThresholdChanged)
         self.controlWindow.minRadiusChanged.connect(self.onMinRadiusChanged)
         self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
         self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
-        
+
         self.init_ui()
         self.circlesProyeccion = None
 
@@ -166,6 +219,7 @@ class VentanaVideo(QMainWindow):
         self.verROI = False
         self.XIROI, self.YIROI = 100, 100
         self.XDROI, self.YDROI = 150, 150
+        self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI)
         self.moverVertices = False
         self.verticeSeleccionado = None
         self.inicio = True
@@ -224,7 +278,8 @@ class VentanaVideo(QMainWindow):
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.botonROI.clicked.connect(self.crear_ROI)
 
-        self.labelBolaEnMano = self.crear_label("Bola en mano: ", 5, 820, 100, 25)
+        self.labelBolaEnMano = self.crear_label(
+            "Bola en mano: ", 5, 820, 100, 25)
         self.checkBolaEnMano = self.crear_checkbox(80, 820, 50, 30)
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
 
@@ -243,7 +298,7 @@ class VentanaVideo(QMainWindow):
 
         # nro fila, nro de col, cant filas, cant columnas
         self.layout.addWidget(self.label, 0, 0, 1, 3)
-        self.layout.addWidget(self.labelCamara, 1, 0)        
+        self.layout.addWidget(self.labelCamara, 1, 0)
         self.layout.addWidget(self.comboCamaras, 2, 0)
         self.layout.addWidget(self.botonROI, 3, 0)
         self.layout.addWidget(self.botonProyectar, 3, 1)
@@ -256,16 +311,18 @@ class VentanaVideo(QMainWindow):
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.on_resize_timeout)
-        # inicioHilos()
+        inicioHilos()
+
         self.actualizar_video()
-   
 
     def actualizarHough(self):
-        global hough,dp,minDist,cannyThreshold,votesThreshold,minRadius,maxRadius,maxCircles
+        global hough, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
+        self.controlWindow.actualizarParametros(
+            dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
         print(f"dp: {dp}, minDist: {minDist}, cannyThreshold: {cannyThreshold}, votesThreshold: {votesThreshold}, minRadius: {minRadius}, maxRadius: {maxRadius}, maxCircles: {maxCircles}")
         try:
             hough = cv2.cuda.createHoughCirclesDetector(
-        dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)        
+                dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
         except cv2.error as e:
             pass
 
@@ -276,12 +333,12 @@ class VentanaVideo(QMainWindow):
 
     def onMinDistChanged(self, minDistNew):
         global minDist
-        minDist = minDistNew        
+        minDist = minDistNew
         self.actualizarHough()
 
     def onCannyThresholdChanged(self, cannyThresholdNew):
         global cannyThreshold
-        cannyThreshold = cannyThresholdNew        
+        cannyThreshold = cannyThresholdNew
         self.actualizarHough()
 
     def onVotesThresholdChanged(self, votesThresholdNew):
@@ -382,10 +439,17 @@ class VentanaVideo(QMainWindow):
         print(f"radio elegido: {radioMin} - {radioMax}")
         print(f"res seleccionada: {ResolucionX}x{ResolucionY}")
 
-        global hough
-        hough = cv2.cuda.createHoughCirclesDetector(
-        dp=1, minDist=25, cannyThreshold=int(Param1), votesThreshold=int(Param2), minRadius=int(radioMin), maxRadius=int(radioMax), maxCircles=100)
+        global minRadius, maxRadius
+        if minRadius < maxRadius:
+            minRadius = radioMin
+            maxRadius = radioMax
+
+        self.actualizarHough()
         self.cambio_camara(self.comboCamaras.currentIndex())
+        self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI)
+
+        self.hiloProyeccion.actualizar_proporcion_interfaz(
+            ResolucionY, ResolucionX)
 
     def cambio_camara(self, index):
         opcion = self.comboCamaras.itemText(index)
@@ -476,6 +540,8 @@ class VentanaVideo(QMainWindow):
             elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() > 1 and event.x() < ResolucionX and event.y() < ResolucionY:
                 self.XDROI = event.x()
                 self.YDROI = event.y()
+            self.hiloProyeccion.actualizar_roi(
+                xiroi=self.XIROI, yiroi=self.YIROI)
 
     def crear_ROI(self):
         if self.creandoROI == False:
@@ -503,6 +569,8 @@ class VentanaVideo(QMainWindow):
                 self.XIROI, self.YIROI = 100, 100
                 self.XDROI, self.YDROI = 150, 150
                 self.inicio = False
+                self.hiloProyeccion.actualizar_roi(
+                    xiroi=self.XIROI, yiroi=self.YIROI)
 
             roi = self.frame[self.YIROI+5:self.YDROI -
                              5, self.XIROI+5:self.XDROI-5]
@@ -549,6 +617,7 @@ class VentanaVideo(QMainWindow):
                 if self.circles is not None:
                     self.circles = np.round(self.circles[0, :]).astype(int)
                     self.circlesProyeccion = self.circles
+                    self.hiloProyeccion.actualizar_circles(self.circles.copy())
                     for (x, y, r) in self.circles:
                         # se dibujan los circulos en la interfaz:
                         xCircle = x + self.XIROI + 3
@@ -611,50 +680,16 @@ class VentanaVideo(QMainWindow):
 resXProy = 1080
 resYProy = 1920
 
-
-class HiloProyeccion(threading.Thread):
-    def __init__(self, bloqueo, ventanaProyeccion: VentanaProyeccion, ventanaPrincipal: VentanaVideo):
-        super().__init__()
-        self.detener = False
-        self.bloqueo = bloqueo
-        self.hora_inicio = datetime.datetime.now()
-        self.ventanaProyeccion = ventanaProyeccion
-        self.ventanaPrincipal = ventanaPrincipal
-
-    def run(self):
-        while not self.detener:
-            time.sleep(0.0167)
-            # limpiar ventana de proyeccion:
-            self.ventanaProyeccion.limpiar_circulos()
-            self.circles = asyncio.run(self.ventanaPrincipal.getCircles())
-            if self.circles is not None and self.ventanaPrincipal.frame is not None:                
-                height, width, _ = self.ventanaPrincipal.frame.shape
-                self.ventanaProyeccion.re_init_frame(height, width)
-                xiroi = self.ventanaPrincipal.XIROI + 3
-                yiroi = self.ventanaPrincipal.YIROI + 3
-                for (x, y, r) in self.circles:
-                    # se dibujan los circulos en la interfaz:
-                    self.ventanaProyeccion.dibujar_circulos(
-                        x + xiroi, y + yiroi, r+3, (0, 255, 0), 2)
-            self.ventanaProyeccion.dibujar()
-            if self.detener:
-                break
-
-    def detener_hilo(self):
-        with self.bloqueo:
-            self.detener = True
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     ventanaProyeccion = VentanaProyeccion()
     ventanaParametros = ControlWindow()
-    ventana = VentanaVideo(ventanaProyeccion,ventanaParametros)
+    hiloProyeccion = HiloProyeccion(bloqueo, ventanaProyeccion)
+    ventana = VentanaVideo(
+        ventanaProyeccion, ventanaParametros, hiloProyeccion)
 
     ventana.show()
     ventana.controlWindow.show()
-    bloqueo = threading.Lock()
-    hiloProyeccion = HiloProyeccion(bloqueo,ventanaProyeccion,ventana)
-    hiloProyeccion.start()
+
     sys.exit(app.exec_())

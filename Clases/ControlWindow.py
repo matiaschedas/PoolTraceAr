@@ -2,6 +2,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLineEdit, QLabel, QGridLayout
 
+
 class ControlWindow(QMainWindow):
     dpChanged = pyqtSignal(int)
     minDistChanged = pyqtSignal(int)
@@ -62,11 +63,13 @@ class ControlWindow(QMainWindow):
         self.cannyThreshold_slider = QSlider(Qt.Horizontal)
         self.cannyThreshold_slider.setRange(1, 100)
         self.cannyThreshold_slider.setValue(self.cannyThreshold)
-        self.cannyThreshold_slider.valueChanged.connect(self.onCannyThresholdSliderChange)
+        self.cannyThreshold_slider.valueChanged.connect(
+            self.onCannyThresholdSliderChange)
         self.cannyThreshold_text = QLineEdit()
         self.cannyThreshold_text.setValidator(QIntValidator())
         self.cannyThreshold_text.setText(str(self.cannyThreshold))
-        self.cannyThreshold_text.textChanged.connect(self.onCannyThresholdTextChange)
+        self.cannyThreshold_text.textChanged.connect(
+            self.onCannyThresholdTextChange)
         self.cannyThreshold_text.setFixedWidth(30)
         layout.addWidget(cannyThreshold_label, 2, 0)
         layout.addWidget(self.cannyThreshold_slider, 2, 1)
@@ -76,11 +79,13 @@ class ControlWindow(QMainWindow):
         self.votesThreshold_slider = QSlider(Qt.Horizontal)
         self.votesThreshold_slider.setRange(1, 100)
         self.votesThreshold_slider.setValue(self.votesThreshold)
-        self.votesThreshold_slider.valueChanged.connect(self.onVotesThresholdSliderChange)
+        self.votesThreshold_slider.valueChanged.connect(
+            self.onVotesThresholdSliderChange)
         self.votesThreshold_text = QLineEdit()
         self.votesThreshold_text.setValidator(QIntValidator())
         self.votesThreshold_text.setText(str(self.votesThreshold))
-        self.votesThreshold_text.textChanged.connect(self.onVotesThresholdTextChange)
+        self.votesThreshold_text.textChanged.connect(
+            self.onVotesThresholdTextChange)
         self.votesThreshold_text.setFixedWidth(30)
         layout.addWidget(votesThreshold_label, 3, 0)
         layout.addWidget(self.votesThreshold_slider, 3, 1)
@@ -90,7 +95,8 @@ class ControlWindow(QMainWindow):
         self.minRadius_slider = QSlider(Qt.Horizontal)
         self.minRadius_slider.setRange(1, 50)
         self.minRadius_slider.setValue(self.minRadius)
-        self.minRadius_slider.valueChanged.connect(self.onMinRadiusSliderChange)
+        self.minRadius_slider.valueChanged.connect(
+            self.onMinRadiusSliderChange)
         self.minRadius_text = QLineEdit()
         self.minRadius_text.setValidator(QIntValidator())
         self.minRadius_text.setText(str(self.minRadius))
@@ -104,7 +110,8 @@ class ControlWindow(QMainWindow):
         self.maxRadius_slider = QSlider(Qt.Horizontal)
         self.maxRadius_slider.setRange(1, 50)
         self.maxRadius_slider.setValue(self.maxRadius)
-        self.maxRadius_slider.valueChanged.connect(self.onMaxRadiusSliderChange)
+        self.maxRadius_slider.valueChanged.connect(
+            self.onMaxRadiusSliderChange)
         self.maxRadius_text = QLineEdit()
         self.maxRadius_text.setValidator(QIntValidator())
         self.maxRadius_text.setText(str(self.maxRadius))
@@ -118,7 +125,8 @@ class ControlWindow(QMainWindow):
         self.maxCircles_slider = QSlider(Qt.Horizontal)
         self.maxCircles_slider.setRange(1, 200)
         self.maxCircles_slider.setValue(self.maxCircles)
-        self.maxCircles_slider.valueChanged.connect(self.onMaxCirclesSliderChange)
+        self.maxCircles_slider.valueChanged.connect(
+            self.onMaxCirclesSliderChange)
         self.maxCircles_text = QLineEdit()
         self.maxCircles_text.setValidator(QIntValidator())
         self.maxCircles_text.setText(str(self.maxCircles))
@@ -133,10 +141,10 @@ class ControlWindow(QMainWindow):
         self.setCentralWidget(widget)
 
     def onDpSliderChange(self, value):
-            self.dp = value
-            self.dpChanged.emit(self.dp)
-            # Actualizar el cuadro de texto correspondiente
-            self.dp_text.setText(str(self.dp))
+        self.dp = value
+        self.dpChanged.emit(self.dp)
+        # Actualizar el cuadro de texto correspondiente
+        self.dp_text.setText(str(self.dp))
 
     def onDpTextChange(self, text):
         if text:
@@ -201,7 +209,7 @@ class ControlWindow(QMainWindow):
                 self.minRadius = self.maxRadius - 1
                 self.minRadius_text.setText(str(self.minRadius))
                 self.minRadius_slider.setValue(self.minRadius)
-            
+
     def onMaxRadiusSliderChange(self, value):
         self.maxRadius = value
         self.maxRadiusChanged.emit(self.maxRadius)
@@ -232,3 +240,37 @@ class ControlWindow(QMainWindow):
             self.maxCirclesChanged.emit(self.maxCircles)
             # Actualizar el slider correspondiente
             self.maxCircles_slider.setValue(self.maxCircles)
+
+    def actualizarParametros(self, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles):
+        self.dp = dp
+        self.minDist = minDist
+        self.cannyThreshold = cannyThreshold
+        self.votesThreshold = votesThreshold
+        self.minRadius = minRadius
+        self.maxRadius = maxRadius
+        self.maxCircles = maxCircles
+        self.actualizarSliderTextBox()
+
+    def actualizarSliderTextBox(self):
+        self.minRadius_text.setText(str(self.minRadius))
+        self.minRadius_slider.setValue(self.minRadius)
+
+        self.maxRadius_text.setText(str(self.maxRadius))
+        self.maxRadius_slider.setValue(self.maxRadius)
+
+        self.cannyThreshold_text.setText(str(self.cannyThreshold))
+        self.cannyThreshold_slider.setValue(self.cannyThreshold)
+
+        self.votesThreshold_text.setText(str(self.votesThreshold))
+        self.votesThreshold_slider.setValue(self.votesThreshold)
+
+        self.dp_text.setText(str(self.dp))
+        self.dp_slider.setValue(self.dp)
+
+        self.maxCircles_text.setText(str(self.maxCircles))
+        self.maxCircles_slider.setValue(self.maxCircles)
+
+        self.minDist_text.setText(str(self.minDist))
+        self.minDist_slider.setValue(self.minDist)
+
+        
