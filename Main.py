@@ -8,9 +8,10 @@ import re
 import datetime
 import asyncio
 import time
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy, QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QSizePolicy, QLineEdit, QVBoxLayout, QSlider
 from PyQt5.QtGui import QImage, QPixmap, QIntValidator
-from PyQt5.QtCore import Qt, QTimer, QEvent
+from PyQt5.QtCore import Qt, QTimer, QEvent, pyqtSignal, QObject
+from PyQt5.QtGui import QIntValidator
 from fchola import HiloEjemplo
 import win32con
 import win32gui
@@ -37,8 +38,17 @@ movimientoDetectado = False
 bloqueo = threading.Lock()
 hilo1 = HiloEjemplo(bloqueo)
 
+
+dp = 1 #El inverso de la resolución de acumulador. Por defecto es 1.
+minDist = 25 #La distancia mínima entre los centros de los círculos detectados. Por defecto es 25.
+cannyThreshold = 10 #El umbral para la detección de bordes utilizando el algoritmo de Canny. Por defecto es 10.
+votesThreshold = 10 #El umbral de votos requeridos para la detección de círculos. Por defecto es 10.
+minRadius = 14 #El radio mínimo de los círculos a detectar. Por defecto es 14.
+maxRadius = 16 #El radio máximo de los círculos a detectar. Por defecto es 16.
+maxCircles = 100 #El número máximo de círculos a detectar. Por defecto es 100.
+
 hough = cv2.cuda.createHoughCirclesDetector(
-    dp=1, minDist=25, cannyThreshold=10, votesThreshold=10, minRadius=14, maxRadius=16, maxCircles=100)
+    dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
 # Crear el objeto cv2.cuda_GpuMat para el fotograma actual
 d_frame = cv2.cuda_GpuMat()
 # Crear el objeto cv2.cuda_GpuMat para el resultado de la detección
@@ -125,6 +135,236 @@ class VentanaProyeccion(QMainWindow):
     def limpiar_circulos(self):
         self.frame = np.zeros((resXProy, resYProy, 3), dtype=np.uint8)
 
+class ControlWindow(QMainWindow):
+    dpChanged = pyqtSignal(int)
+    minDistChanged = pyqtSignal(int)
+    cannyThresholdChanged = pyqtSignal(int)
+    votesThresholdChanged = pyqtSignal(int)
+    minRadiusChanged = pyqtSignal(int)
+    maxRadiusChanged = pyqtSignal(int)
+    maxCirclesChanged = pyqtSignal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Ajuste de parámetros")
+        self.setGeometry(100, 100, 400, 300)
+
+        self.dp = 1
+        self.minDist = 25
+        self.cannyThreshold = 10
+        self.votesThreshold = 10
+        self.minRadius = 14
+        self.maxRadius = 16
+        self.maxCircles = 100
+
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        dp_label = QLabel("dp")
+        self.dp_slider = QSlider(Qt.Horizontal)
+        self.dp_slider.setRange(1, 10)
+        self.dp_slider.setValue(self.dp)
+        self.dp_slider.valueChanged.connect(self.onDpSliderChange)
+        layout.addWidget(dp_label)
+        layout.addWidget(self.dp_slider)
+
+        self.dp_text = QLineEdit()
+        self.dp_text.setValidator(QIntValidator())
+        self.dp_text.setText(str(self.dp))
+        self.dp_text.textChanged.connect(self.onDpTextChange)
+        layout.addWidget(self.dp_text)
+
+        self.minDist_label = QLabel("minDist")
+        self.minDist_slider = QSlider(Qt.Horizontal)
+        self.minDist_slider.setRange(1, 50)
+        self.minDist_slider.setValue(self.minDist)
+        self.minDist_slider.valueChanged.connect(self.onMinDistSliderChange)
+        layout.addWidget(self.minDist_label)
+        layout.addWidget(self.minDist_slider)
+
+        self.minDist_text = QLineEdit()
+        self.minDist_text.setValidator(QIntValidator())
+        self.minDist_text.setText(str(self.minDist))
+        self.minDist_text.textChanged.connect(self.onMinDistTextChange)
+        layout.addWidget(self.minDist_text)
+
+        cannyThreshold_label = QLabel("cannyThreshold")
+        self.cannyThreshold_slider = QSlider(Qt.Horizontal)
+        self.cannyThreshold_slider.setRange(1, 100)
+        self.cannyThreshold_slider.setValue(self.cannyThreshold)
+        self.cannyThreshold_slider.valueChanged.connect(self.onCannyThresholdSliderChange)
+        layout.addWidget(cannyThreshold_label)
+        layout.addWidget(self.cannyThreshold_slider)
+
+        self.cannyThreshold_text = QLineEdit()
+        self.cannyThreshold_text.setValidator(QIntValidator())
+        self.cannyThreshold_text.setText(str(self.cannyThreshold))
+        self.cannyThreshold_text.textChanged.connect(self.onCannyThresholdTextChange)
+        layout.addWidget(self.cannyThreshold_text)
+
+        votesThreshold_label = QLabel("votesThreshold")
+        self.votesThreshold_slider = QSlider(Qt.Horizontal)
+        self.votesThreshold_slider.setRange(1, 100)
+        self.votesThreshold_slider.setValue(self.votesThreshold)
+        self.votesThreshold_slider.valueChanged.connect(self.onVotesThresholdSliderChange)
+        layout.addWidget(votesThreshold_label)
+        layout.addWidget(self.votesThreshold_slider)
+
+        self.votesThreshold_text = QLineEdit()
+        self.votesThreshold_text.setValidator(QIntValidator())
+        self.votesThreshold_text.setText(str(self.votesThreshold))
+        self.votesThreshold_text.textChanged.connect(self.onVotesThresholdTextChange)
+        layout.addWidget(self.votesThreshold_text)
+
+        minRadius_label = QLabel("minRadius")
+        self.minRadius_slider = QSlider(Qt.Horizontal)
+        self.minRadius_slider.setRange(1, 50)
+        self.minRadius_slider.setValue(self.minRadius)
+        self.minRadius_slider.valueChanged.connect(self.onMinRadiusSliderChange)
+        layout.addWidget(minRadius_label)
+        layout.addWidget(self.minRadius_slider)
+
+        self.minRadius_text = QLineEdit()
+        self.minRadius_text.setValidator(QIntValidator())
+        self.minRadius_text.setText(str(self.minRadius))
+        self.minRadius_text.textChanged.connect(self.onMinRadiusTextChange)
+        layout.addWidget(self.minRadius_text)
+
+        maxRadius_label = QLabel("maxRadius")
+        self.maxRadius_slider = QSlider(Qt.Horizontal)
+        self.maxRadius_slider.setRange(1, 50)
+        self.maxRadius_slider.setValue(self.maxRadius)
+        self.maxRadius_slider.valueChanged.connect(self.onMaxRadiusSliderChange)
+        layout.addWidget(maxRadius_label)
+        layout.addWidget(self.maxRadius_slider)
+
+        self.maxRadius_text = QLineEdit()
+        self.maxRadius_text.setValidator(QIntValidator())
+        self.maxRadius_text.setText(str(self.maxRadius))
+        self.maxRadius_text.textChanged.connect(self.onMaxRadiusTextChange)
+        layout.addWidget(self.maxRadius_text)
+
+        maxCircles_label = QLabel("maxCircles")
+        self.maxCircles_slider = QSlider(Qt.Horizontal)
+        self.maxCircles_slider.setRange(1, 200)
+        self.maxCircles_slider.setValue(self.maxCircles)
+        self.maxCircles_slider.valueChanged.connect(self.onMaxCirclesSliderChange)
+        layout.addWidget(maxCircles_label)
+        layout.addWidget(self.maxCircles_slider)
+
+        self.maxCircles_text = QLineEdit()
+        self.maxCircles_text.setValidator(QIntValidator())
+        self.maxCircles_text.setText(str(self.maxCircles))
+        self.maxCircles_text.textChanged.connect(self.onMaxCirclesTextChange)
+        layout.addWidget(self.maxCircles_text)
+
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+    def onDpSliderChange(self, value):
+        self.dp = value
+        self.dpChanged.emit(self.dp)
+        # Actualizar el cuadro de texto correspondiente
+        self.dp_text.setText(str(self.dp))
+
+    def onDpTextChange(self, text):
+        if text:
+            self.dp = int(text)
+            self.dpChanged.emit(self.dp)
+            # Actualizar el slider correspondiente
+            self.dp_slider.setValue(self.dp)
+
+    def onMinDistSliderChange(self, value):
+        self.minDist = value
+        self.minDistChanged.emit(self.minDist)
+        # Actualizar el cuadro de texto correspondiente
+        self.minDist_text.setText(str(self.minDist))
+
+    def onMinDistTextChange(self, text):
+        if text:
+            self.minDist = int(text)
+            self.minDistChanged.emit(self.minDist)
+            # Actualizar el slider correspondiente
+            self.minDist_slider.setValue(self.minDist)
+
+    def onCannyThresholdSliderChange(self, value):
+        self.cannyThreshold = value
+        self.cannyThresholdChanged.emit(self.cannyThreshold)
+        # Actualizar el cuadro de texto correspondiente
+        self.cannyThreshold_text.setText(str(self.cannyThreshold))
+
+    def onCannyThresholdTextChange(self, text):
+        if text:
+            self.cannyThreshold = int(text)
+            self.cannyThresholdChanged.emit(self.cannyThreshold)
+            # Actualizar el slider correspondiente
+            self.cannyThreshold_slider.setValue(self.cannyThreshold)
+
+    def onVotesThresholdSliderChange(self, value):
+        self.votesThreshold = value
+        self.votesThresholdChanged.emit(self.votesThreshold)
+        # Actualizar el cuadro de texto correspondiente
+        self.votesThreshold_text.setText(str(self.votesThreshold))
+
+    def onVotesThresholdTextChange(self, text):
+        if text:
+            self.votesThreshold = int(text)
+            self.votesThresholdChanged.emit(self.votesThreshold)
+            # Actualizar el slider correspondiente
+            self.votesThreshold_slider.setValue(self.votesThreshold)
+
+    def onMinRadiusSliderChange(self, value):
+        self.minRadius = value
+        self.minRadiusChanged.emit(self.minRadius)
+        # Actualizar el cuadro de texto correspondiente
+        self.minRadius_text.setText(str(self.minRadius))
+
+    def onMinRadiusTextChange(self, text):
+        if text:
+            self.minRadius = int(text)
+            self.minRadiusChanged.emit(self.minRadius)
+            # Actualizar el slider correspondiente
+            self.minRadius_slider.setValue(self.minRadius)
+            # Validar que minRadius sea menor que maxRadius
+            if self.minRadius >= self.maxRadius:
+                self.minRadius = self.maxRadius - 1
+                self.minRadius_text.setText(str(self.minRadius))
+                self.minRadius_slider.setValue(self.minRadius)
+            
+    def onMaxRadiusSliderChange(self, value):
+        self.maxRadius = value
+        self.maxRadiusChanged.emit(self.maxRadius)
+        # Actualizar el cuadro de texto correspondiente
+        self.maxRadius_text.setText(str(self.maxRadius))
+
+    def onMaxRadiusTextChange(self, text):
+        if text:
+            self.maxRadius = int(text)
+            self.maxRadiusChanged.emit(self.maxRadius)
+            # Actualizar el slider correspondiente
+            self.maxRadius_slider.setValue(self.maxRadius)
+            # Validar que maxRadius sea mayor que minRadius
+            if self.maxRadius <= self.minRadius:
+                self.maxRadius = self.minRadius + 1
+                self.maxRadius_text.setText(str(self.maxRadius))
+                self.maxRadius_slider.setValue(self.maxRadius)
+
+    def onMaxCirclesSliderChange(self, value):
+        self.maxCircles = value
+        self.maxCirclesChanged.emit(self.maxCircles)
+        # Actualizar el cuadro de texto correspondiente
+        self.maxCircles_text.setText(str(self.maxCircles))
+
+    def onMaxCirclesTextChange(self, text):
+        if text:
+            self.maxCircles = int(text)
+            self.maxCirclesChanged.emit(self.maxCircles)
+            # Actualizar el slider correspondiente
+            self.maxCircles_slider.setValue(self.maxCircles)
 
 class VentanaVideo(QMainWindow):
     def __init__(self, ventanaProyeccion: VentanaProyeccion):
@@ -132,6 +372,15 @@ class VentanaVideo(QMainWindow):
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
         self.setWindowTitle("PoolTraceAR")
+        self.controlWindow = ControlWindow(self)
+        self.controlWindow.dpChanged.connect(self.onDpChanged)
+        self.controlWindow.minDistChanged.connect(self.onMinDistChanged)
+        self.controlWindow.cannyThresholdChanged.connect(self.onCannyThresholdChanged)
+        self.controlWindow.votesThresholdChanged.connect(self.onVotesThresholdChanged)
+        self.controlWindow.minRadiusChanged.connect(self.onMinRadiusChanged)
+        self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
+        self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
+        self.controlWindow.show()
         self.init_ui()
         self.circlesProyeccion = None
 
@@ -254,6 +503,50 @@ class VentanaVideo(QMainWindow):
         self.resize_timer.timeout.connect(self.on_resize_timeout)
         # inicioHilos()
         self.actualizar_video()
+   
+
+    def actualizarHough(self):
+        global hough,dp,minDist,cannyThreshold,votesThreshold,minRadius,maxRadius,maxCircles
+        try:
+            hough = cv2.cuda.createHoughCirclesDetector(
+        dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)        
+        except cv2.error as e:
+            pass
+
+    def onDpChanged(self, newDP):
+        global dp
+        dp = newDP
+        self.actualizarHough()
+
+    def onMinDistChanged(self, minDistNew):
+        global minDist
+        minDist = minDistNew        
+        self.actualizarHough()
+
+    def onCannyThresholdChanged(self, cannyThresholdNew):
+        global cannyThreshold
+        cannyThreshold = cannyThresholdNew        
+        self.actualizarHough()
+
+    def onVotesThresholdChanged(self, cannyThresholdNew):
+        global cannyThreshold
+        cannyThreshold = cannyThresholdNew
+        self.actualizarHough()
+
+    def onMinRadiusChanged(self, minRadiusNew):
+        global minRadius
+        minRadius = minRadiusNew
+        self.actualizarHough()
+
+    def onMaxRadiusChanged(self, maxRadiusNew):
+        global maxRadius
+        maxRadius = maxRadiusNew
+        self.actualizarHough()
+
+    def onMaxCirclesChanged(self, maxCirclesNew):
+        global maxCircles
+        maxCircles = maxCirclesNew
+        self.actualizarHough()
 
     def init_ui(self):
         # Configurar la ventana para mostrar el botón de maximizar de Windows
@@ -496,11 +789,11 @@ class VentanaVideo(QMainWindow):
                            8, (0, 255, 0), 2)
 
             gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (1, 1), 0)
+            blur = cv2.GaussianBlur(gray, (5, 5), 0)
             global Param1, Param2
             # Cargar el fotograma actual en el objeto cv2.cuda_GpuMat
             d_frame.upload(blur)
-
+            global hough
             self.circles = hough.detect(d_frame)
 
 
@@ -516,7 +809,7 @@ class VentanaVideo(QMainWindow):
                         xCircle = x + self.XIROI + 3
                         yCircle = y + self.YIROI + 3
                         cv2.circle(self.frame, (xCircle, yCircle),
-                                   r, (0, 255, 0), 1)
+                                   r+5, (0, 255, 0), 1)
                         # self.ventanaProyeccion.dibujar_circulos(
                         #     xCircle, yCircle, r, (0, 255, 0), 1)
 
@@ -599,7 +892,7 @@ class HiloProyeccion(threading.Thread):
                 for (x, y, r) in self.circles:
                     # se dibujan los circulos en la interfaz:
                     self.ventanaProyeccion.dibujar_circulos(
-                        x + xiroi, y + yiroi, r, (0, 255, 0), 3)
+                        x + xiroi, y + yiroi, r+2, (0, 255, 0), 3)
             self.ventanaProyeccion.dibujar()
             if self.detener:
                 break
