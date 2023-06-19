@@ -553,7 +553,6 @@ class VentanaVideo(QMainWindow):
             if current_time - previous_time >= 1:
                 fps_str = "{:.2f}".format(self.frame_count - frames_previos)
                 self.fpsText.setText(fps_str)
-                print(self.frame_count-frames_previos)
                 frames_previos = self.frame_count
                 previous_time = current_time
 
@@ -589,7 +588,7 @@ class HiloProyeccion(threading.Thread):
         while not self.detener:
             time.sleep(0.1)
             # limpiar ventana de proyeccion:            self.ventanaProyeccion.limpiar_circulos()
-            
+            self.ventanaProyeccion.limpiar_circulos()
             self.circles = asyncio.run(self.ventanaPrincipal.getCircles())
             if self.circles is not None and self.ventanaPrincipal.frame is not None:                
                 height, width, _ = self.ventanaPrincipal.frame.shape
