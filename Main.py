@@ -269,11 +269,13 @@ class VentanaVideo(QMainWindow):
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
         self.botonROI = self.crear_boton("Configurar ROI", 1290, 80, 100, 30)
         self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
+        self.botonConfiguracion = self.crear_boton("Configuracion", 1290, 125, 100, 30)
         self.fpsText = QLineEdit(self)
         self.fpsText.setReadOnly(True)
         self.labelFps = self.crear_label("FPS: ", 5, 820, 100, 25)
         self.labelFps.setAlignment(Qt.AlignCenter)
 
+        self.botonConfiguracion.clicked.connect(self.configurar)
         self.botonProyectar.clicked.connect(self.proyectar)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.botonROI.clicked.connect(self.crear_ROI)
@@ -290,24 +292,29 @@ class VentanaVideo(QMainWindow):
         # configuracion de columnas:
         self.layout.setColumnStretch(0, 0)
         self.layout.setColumnStretch(1, 0)
-        self.layout.setColumnStretch(2, 1)
+        self.layout.setColumnStretch(2, 0)
         self.layout.setColumnStretch(3, 0)
-        self.layout.setColumnStretch(4, 1)
+        self.layout.setColumnStretch(4, 0)
         self.layout.setColumnStretch(10, 0)
-        self.fpsText.setMaximumWidth(50)
 
-        # nro fila, nro de col, cant filas, cant columnas
+        self.fpsText.setMaximumWidth(50)
+        self.botonROI.setMaximumWidth(100)
+        self.botonConfiguracion.setMaximumWidth(100)  # Ancho fijo
+        self.botonProyectar.setMaximumWidth(100)  # Ancho fijo
+
         self.layout.addWidget(self.label, 0, 0, 1, 3)
         self.layout.addWidget(self.labelCamara, 1, 0)
         self.layout.addWidget(self.comboCamaras, 2, 0)
         self.layout.addWidget(self.botonROI, 3, 0)
         self.layout.addWidget(self.botonProyectar, 3, 1)
+        self.layout.addWidget(self.botonConfiguracion, 3, 2)
         self.layout.addWidget(self.labelBolaEnMano, 4, 0)
         self.layout.addWidget(self.checkBolaEnMano, 5, 0)
         self.layout.addWidget(self.labelFps, 6, 4, 1, 10)
         self.layout.addWidget(self.fpsText, 6, 10, 1, 10)
         self.setCentralWidget(self.widget)
-        # endregion
+
+
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.on_resize_timeout)
@@ -473,12 +480,16 @@ class VentanaVideo(QMainWindow):
     def proyectar(self):
         self.ventanaProyeccion.show()
 
+    def configurar(self):
+        self.controlWindow.show()
+
     def closeEvent(self, event):
         parar_de_actualizar(self)
         if self.cap is not None:
             self.cap.release()
         pararHilos()
         self.ventanaProyeccion.close()
+        self.controlWindow.close()
         event.accept()
 
     def bola_en_mano(self):
@@ -629,21 +640,20 @@ class VentanaVideo(QMainWindow):
 
             # self.ventanaProyeccion.dibujar()
             # detectar si hay movimiento de alguna bola:
-            if self.frame_count % 4 == 0:
-                # print(f"movimiento: {self.hayMovimiento}")
+            if self.frame_count % 5 == 0:
+                print(f"movimiento: {self.hayMovimiento}")
                 global movimientoDetectado
                 if circles_prev is not None and self.circles is not None:
                     movimientoDetectado = False
                     index = 0
                     for (x, y, r) in self.circles:
                         for (prev_x, prev_y, prev_r) in circles_prev:
-                            distance = math.sqrt(
-                                (x - prev_x) ** 2 + (y - prev_y) ** 2)
-                            if distance < 6:  # Umbral para considerar movimiento
+                            distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
+                            if distance < 4:  # Umbral para considerar movimiento
                                 movimientoDetectado = False
                                 break
                             else:
-                                movimientoDetectado = True
+                                movimientoDetectado = True               
                 else:
                     movimientoDetectado = False
                 circles_prev = self.circles
