@@ -169,7 +169,7 @@ class ControlWindow(QMainWindow):
         widget = QWidget()
         widget.setLayout(layout)
         self.setCentralWidget(widget)
-
+        
     
     def obtenerComboCamaras(self):
         return self.comboCamaras

@@ -30,7 +30,8 @@ radioMax = 16
 tamPanelBotones = 94
 Param1 = 50
 Param2 = 50
-
+cerrarProyeccion = False
+proyectando = False
 
 circles_prev = None
 movimientoDetectado = False
@@ -123,6 +124,12 @@ class VentanaProyeccion(QMainWindow):
         self.frame = cv2.resize(
             self.frame, (resYProy, resXProy), interpolation=cv2.INTER_LINEAR)
         self.resize(1920, 1080)
+
+    def closeEvent(self, event):
+        if(cerrarProyeccion):
+            event.accept()
+        else:
+            event.ignore()
 
     def dibujar_circulos(self, x, y, r, color, grosor):
         cv2.circle(self.frame, (x, y), r, color, grosor)
@@ -479,16 +486,26 @@ class VentanaVideo(QMainWindow):
         return math.floor(distancia/2)
 
     def proyectar(self):
-        self.ventanaProyeccion.show()
+        global proyectando, cerrarProyeccion
+        if(proyectando==False):
+            proyectando = True
+            self.ventanaProyeccion.show()
+            cerrarProyeccion=False
+        else:
+            proyectando=False
+            cerrarProyeccion = True
+            ventanaProyeccion.close()
 
     def configurar(self):
         self.controlWindow.show()
 
     def closeEvent(self, event):
+        global cerrarProyeccion
         parar_de_actualizar(self)
         if self.cap is not None:
             self.cap.release()
         pararHilos()
+        cerrarProyeccion=True
         self.ventanaProyeccion.close()
         self.controlWindow.close()
         event.accept()
