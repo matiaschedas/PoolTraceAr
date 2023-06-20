@@ -8,7 +8,7 @@ import re
 import datetime
 import asyncio
 import time
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter
 from PyQt5.QtGui import QImage, QPixmap, QIcon
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
@@ -29,7 +29,7 @@ radios = [(5, 9), (9, 12), (12, 15), (15, 19),
           (19, 22), (22, 25), (25, 28), (28, 31)]
 radioMin = 4
 radioMax = 16
-tamPanelBotones = 94
+tamPanelBotones = 70
 Param1 = 50
 Param2 = 50
 cerrarProyeccion = False
@@ -313,30 +313,44 @@ class VentanaVideo(QMainWindow):
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
         # endregion
 
-        # Layout:
-        self.widget = QWidget()
-        self.layout = QGridLayout(self.widget)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        # configuracion de columnas:
-        self.layout.setColumnStretch(0, 0)
-        self.layout.setColumnStretch(1, 0)
-        self.layout.setColumnStretch(2, 0)
-        self.layout.setColumnStretch(3, 0)
-        self.layout.setColumnStretch(4, 0)
-        self.layout.setColumnStretch(10, 0)
+        # Crear el widget principal y asignarle un layout vertical
+        widgetPrincipal = QWidget()
+        layoutPrincipal = QVBoxLayout()
+        widgetPrincipal.setLayout(layoutPrincipal)
+        layoutPrincipal.setContentsMargins(0, 0, 0, 0)
+
+        # Crear el widget1 y asignarle el layout1 como QGridLayout
+        self.widget1 = QWidget()
+        self.layout1 = QGridLayout(self.widget1)
+        self.layout1.setContentsMargins(0, 0, 0, 0)
+        self.layout1.setSpacing(0)  # Opcional: eliminar el espacio entre los widgets
+
+        # Crear el widget2 y asignarle el layout2
+        self.widget2 = QWidget()
+        self.layout2 = QGridLayout(self.widget2)
+        self.layout2.setContentsMargins(0, 0, 0, 0)
+        self.widget2.setFixedHeight(tamPanelBotones)
 
         self.fpsText.setMaximumWidth(50)
         self.botonConfiguracion.setMaximumWidth(100)  # Ancho fijo
-        self.layout.setSpacing(0)
+        self.layout2.setSpacing(0)
 
-        self.layout.addWidget(self.label, 0, 0, 1, 3)
-        self.layout.addWidget(self.botonConfiguracion,1,0)
-        self.layout.addWidget(self.labelBolaEnMano, 4, 0)
-        self.layout.addWidget(self.checkBolaEnMano, 5, 0)
-        self.layout.addWidget(self.labelFps, 6, 4, 1, 10)
-        self.layout.addWidget(self.fpsText, 6, 10, 1, 10)
-        self.setCentralWidget(self.widget)
+        # Agregar los widgets al layout principal
+        layoutPrincipal.addWidget(self.widget1)
+        layoutPrincipal.addWidget(self.widget2)
 
+        # Agregar los widgets al layout1 y layout2 con sus respectivas posiciones
+        self.layout1.addWidget(self.label, 0, 0, 1, 1, alignment=Qt.AlignTop | Qt.AlignLeft)
+        self.layout2.addWidget(self.botonConfiguracion, 1, 0)
+        self.layout2.addWidget(self.labelBolaEnMano, 2, 0)
+        self.layout2.addWidget(self.checkBolaEnMano, 3, 0)
+
+        # Agregar el contador de FPS con alineación a la esquina inferior derecha
+        self.layout2.addWidget(self.labelFps, 3, 10)
+        self.layout2.addWidget(self.fpsText, 3, 11, Qt.AlignBottom | Qt.AlignRight)
+
+        self.setCentralWidget(widgetPrincipal)
+        
 
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
@@ -679,10 +693,7 @@ class VentanaVideo(QMainWindow):
                         yCircle = y + self.YIROI + 3
                         cv2.circle(self.frame, (xCircle, yCircle),
                                    r+5, (0, 255, 0), 1)
-                        # self.ventanaProyeccion.dibujar_circulos(
-                        #     xCircle, yCircle, r, (0, 255, 0), 1)
-
-            # self.ventanaProyeccion.dibujar()
+                     
             # detectar si hay movimiento de alguna bola:
             if self.frame_count % 5 == 0:
                 #print(f"movimiento: {self.hayMovimiento}")
