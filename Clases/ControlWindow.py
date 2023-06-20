@@ -1,6 +1,17 @@
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIntValidator
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLineEdit, QLabel, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLineEdit, QLabel, QGridLayout, QPushButton, QCheckBox, QComboBox
+import cv2
+
+def obtener_webcams():
+        webcams = []
+        for index in range(10):
+            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+            if cap.isOpened():
+                webcam_name = f"Webcam {index}"
+                webcams.append(webcam_name)
+                cap.release()
+        return webcams
 
 
 class ControlWindow(QMainWindow):
@@ -11,6 +22,10 @@ class ControlWindow(QMainWindow):
     minRadiusChanged = pyqtSignal(int)
     maxRadiusChanged = pyqtSignal(int)
     maxCirclesChanged = pyqtSignal(int)
+    botonProyectar = None
+    botonConfigurarROI = None
+    botonPreprocesamientos = None
+    comboCamaras = None
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -136,9 +151,53 @@ class ControlWindow(QMainWindow):
         layout.addWidget(self.maxCircles_slider, 6, 1)
         layout.addWidget(self.maxCircles_text, 6, 2)
 
+
+        webcams = obtener_webcams()
+        self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
+        self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
+        
+        self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
+        self.botonConfigurarROI = self.crear_boton("Configurar ROI", 1290, 125, 100, 30)
+        self.botonPreprocesamientos = self.crear_boton("Preprocesamientos", 1290, 125, 100, 30)
+        layout.addWidget(self.labelCamara,7,0)
+        layout.addWidget(self.comboCamaras,8,0)
+        layout.addWidget(self.botonProyectar, 9, 0)
+        layout.addWidget(self.botonConfigurarROI, 9, 1)
+        layout.addWidget(self.botonPreprocesamientos, 9, 2)
+
+
         widget = QWidget()
         widget.setLayout(layout)
         self.setCentralWidget(widget)
+
+    
+    def obtenerComboCamaras(self):
+        return self.comboCamaras
+    
+    def obtenerBotones(self):
+        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos
+
+    def crear_boton(self, texto, x, y, ancho, alto):
+        boton = QPushButton(texto, self)
+        boton.setGeometry(x, y, ancho, alto)
+        return boton
+    
+    def crear_combobox(self, opciones, posX, posY, largo, ancho, default):
+        # Crear instancia de QComboBox
+        combo_box = QComboBox(self)
+        # Configurar opciones del ComboBox
+        combo_box.addItems(opciones)
+        # Establecer posición y tamaño del ComboBox
+        combo_box.setGeometry(posX, posY, largo, ancho)
+        combo_box.setCurrentIndex(default)
+        return combo_box
+    
+    def crear_label(self, texto, posX, posY, largo, ancho):
+        # Crear instancia de QLabel
+        label = QLabel(self)
+        label.setText(texto)
+        label.setGeometry(posX, posY, largo, ancho)
+        return label
 
     def onDpSliderChange(self, value):
         self.dp = value

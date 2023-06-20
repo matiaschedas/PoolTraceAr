@@ -27,7 +27,7 @@ radios = [(5, 9), (9, 12), (12, 15), (15, 19),
           (19, 22), (22, 25), (25, 28), (28, 31)]
 radioMin = 4
 radioMax = 16
-tamPanelBotones = 140
+tamPanelBotones = 94
 Param1 = 50
 Param2 = 50
 
@@ -225,6 +225,10 @@ class VentanaVideo(QMainWindow):
         self.inicio = True
         self.creandoROI = False
         self.cargarCoordenadas = True
+        self.aplicarBlur = True
+        self.aplicarHist = False
+        self.aplicarContraste = False
+        self.aplicarBrillo = False
         # endregion
 
         # region coordenadas de huecos(troneras):
@@ -264,11 +268,12 @@ class VentanaVideo(QMainWindow):
         # self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         # endregion
 
-        # region creacion de interfaz
-        self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
-        self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
-        self.botonROI = self.crear_boton("Configurar ROI", 1290, 80, 100, 30)
-        self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
+        #region creacion de interfaz
+        self.botonProyectar, self.botonROI, self.botonPreprocesamientos = ventanaParametros.obtenerBotones()
+        self.comboCamaras = ventanaParametros.obtenerComboCamaras()
+        #self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
+        #self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
+
         self.botonConfiguracion = self.crear_boton("Configuracion", 1290, 125, 100, 30)
         self.fpsText = QLineEdit(self)
         self.fpsText.setReadOnly(True)
@@ -284,6 +289,7 @@ class VentanaVideo(QMainWindow):
             "Bola en mano: ", 5, 820, 100, 25)
         self.checkBolaEnMano = self.crear_checkbox(80, 820, 50, 30)
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
+        # endregion
 
         # Layout:
         self.widget = QWidget()
@@ -298,16 +304,11 @@ class VentanaVideo(QMainWindow):
         self.layout.setColumnStretch(10, 0)
 
         self.fpsText.setMaximumWidth(50)
-        self.botonROI.setMaximumWidth(100)
         self.botonConfiguracion.setMaximumWidth(100)  # Ancho fijo
-        self.botonProyectar.setMaximumWidth(100)  # Ancho fijo
+        self.layout.setSpacing(0)
 
         self.layout.addWidget(self.label, 0, 0, 1, 3)
-        self.layout.addWidget(self.labelCamara, 1, 0)
-        self.layout.addWidget(self.comboCamaras, 2, 0)
-        self.layout.addWidget(self.botonROI, 3, 0)
-        self.layout.addWidget(self.botonProyectar, 3, 1)
-        self.layout.addWidget(self.botonConfiguracion, 3, 2)
+        self.layout.addWidget(self.botonConfiguracion,1,0)
         self.layout.addWidget(self.labelBolaEnMano, 4, 0)
         self.layout.addWidget(self.checkBolaEnMano, 5, 0)
         self.layout.addWidget(self.labelFps, 6, 4, 1, 10)
@@ -615,11 +616,22 @@ class VentanaVideo(QMainWindow):
                 cv2.circle(self.frame, (self.XDROI, self.YDROI),
                            8, (0, 255, 0), 2)
 
-            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (5, 5), 0)
+            image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            if self.aplicarBlur:
+                image = cv2.GaussianBlur(image, (5, 5), 0)
+            if self.aplicarHist:
+                image = cv2.equalizeHist(image)
+            if self.aplicarContraste:
+                alpha = 1.2  # Factor de contraste (1.0 mantiene el contraste original)
+                beta = 30  # Valor de brillo (0 mantiene el brillo original)
+                image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+            if self.aplicarBrillo:
+                gamma = 1.5  # Valor de gamma para ajustar el brillo (mayor valor = mayor brillo)
+                image = np.power(image / 255.0, gamma) * 255
+
             global Param1, Param2
             # Cargar el fotograma actual en el objeto cv2.cuda_GpuMat
-            d_frame.upload(blur)
+            d_frame.upload(image)
             global hough
             self.circles = hough.detect(d_frame)
             global circles_prev
@@ -661,7 +673,6 @@ class VentanaVideo(QMainWindow):
             self.hay_movimiento(movimientoDetectado)
 
             tiempo_actual = time.time()
-            tiempo_transcurrido = tiempo_actual - self.tiempo_inicio
 
             # Calcular los FPS
             global previous_time, frames_previos
