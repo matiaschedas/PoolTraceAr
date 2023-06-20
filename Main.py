@@ -9,13 +9,15 @@ import datetime
 import asyncio
 import time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QImage, QPixmap, QIcon
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
 from Clases.ControlWindow import ControlWindow
 import win32con
 import win32gui
 import pyautogui
+import os
+import sys
 
 screen_width, screen_height = pyautogui.size()
 
@@ -32,6 +34,7 @@ Param1 = 50
 Param2 = 50
 cerrarProyeccion = False
 proyectando = False
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 circles_prev = None
 movimientoDetectado = False
@@ -114,6 +117,7 @@ def enable_maximize_button(window):
 
 class VentanaProyeccion(QMainWindow):
     def __init__(self):
+        global script_dir
         super().__init__()
         self.setWindowTitle("Proyeccion")
         self.label = QLabel(self)
@@ -124,6 +128,11 @@ class VentanaProyeccion(QMainWindow):
         self.frame = cv2.resize(
             self.frame, (resYProy, resXProy), interpolation=cv2.INTER_LINEAR)
         self.resize(1920, 1080)
+        # Establecer el icono de la ventana
+
+        icon_path = os.path.join(script_dir, "proyector.png")
+        icon = QIcon(icon_path)
+        self.setWindowIcon(icon)
 
     def closeEvent(self, event):
         if(cerrarProyeccion):
@@ -163,6 +172,7 @@ class HiloProyeccion(threading.Thread):
         self.circles = None
         self.height = None
         self.width = None
+        
 
     def run(self):
         while not self.detener:
@@ -198,6 +208,7 @@ class HiloProyeccion(threading.Thread):
 class VentanaVideo(QMainWindow):
     def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion):
         super().__init__()
+        global script_dir 
         self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
@@ -212,6 +223,10 @@ class VentanaVideo(QMainWindow):
         self.controlWindow.minRadiusChanged.connect(self.onMinRadiusChanged)
         self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
         self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
+
+        icon_path = os.path.join(script_dir, "bola8.png")
+        icon = QIcon(icon_path)
+        self.setWindowIcon(icon)
 
         self.init_ui()
         self.circlesProyeccion = None
@@ -670,7 +685,7 @@ class VentanaVideo(QMainWindow):
             # self.ventanaProyeccion.dibujar()
             # detectar si hay movimiento de alguna bola:
             if self.frame_count % 5 == 0:
-                print(f"movimiento: {self.hayMovimiento}")
+                #print(f"movimiento: {self.hayMovimiento}")
                 global movimientoDetectado
                 if circles_prev is not None and self.circles is not None:
                     movimientoDetectado = False

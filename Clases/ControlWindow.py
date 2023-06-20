@@ -1,7 +1,10 @@
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtGui import QIntValidator, QIcon
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLineEdit, QLabel, QGridLayout, QPushButton, QCheckBox, QComboBox
 import cv2
+import os
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 def obtener_webcams():
         webcams = []
@@ -29,6 +32,7 @@ class ControlWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        global script_dir 
 
         self.setWindowTitle("Ajuste de parámetros")
         self.setGeometry(100, 100, 400, 300)
@@ -40,6 +44,11 @@ class ControlWindow(QMainWindow):
         self.minRadius = 14
         self.maxRadius = 16
         self.maxCircles = 100
+
+        
+        icon_path = os.path.join(script_dir, "config.png")
+        icon = QIcon(icon_path)
+        self.setWindowIcon(icon)
 
         self.initUI()
 
