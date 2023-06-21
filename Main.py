@@ -38,6 +38,8 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 
 circles_prev = None
 movimientoDetectado = False
+bolaSeleccionada = None
+resaltarBola = False
 
 # bloqueo del hilo1 desde el main
 bloqueo = threading.Lock()
@@ -264,6 +266,7 @@ class VentanaVideo(QMainWindow):
 
         # region Parametros de reglas de juego
         self.BolaEnMano = False
+        self.Hay2Tiros = False
         self.hayMovimiento = False
         # endregion
 
@@ -307,10 +310,12 @@ class VentanaVideo(QMainWindow):
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.botonROI.clicked.connect(self.crear_ROI)
 
-        self.labelBolaEnMano = self.crear_label(
-            "Bola en mano: ", 5, 820, 100, 25)
+        self.labelBolaEnMano = self.crear_label("Bola en mano: ", 5, 820, 100, 25)
+        self.label2Tiros = self.crear_label("2 Tiros: ", 5,820,100,25)
         self.checkBolaEnMano = self.crear_checkbox(80, 820, 50, 30)
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
+        self.check2Tiros = self.crear_checkbox(80,820,50,30)
+        self.check2Tiros.stateChanged.connect(self.dos_tiros)
         # endregion
 
         # Crear el widget principal y asignarle un layout vertical
@@ -343,7 +348,9 @@ class VentanaVideo(QMainWindow):
         self.layout1.addWidget(self.label, 0, 0, 1, 1, alignment=Qt.AlignTop | Qt.AlignLeft)
         self.layout2.addWidget(self.botonConfiguracion, 1, 0)
         self.layout2.addWidget(self.labelBolaEnMano, 2, 0)
+        self.layout2.addWidget(self.label2Tiros,2,1)
         self.layout2.addWidget(self.checkBolaEnMano, 3, 0)
+        self.layout2.addWidget(self.check2Tiros,3,1)
 
         # Agregar el contador de FPS con alineación a la esquina inferior derecha
         self.layout2.addWidget(self.labelFps, 3, 10)
@@ -505,7 +512,7 @@ class VentanaVideo(QMainWindow):
             self.fps = self.cap.get(cv2.CAP_PROP_FPS)
             self.actualizar_video()
         except Exception as ex:
-            print("Error")
+            print("Error", ex)
             self.cap.release()
 
     def distancia_media_entre_puntos(self, x1, x2):
@@ -541,10 +548,19 @@ class VentanaVideo(QMainWindow):
         estado_actual = self.checkBolaEnMano.isChecked()
         if estado_actual == True:
             self.BolaEnMano = True
-            print("hay bola en mano")
+            print("Hay bola en mano")
         else:
             self.BolaEnMano = False
             print("No hay bola en mano")
+
+    def dos_tiros(self):
+        estado_actual = self.check2Tiros.isChecked()
+        if estado_actual == True:
+            self.Hay2Tiros = True
+            print("Hay 2 tiros")
+        else:
+            self.Hay2Tiros = False
+            print("No hay 2 tiros")
 
     def crear_checkbox(self, posX, posY, largo, ancho):
         checkbox = QCheckBox(self)
@@ -576,6 +592,8 @@ class VentanaVideo(QMainWindow):
     def mousePressEvent(self, event):
         # Verificar si se hizo clic dentro de los vértices del ROI
         self.verticeSeleccionado = None
+        self.moverVertices = False
+        clickEnBola = False
         if self.verVerticesROI:
             vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI)]
             for i, vertice in enumerate(vertices):
@@ -585,6 +603,30 @@ class VentanaVideo(QMainWindow):
                     self.verticeSeleccionado = i
                     self.moverVertices = True
                     break
+        if self.moverVertices == False:
+            global bolaSeleccionada
+            if self.circles is not None:
+                for (x, y, r) in self.circles:
+                    x = (x+self.XIROI)
+                    y = (y+self.YIROI)
+                    distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
+                    if distancia <=10:
+                        print(f"bola {x},{y}")
+                        clickEnBola = True
+                        bolaSeleccionada=(x,y,r)
+                        self.resaltar_bola_seleccionada()
+        if clickEnBola == False and self.moverVertices == False:
+            self.deseleccionar_bola()
+
+    def resaltar_bola_seleccionada(self):
+        global resaltarBola
+        if bolaSeleccionada is not None:
+            resaltarBola = True
+            
+    def deseleccionar_bola(self):
+        global resaltarBola, bolaSeleccionada
+        resaltarBola = False
+        bolaSeleccionada = None
 
     def mouseMoveEvent(self, event):
         if self.moverVertices and self.verticeSeleccionado is not None:
@@ -598,6 +640,7 @@ class VentanaVideo(QMainWindow):
                 self.YDROI = event.y()
             self.hiloProyeccion.actualizar_roi(
                 xiroi=self.XIROI, yiroi=self.YIROI)
+            
 
     def crear_ROI(self):
         if self.creandoROI == False:
@@ -628,8 +671,8 @@ class VentanaVideo(QMainWindow):
                 self.hiloProyeccion.actualizar_roi(
                     xiroi=self.XIROI, yiroi=self.YIROI)
 
-            roi = self.frame[self.YIROI+5:self.YDROI -
-                             5, self.XIROI+5:self.XDROI-5]
+            roi = self.frame[self.YIROI:self.YDROI 
+                             , self.XIROI:self.XDROI]
             if self.verROI:
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
                               (self.XDROI, self.YDROI), (0, 255, 0), 2)
@@ -685,12 +728,28 @@ class VentanaVideo(QMainWindow):
                     self.circles = np.round(self.circles[0, :]).astype(int)
                     self.circlesProyeccion = self.circles
                     self.hiloProyeccion.actualizar_circles(self.circles.copy())
+
+                    global bolaSeleccionada, resaltarBola
+                    algunaEstaSeleccionada = False
                     for (x, y, r) in self.circles:
                         # se dibujan los circulos en la interfaz:
-                        xCircle = x + self.XIROI + 3
-                        yCircle = y + self.YIROI + 3
+                        xCircle = x + self.XIROI 
+                        yCircle = y + self.YIROI 
                         cv2.circle(self.frame, (xCircle, yCircle),
                                    r+5, (0, 255, 0), 1)
+                        
+                        if resaltarBola == True and bolaSeleccionada is not None:
+                            (xs,ys,rs) = bolaSeleccionada
+                            dist = np.sqrt((xCircle-xs)**2 + (yCircle-ys)**2)
+                            if dist <=10:
+                                cv2.circle(self.frame, (xCircle, yCircle),
+                                    r+5, (0, 0, 255), 3)
+                                algunaEstaSeleccionada = True
+                    if(algunaEstaSeleccionada == False):
+                        bolaSeleccionada = None
+                        resaltarBola = False
+
+                                
                      
             # detectar si hay movimiento de alguna bola:
             if self.frame_count % 5 == 0:
