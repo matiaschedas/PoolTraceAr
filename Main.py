@@ -18,8 +18,11 @@ import win32gui
 import pyautogui
 import os
 import sys
+import json
 
 screen_width, screen_height = pyautogui.size()
+
+computo = None
 
 ResolucionX = (int)(screen_width*0.8)
 ResolucionY = (int)(screen_height*0.8)
@@ -59,13 +62,17 @@ minRadius = 14
 maxRadius = 16
 # El número máximo de círculos a detectar. Por defecto es 100.
 maxCircles = 100
+hough = None
+d_frame = None
+d_circles = None
 
-hough = cv2.cuda.createHoughCirclesDetector(
-    dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
-# Crear el objeto cv2.cuda_GpuMat para el fotograma actual
-d_frame = cv2.cuda_GpuMat()
-# Crear el objeto cv2.cuda_GpuMat para el resultado de la detección
-d_circles = cv2.cuda_GpuMat()
+def iniciar_GPU():
+    global hough,d_frame,d_circles
+    hough = cv2.cuda.createHoughCirclesDetector(dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
+    # Crear el objeto cv2.cuda_GpuMat para el fotograma actual
+    d_frame = cv2.cuda_GpuMat()
+    # Crear el objeto cv2.cuda_GpuMat para el resultado de la detección
+    d_circles = cv2.cuda_GpuMat()
 
 start_time = time.time()
 previous_time = start_time
@@ -367,13 +374,14 @@ class VentanaVideo(QMainWindow):
         self.actualizar_video()
 
     def actualizarHough(self):
-        global hough, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
+        global hough, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, computo
         self.controlWindow.actualizarParametros(
             dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
         print(f"dp: {dp}, minDist: {minDist}, cannyThreshold: {cannyThreshold}, votesThreshold: {votesThreshold}, minRadius: {minRadius}, maxRadius: {maxRadius}, maxCircles: {maxCircles}")
         try:
-            hough = cv2.cuda.createHoughCirclesDetector(
-                dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
+            if (computo == "GPU"):
+                hough = cv2.cuda.createHoughCirclesDetector(
+                    dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
         except cv2.error as e:
             pass
 
@@ -469,7 +477,7 @@ class VentanaVideo(QMainWindow):
     def on_resize_timeout(self):
         # Código a ejecutar cuando finaliza el evento de redimensionamiento
         print("Final del evento de redimensionamiento")
-        global ResolucionX, ResolucionY, resoluciones, radioMax, radioMin
+        global ResolucionX, ResolucionY, resoluciones, radioMax, radioMin, computo
         resolucion_encontrada = self.encontrar_resolucion(
             resoluciones, ResolucionX, ResolucionY)
         ResolucionX = resolucion_encontrada[0]
@@ -492,8 +500,8 @@ class VentanaVideo(QMainWindow):
         if minRadius < maxRadius:
             minRadius = radioMin
             maxRadius = radioMax
-
-        self.actualizarHough()
+        if(computo == "GPU"):
+            self.actualizarHough()
         self.cambio_camara(self.comboCamaras.currentIndex())
         self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI)
 
@@ -716,14 +724,17 @@ class VentanaVideo(QMainWindow):
                 gamma = 1.5  # Valor de gamma para ajustar el brillo (mayor valor = mayor brillo)
                 image = np.power(image / 255.0, gamma) * 255
 
-            global Param1, Param2
+            global Param1, Param2, hough
             # Cargar el fotograma actual en el objeto cv2.cuda_GpuMat
-            d_frame.upload(image)
-            global hough
-            self.circles = hough.detect(d_frame)
+            if(computo == "GPU"):
+                d_frame.upload(image)
+                self.circles = hough.detect(d_frame)
+            elif (computo == "CPU"):
+                self.circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
             global circles_prev
             if self.circles is not None:
-                self.circles = self.circles.download()
+                if(computo == "GPU"):
+                    self.circles = self.circles.download()
                 if self.circles is not None:
                     self.circles = np.round(self.circles[0, :]).astype(int)
                     self.circlesProyeccion = self.circles
@@ -801,14 +812,24 @@ class VentanaVideo(QMainWindow):
 resXProy = 1080
 resYProy = 1920
 
+def levantar_configuracion():
+    global computo
+    path = script_dir + "\\configuracion.json"
+    with open(path) as f:
+        data = json.load(f)
+    computo = data["computo"]
+    print(f"computo: {computo}")
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
+    levantar_configuracion()
+    if (computo == "GPU"):
+        iniciar_GPU()
     ventanaProyeccion = VentanaProyeccion()
     ventanaParametros = ControlWindow()
     hiloProyeccion = HiloProyeccion(bloqueo, ventanaProyeccion)
-    ventana = VentanaVideo(
-        ventanaProyeccion, ventanaParametros, hiloProyeccion)
+    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion)
 
     ventana.show()
     ventana.controlWindow.show()
