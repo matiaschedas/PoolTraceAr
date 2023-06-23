@@ -518,10 +518,10 @@ class VentanaVideo(QMainWindow):
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
             self.fps = self.cap.get(cv2.CAP_PROP_FPS)
-            self.actualizar_video()
         except Exception as ex:
             print("Error", ex)
             self.cap.release()
+        self.actualizar_video()
 
     def distancia_media_entre_puntos(self, x1, x2):
         distancia = (x2 - x1)
@@ -666,6 +666,21 @@ class VentanaVideo(QMainWindow):
     def hay_movimiento(self, movimiento):
         self.hayMovimiento = movimiento
 
+    def estandarizar(self, circulos, circulosPrevios):
+        modificados = False
+        if (circulos is not None and circulosPrevios is not None):
+            for (x,y,r) in circulos:
+                duplicado = False
+                for (xp,yp,rp) in circulosPrevios:
+                    dist = np.sqrt((xp-x)**2 + (yp-y)**2)
+                    if dist < 10 and (x != xp or y != yp or r!=rp):
+                        x = xp
+                        y = yp
+                        r = rp
+                        modificados = True
+                        break
+        return circulos, modificados
+
     def actualizar_video(self):
         if not self.seguirActualizando:
             return
@@ -732,6 +747,7 @@ class VentanaVideo(QMainWindow):
             elif (computo == "CPU"):
                 self.circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
             global circles_prev
+           
             if self.circles is not None:
                 if(computo == "GPU"):
                     self.circles = self.circles.download()
@@ -740,21 +756,23 @@ class VentanaVideo(QMainWindow):
                     self.circlesProyeccion = self.circles
                     self.hiloProyeccion.actualizar_circles(self.circles.copy())
 
-                    global bolaSeleccionada, resaltarBola
+                    global bolaSeleccionada, resaltarBola, minRadius, maxRadius
+                    radioProm = int((minRadius+maxRadius)/2)
                     algunaEstaSeleccionada = False
+                    
                     for (x, y, r) in self.circles:
                         # se dibujan los circulos en la interfaz:
                         xCircle = x + self.XIROI 
                         yCircle = y + self.YIROI 
                         cv2.circle(self.frame, (xCircle, yCircle),
-                                   r+5, (0, 255, 0), 1)
+                                   radioProm+5, (0, 255, 0), 1)
                         
                         if resaltarBola == True and bolaSeleccionada is not None:
                             (xs,ys,rs) = bolaSeleccionada
                             dist = np.sqrt((xCircle-xs)**2 + (yCircle-ys)**2)
                             if dist <=10:
                                 cv2.circle(self.frame, (xCircle, yCircle),
-                                    r+5, (0, 0, 255), 3)
+                                    radioProm+5, (0, 0, 255), 3)
                                 algunaEstaSeleccionada = True
                     if(algunaEstaSeleccionada == False):
                         bolaSeleccionada = None
@@ -779,11 +797,10 @@ class VentanaVideo(QMainWindow):
                                 movimientoDetectado = True               
                 else:
                     movimientoDetectado = False
-                circles_prev = self.circles
-
+            
+            circles_prev = self.circles
             self.hay_movimiento(movimientoDetectado)
 
-            tiempo_actual = time.time()
 
             # Calcular los FPS
             global previous_time, frames_previos
