@@ -310,7 +310,7 @@ class VentanaVideo(QMainWindow):
         # endregion
 
         #region creacion de interfaz
-        self.botonProyectar, self.botonROI, self.botonPreprocesamientos = ventanaParametros.obtenerBotones()
+        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset = ventanaParametros.obtenerBotones()
         self.comboCamaras = ventanaParametros.obtenerComboCamaras()
         #self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
         #self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
@@ -333,6 +333,8 @@ class VentanaVideo(QMainWindow):
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
         self.check2Tiros = self.crear_checkbox(80,820,50,30)
         self.check2Tiros.stateChanged.connect(self.dos_tiros)
+
+        self.botonGuardarPreset.clicked.connect(self.guardar_preset)
         # endregion
 
         # Crear el widget principal y asignarle un layout vertical
@@ -394,7 +396,34 @@ class VentanaVideo(QMainWindow):
         inicioHilos()
 
         self.actualizar_video()
+
+    def es_nombre_archivo_valido(self, texto):
+        patron = r"^(?!^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$)[^\x00-\x1f\\?*:\";|/<>]+$"
+        coincide = re.match(patron, texto, re.IGNORECASE)
+        return coincide is not None
     
+    def guardar_preset(self):
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
+        nombreArchivo = self.controlWindow.textNombrePreset.text()
+        valido = self.es_nombre_archivo_valido(nombreArchivo)
+        if valido:
+            nombreArchivo = nombreArchivo + ".json"
+            path = script_dir + "\\" + nombreArchivo
+            datos = {
+                "dp": dp,
+                "minDist": minDist,
+                "cannyThreshold": cannyThreshold,
+                "votesThreshold": votesThreshold,
+                "minRadius": minRadius,
+                "maxRadius": maxRadius,
+                "maxCircles": maxCircles,
+            }
+            with open(path, "w") as archivo:
+                json.dump(datos, archivo)
+
+
+
+        
     def onAlphaChanged(self, value):
         global Alpha
         Alpha = value
@@ -893,6 +922,8 @@ def levantar_configuracion():
         data = json.load(f)
     computo = data["computo"]
     print(f"computo: {computo}")
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

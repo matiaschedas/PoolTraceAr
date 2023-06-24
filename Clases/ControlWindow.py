@@ -164,15 +164,23 @@ class ControlWindow(QMainWindow):
         webcams = obtener_webcams()
         self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
+        self.labelNombrePreset = self.crear_label("Nombre archivo:", 1290,5,50,30)
+        self.textNombrePreset = QLineEdit(self)
         
         self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
         self.botonConfigurarROI = self.crear_boton("Configurar ROI", 1290, 125, 100, 30)
         self.botonPreprocesamientos = self.crear_boton("Preprocesamientos", 1290, 125, 100, 30)
+        self.botonGuardarPreset = self.crear_boton("Guardar Preset", 1290,125,100,30)
+
+
         layout.addWidget(self.labelCamara,7,0)
+        layout.addWidget(self.labelNombrePreset,7,3)
+        layout.addWidget(self.textNombrePreset,8,3)
         layout.addWidget(self.comboCamaras,8,0)
         layout.addWidget(self.botonProyectar, 9, 0)
         layout.addWidget(self.botonConfigurarROI, 9, 1)
         layout.addWidget(self.botonPreprocesamientos, 9, 2)
+        layout.addWidget(self.botonGuardarPreset,9,3)
 
 
         widget = QWidget()
@@ -184,7 +192,7 @@ class ControlWindow(QMainWindow):
         return self.comboCamaras
     
     def obtenerBotones(self):
-        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos
+        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset
 
     def crear_boton(self, texto, x, y, ancho, alto):
         boton = QPushButton(texto, self)
