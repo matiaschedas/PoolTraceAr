@@ -1,9 +1,18 @@
 import sys
-from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QCheckBox, QSlider, QVBoxLayout, QHBoxLayout, QWidget, QPushButton
+from PyQt5.QtCore import Qt, pyqtSignal
 
 
 class PreprocesamientoWindow(QMainWindow):
+
+    alphaChanged = pyqtSignal(float)
+    betaChanged = pyqtSignal(int)
+    blurChanged = pyqtSignal(int)
+
+    blurChecked = pyqtSignal(bool)
+    contrastChecked = pyqtSignal(bool)
+    histChecked = pyqtSignal(bool)
+
     def __init__(self):
         super(PreprocesamientoWindow, self).__init__()
 
@@ -12,20 +21,6 @@ class PreprocesamientoWindow(QMainWindow):
 
         self.layout = QVBoxLayout()
 
-        self.brightness_layout = QHBoxLayout()
-        self.brightness_label = QLabel("Brillo", self)
-        self.brightness_layout.addWidget(self.brightness_label)
-
-        self.brightness_checkbox = QCheckBox(self)
-        self.brightness_layout.addWidget(self.brightness_checkbox)
-
-        self.brightness_slider = QSlider(Qt.Horizontal)
-        self.brightness_slider.setMinimum(0)
-        self.brightness_slider.setMaximum(100)
-        self.brightness_slider.setDisabled(True)  # Desactivado por defecto
-        self.brightness_layout.addWidget(self.brightness_slider)
-
-        self.layout.addLayout(self.brightness_layout)
 
         self.contrast_layout = QHBoxLayout()
         self.contrast_label = QLabel("Contraste", self)
@@ -71,7 +66,7 @@ class PreprocesamientoWindow(QMainWindow):
         self.blur_layout.addWidget(self.blur_checkbox)
 
         self.blur_slider = QSlider(Qt.Horizontal)
-        self.blur_slider.setMinimum(0)
+        self.blur_slider.setMinimum(1)
         self.blur_slider.setMaximum(100)
         self.blur_slider.setDisabled(True)  # Desactivado por defecto
         self.blur_layout.addWidget(self.blur_slider)
@@ -89,11 +84,11 @@ class PreprocesamientoWindow(QMainWindow):
         self.widget.setLayout(self.layout)
         self.setCentralWidget(self.widget)
 
-        self.brightness_checkbox.stateChanged.connect(self.on_brightness_checkbox_changed)
+       
         self.contrast_checkbox.stateChanged.connect(self.on_contrast_checkbox_changed)
         self.hist_checkbox.stateChanged.connect(self.on_hist_checkbox_changed)
         self.blur_checkbox.stateChanged.connect(self.on_blur_checkbox_changed)
-        self.brightness_slider.valueChanged.connect(self.on_brightness_slider_changed)
+       
         self.alpha_slider.valueChanged.connect(self.on_contrast_alpha_slider_changed)
         self.beta_slider.valueChanged.connect(self.on_contrast_beta_slider_changed)
         self.hist_slider.valueChanged.connect(self.on_hist_slider_changed)
@@ -103,47 +98,63 @@ class PreprocesamientoWindow(QMainWindow):
     def on_brightness_checkbox_changed(self, state):
         if state == Qt.Checked:
             self.brightness_slider.setEnabled(True)
+            self.brilloChecked.emit(True)
         else:
             self.brightness_slider.setEnabled(False)
+            self.brilloChecked.emit(False)
 
     def on_contrast_checkbox_changed(self, state):
         if state == Qt.Checked:
             self.alpha_slider.setEnabled(True)
             self.beta_slider.setEnabled(True)
+            self.contrastChecked.emit(True)
         else:
             self.alpha_slider.setEnabled(False)
             self.beta_slider.setEnabled(False)
+            self.contrastChecked.emit(False)
 
     def on_hist_checkbox_changed(self, state):
         if state == Qt.Checked:
             self.hist_slider.setEnabled(True)
+            self.histChecked.emit(True)
         else:
             self.hist_slider.setEnabled(False)
+            self.histChecked.emit(False)
 
     def on_blur_checkbox_changed(self, state):
         if state == Qt.Checked:
             self.blur_slider.setEnabled(True)
+            self.blurChecked.emit(True)
         else:
             self.blur_slider.setEnabled(False)
+            self.blurChecked.emit(False)
 
     def on_brightness_slider_changed(self, value):
-        brightness = value / 100.0
+        inverted_value = (self.brightness_slider.maximum() - value)
+        brightness = inverted_value/100
+        self.brilloChanged.emit(brightness)
         print(f"Brightness: {brightness}")
 
     def on_contrast_alpha_slider_changed(self, value):
-        alpha = value / 100.0
+        alpha = value/10
+        self.alphaChanged.emit(alpha)
         print(f"Alpha: {alpha}")
 
     def on_contrast_beta_slider_changed(self, value):
-        beta = value / 100.0
+        beta = value 
+        self.betaChanged.emit(beta)
         print(f"Beta: {beta}")
 
     def on_hist_slider_changed(self, value):
-        hist = value / 100.0
+        hist = value
         print(f"Hist: {hist}")
 
     def on_blur_slider_changed(self, value):
-        blur = value / 100.0
+        if value % 2 == 0:
+            value = value+1
+            self.blur_slider.setValue(value)
+        blur = value 
+        self.blurChanged.emit(blur)
         print(f"Blur: {blur}")
 
     def on_view_frame_button_clicked(self):

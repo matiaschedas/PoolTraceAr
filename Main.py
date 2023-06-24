@@ -48,8 +48,10 @@ resaltarBola = False
 aplicarBlur = True
 aplicarHist = False
 aplicarContraste = False
-aplicarBrillo = False
 mostrarFrameRaw=False
+Alpha = 1
+Beta = 1
+Blur = 1
 
 # bloqueo del hilo1 desde el main
 bloqueo = threading.Lock()
@@ -375,6 +377,16 @@ class VentanaVideo(QMainWindow):
         
         #componenetes de la ventana de preprocesamiento
         self.ventanaPrepro.view_frame_button.clicked.connect(self.ver_frame)
+        self.ventanaPrepro.alphaChanged.connect(self.onAlphaChanged)
+        self.ventanaPrepro.betaChanged.connect(self.onBetaChanged)
+        self.ventanaPrepro.blurChanged.connect(self.onBlurChanged)
+        
+
+        self.ventanaPrepro.blurChecked.connect(self.aplicarBlur)
+        self.ventanaPrepro.contrastChecked.connect(self.aplicarContraste)
+        self.ventanaPrepro.histChecked.connect(self.aplicarHist)
+
+
 
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
@@ -383,6 +395,34 @@ class VentanaVideo(QMainWindow):
 
         self.actualizar_video()
     
+    def onAlphaChanged(self, value):
+        global Alpha
+        Alpha = value
+    
+    def onBetaChanged(self, value):
+        global Beta
+        Beta = value
+
+    def onBlurChanged(self, value):
+        global Blur
+        Blur = value
+
+    def aplicarBlur(self, value):
+        global aplicarBlur
+        aplicarBlur = value
+    
+    def aplicarHist(self, value):
+        global aplicarHist
+        aplicarHist = value
+
+    def aplicarContraste(self, value):
+        global aplicarContraste
+        aplicarContraste = value
+
+      
+
+
+
     def ver_frame(self):
         global mostrarFrameRaw
         if mostrarFrameRaw  == True:
@@ -692,18 +732,15 @@ class VentanaVideo(QMainWindow):
         self.ventanaPrepro.show()
 
     def aplicar_preprocesamientos(self, image):
-        global aplicarBlur,aplicarBrillo,aplicarContraste,aplicarHist,mostrarFrameRaw
+        global aplicarBlur,aplicarBrillo,aplicarContraste,aplicarHist,mostrarFrameRaws
         if aplicarBlur:
-            image = cv2.GaussianBlur(image, (5, 5), 0)
+            global Blur
+            image = cv2.GaussianBlur(image, (Blur, Blur), 0)
         if aplicarHist:
             image = cv2.equalizeHist(image)
         if aplicarContraste:
-            alpha = 1.2  # Factor de contraste (1.0 mantiene el contraste original)
-            beta = 30  # Valor de brillo (0 mantiene el brillo original)
-            image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
-        if aplicarBrillo:
-            gamma = 1.5  # Valor de gamma para ajustar el brillo (mayor valor = mayor brillo)
-            image = np.power(image / 255.0, gamma) * 255
+            global Alpha, Beta
+            image = cv2.convertScaleAbs(image, alpha=Alpha, beta=Beta)
         if mostrarFrameRaw:
             cv2.imshow("Frame",image)
             cv2.resizeWindow("Frame", ResolucionX, ResolucionY)
