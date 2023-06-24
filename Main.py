@@ -13,6 +13,7 @@ from PyQt5.QtGui import QImage, QPixmap, QIcon
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
 from Clases.ControlWindow import ControlWindow
+from Clases.PreprocesamientoWindow import PreprocesamientoWindow
 import win32con
 import win32gui
 import pyautogui
@@ -43,6 +44,12 @@ circles_prev = None
 movimientoDetectado = False
 bolaSeleccionada = None
 resaltarBola = False
+
+aplicarBlur = True
+aplicarHist = False
+aplicarContraste = False
+aplicarBrillo = False
+mostrarFrameRaw=False
 
 # bloqueo del hilo1 desde el main
 bloqueo = threading.Lock()
@@ -150,7 +157,7 @@ class VentanaProyeccion(QMainWindow):
             event.ignore()
 
     def dibujar_circulos(self, x, y, r, color, grosor):
-        cv2.circle(self.frame, (x, y), r, color, grosor)
+            cv2.circle(self.frame, (x, y), r, color, grosor)
 
     def re_init_frame(self, h, w):
         self.frame = self.frame.copy()
@@ -190,10 +197,12 @@ class HiloProyeccion(threading.Thread):
             self.ventanaProyeccion.limpiar_circulos()
             if self.circles is not None and self.height is not None and self.width is not None:
                 self.ventanaProyeccion.re_init_frame(self.height, self.width)
+                global minRadius, maxRadius
+                radioProm = int((minRadius+maxRadius)/2)
                 for (x, y, r) in self.circles:
-                    # se dibujan los circulos en la interfaz:
+                    # se dibujan los circulos en la interfaz: 
                     self.ventanaProyeccion.dibujar_circulos(
-                        x + self.xiroi, y + self.yiroi, r+3, (0, 255, 0), 2)
+                        x + self.xiroi, y + self.yiroi, radioProm, (0, 255, 0), 2)
             self.ventanaProyeccion.dibujar()
             if self.detener:
                 break
@@ -215,13 +224,14 @@ class HiloProyeccion(threading.Thread):
 
 
 class VentanaVideo(QMainWindow):
-    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion):
+    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow):
         super().__init__()
         global script_dir 
         self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
         self.setWindowTitle("PoolTraceAR")
+        self.ventanaPrepro = ventanaPreprocesamiento
         self.controlWindow = ventanaParametros
         self.controlWindow.dpChanged.connect(self.onDpChanged)
         self.controlWindow.minDistChanged.connect(self.onMinDistChanged)
@@ -256,10 +266,7 @@ class VentanaVideo(QMainWindow):
         self.inicio = True
         self.creandoROI = False
         self.cargarCoordenadas = True
-        self.aplicarBlur = True
-        self.aplicarHist = False
-        self.aplicarContraste = False
-        self.aplicarBrillo = False
+      
         # endregion
 
         # region coordenadas de huecos(troneras):
@@ -316,6 +323,7 @@ class VentanaVideo(QMainWindow):
         self.botonProyectar.clicked.connect(self.proyectar)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.botonROI.clicked.connect(self.crear_ROI)
+        self.botonPreprocesamientos.clicked.connect(self.abrir_preprocesamiento)
 
         self.labelBolaEnMano = self.crear_label("Bola en mano: ", 5, 820, 100, 25)
         self.label2Tiros = self.crear_label("2 Tiros: ", 5,820,100,25)
@@ -365,6 +373,8 @@ class VentanaVideo(QMainWindow):
 
         self.setCentralWidget(widgetPrincipal)
         
+        #componenetes de la ventana de preprocesamiento
+        self.ventanaPrepro.view_frame_button.clicked.connect(self.ver_frame)
 
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
@@ -372,6 +382,15 @@ class VentanaVideo(QMainWindow):
         inicioHilos()
 
         self.actualizar_video()
+    
+    def ver_frame(self):
+        global mostrarFrameRaw
+        if mostrarFrameRaw  == True:
+            mostrarFrameRaw = False
+            if cv2.getWindowProperty("Frame", cv2.WND_PROP_VISIBLE) > 0:
+                cv2.destroyWindow("Frame")
+        else:
+            mostrarFrameRaw = True
 
     def actualizarHough(self):
         global hough, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, computo
@@ -550,6 +569,9 @@ class VentanaVideo(QMainWindow):
         cerrarProyeccion=True
         self.ventanaProyeccion.close()
         self.controlWindow.close()
+        if cv2.getWindowProperty("Frame", cv2.WND_PROP_VISIBLE) > 0:
+            cv2.destroyWindow("Frame")
+        self.ventanaPrepro.close()
         event.accept()
 
     def bola_en_mano(self):
@@ -665,21 +687,28 @@ class VentanaVideo(QMainWindow):
 
     def hay_movimiento(self, movimiento):
         self.hayMovimiento = movimiento
+    
+    def abrir_preprocesamiento(self):
+        self.ventanaPrepro.show()
 
-    def estandarizar(self, circulos, circulosPrevios):
-        modificados = False
-        if (circulos is not None and circulosPrevios is not None):
-            for (x,y,r) in circulos:
-                duplicado = False
-                for (xp,yp,rp) in circulosPrevios:
-                    dist = np.sqrt((xp-x)**2 + (yp-y)**2)
-                    if dist < 10 and (x != xp or y != yp or r!=rp):
-                        x = xp
-                        y = yp
-                        r = rp
-                        modificados = True
-                        break
-        return circulos, modificados
+    def aplicar_preprocesamientos(self, image):
+        global aplicarBlur,aplicarBrillo,aplicarContraste,aplicarHist,mostrarFrameRaw
+        if aplicarBlur:
+            image = cv2.GaussianBlur(image, (5, 5), 0)
+        if aplicarHist:
+            image = cv2.equalizeHist(image)
+        if aplicarContraste:
+            alpha = 1.2  # Factor de contraste (1.0 mantiene el contraste original)
+            beta = 30  # Valor de brillo (0 mantiene el brillo original)
+            image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+        if aplicarBrillo:
+            gamma = 1.5  # Valor de gamma para ajustar el brillo (mayor valor = mayor brillo)
+            image = np.power(image / 255.0, gamma) * 255
+        if mostrarFrameRaw:
+            cv2.imshow("Frame",image)
+            cv2.resizeWindow("Frame", ResolucionX, ResolucionY)
+        return image
+
 
     def actualizar_video(self):
         if not self.seguirActualizando:
@@ -727,17 +756,8 @@ class VentanaVideo(QMainWindow):
                            8, (0, 255, 0), 2)
 
             image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            if self.aplicarBlur:
-                image = cv2.GaussianBlur(image, (5, 5), 0)
-            if self.aplicarHist:
-                image = cv2.equalizeHist(image)
-            if self.aplicarContraste:
-                alpha = 1.2  # Factor de contraste (1.0 mantiene el contraste original)
-                beta = 30  # Valor de brillo (0 mantiene el brillo original)
-                image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
-            if self.aplicarBrillo:
-                gamma = 1.5  # Valor de gamma para ajustar el brillo (mayor valor = mayor brillo)
-                image = np.power(image / 255.0, gamma) * 255
+            image = self.aplicar_preprocesamientos(image)
+           
 
             global Param1, Param2, hough
             # Cargar el fotograma actual en el objeto cv2.cuda_GpuMat
@@ -765,14 +785,14 @@ class VentanaVideo(QMainWindow):
                         xCircle = x + self.XIROI 
                         yCircle = y + self.YIROI 
                         cv2.circle(self.frame, (xCircle, yCircle),
-                                   radioProm+5, (0, 255, 0), 1)
+                                   radioProm, (0, 255, 0), 1)
                         
                         if resaltarBola == True and bolaSeleccionada is not None:
                             (xs,ys,rs) = bolaSeleccionada
                             dist = np.sqrt((xCircle-xs)**2 + (yCircle-ys)**2)
                             if dist <=10:
                                 cv2.circle(self.frame, (xCircle, yCircle),
-                                    radioProm+5, (0, 0, 255), 3)
+                                    radioProm+6, (0, 0, 255), 3)
                                 algunaEstaSeleccionada = True
                     if(algunaEstaSeleccionada == False):
                         bolaSeleccionada = None
@@ -845,8 +865,9 @@ if __name__ == "__main__":
         iniciar_GPU()
     ventanaProyeccion = VentanaProyeccion()
     ventanaParametros = ControlWindow()
+    ventanaPreprocesamiento = PreprocesamientoWindow()
     hiloProyeccion = HiloProyeccion(bloqueo, ventanaProyeccion)
-    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion)
+    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion, ventanaPreprocesamiento)
 
     ventana.show()
     ventana.controlWindow.show()

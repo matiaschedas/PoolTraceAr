@@ -340,5 +340,5 @@ class ControlWindow(QMainWindow):
 
         self.minDist_text.setText(str(self.minDist))
         self.minDist_slider.setValue(self.minDist)
-
-        
+    
+      
