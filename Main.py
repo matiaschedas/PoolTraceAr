@@ -8,7 +8,7 @@ import re
 import datetime
 import asyncio
 import time
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter, QFileDialog
 from PyQt5.QtGui import QImage, QPixmap, QIcon
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
@@ -310,7 +310,7 @@ class VentanaVideo(QMainWindow):
         # endregion
 
         #region creacion de interfaz
-        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset = ventanaParametros.obtenerBotones()
+        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset, self.botonCargarPreset = ventanaParametros.obtenerBotones()
         self.comboCamaras = ventanaParametros.obtenerComboCamaras()
         #self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
         #self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
@@ -335,6 +335,7 @@ class VentanaVideo(QMainWindow):
         self.check2Tiros.stateChanged.connect(self.dos_tiros)
 
         self.botonGuardarPreset.clicked.connect(self.guardar_preset)
+        self.botonCargarPreset.clicked.connect(self.cargar_preset)
         # endregion
 
         # Crear el widget principal y asignarle un layout vertical
@@ -421,9 +422,43 @@ class VentanaVideo(QMainWindow):
             with open(path, "w") as archivo:
                 json.dump(datos, archivo)
 
+    def cargar_preset(self):
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
+        campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles']
+        valido = False
+        file_dialog = QFileDialog()
 
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
 
-        
+        file_path, _ = file_dialog.getOpenFileName(None, "Seleccionar archivo", "", "Todos los archivos (*.*)", options=options)
+            
+        if file_path:
+            print("Archivo seleccionado:", file_path)
+            _, extension = os.path.splitext(file_path)
+            if extension == ".json":
+                try:
+                    with open(file_path) as f:
+                        data = json.load(f)
+                    for campo in campos:
+                        valido = True
+                        if campo not in data:
+                            print(f"El campo '{campo}' no está presente en el JSON.")
+                            valido = False
+                except Exception:
+                    print("Error al levantar archivo seleccionado")
+                    valido=False
+        if valido:
+            dp = data["dp"]
+            minDist =data["minDist"]
+            cannyThreshold =data["cannyThreshold"]
+            votesThreshold =data["votesThreshold"]
+            minRadius =data["minRadius"]
+            maxRadius =data["maxRadius"]
+            maxCircles = data["maxCircles"]
+            self.controlWindow.actualizarParametros(
+            dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
+           
     def onAlphaChanged(self, value):
         global Alpha
         Alpha = value
