@@ -8,8 +8,8 @@ import re
 import datetime
 import asyncio
 import time
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter, QFileDialog
-from PyQt5.QtGui import QImage, QPixmap, QIcon
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter, QFileDialog, QDesktopWidget
+from PyQt5.QtGui import QImage, QPixmap, QIcon, QWindow, QScreen, QGuiApplication
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from fchola import HiloEjemplo
 from Clases.ControlWindow import ControlWindow
@@ -20,6 +20,7 @@ import pyautogui
 import os
 import sys
 import json
+from screeninfo import get_monitors
 
 screen_width, screen_height = pyautogui.size()
 
@@ -140,6 +141,13 @@ class VentanaProyeccion(QMainWindow):
         self.setWindowTitle("Proyeccion")
         self.label = QLabel(self)
         global resXProy, resYProy
+
+        
+        display_monitor = 2
+
+        monitor = QDesktopWidget().screenGeometry(display_monitor)
+        self.move(monitor.left(), monitor.top())
+
         self.label.setGeometry(0, 0, 1920, 1080)
         self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.frame = np.zeros((resXProy, resYProy, 3), dtype=np.uint8)
@@ -151,6 +159,10 @@ class VentanaProyeccion(QMainWindow):
         icon_path = os.path.join(script_dir, "proyector.png")
         icon = QIcon(icon_path)
         self.setWindowIcon(icon)
+        self.showFullScreen() 
+        global cerrarProyeccion
+        cerrarProyeccion=True
+        self.close()
 
     def closeEvent(self, event):
         if(cerrarProyeccion):
@@ -886,7 +898,7 @@ class VentanaVideo(QMainWindow):
                         xCircle = x + self.XIROI 
                         yCircle = y + self.YIROI 
                         cv2.circle(self.frame, (xCircle, yCircle),
-                                   radioProm, (0, 255, 0), 1)
+                                   radioProm, (0, 255, 0), 2)
                         
                         if resaltarBola == True and bolaSeleccionada is not None:
                             (xs,ys,rs) = bolaSeleccionada
