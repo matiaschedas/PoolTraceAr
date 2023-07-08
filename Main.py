@@ -40,6 +40,7 @@ Param2 = 50
 cerrarProyeccion = False
 proyectando = False
 script_dir = os.path.dirname(os.path.abspath(__file__))
+display_monitor = 1
 
 circles_prev = None
 movimientoDetectado = False
@@ -136,16 +137,16 @@ def enable_maximize_button(window):
 
 class VentanaProyeccion(QMainWindow):
     def __init__(self):
-        global script_dir
+        global script_dir, display_monitor
         super().__init__()
         self.setWindowTitle("Proyeccion")
         self.label = QLabel(self)
         global resXProy, resYProy
 
         
-        display_monitor = 2
+        self.nroMonitor = display_monitor
 
-        monitor = QDesktopWidget().screenGeometry(display_monitor)
+        monitor = QDesktopWidget().screenGeometry(self.nroMonitor)
         self.move(monitor.left(), monitor.top())
 
         self.label.setGeometry(0, 0, 1920, 1080)
@@ -169,6 +170,11 @@ class VentanaProyeccion(QMainWindow):
             event.accept()
         else:
             event.ignore()
+
+    def set_nroMonitor(self, numero):
+        self.nroMonitor = numero
+        monitor = QDesktopWidget().screenGeometry(self.nroMonitor)
+        self.move(monitor.left() + 7, monitor.top())
 
     def dibujar_circulos(self, x, y, r, color, grosor):
             cv2.circle(self.frame, (x, y), r, color, grosor)
@@ -324,6 +330,7 @@ class VentanaVideo(QMainWindow):
         #region creacion de interfaz
         self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset, self.botonCargarPreset = ventanaParametros.obtenerBotones()
         self.comboCamaras = ventanaParametros.obtenerComboCamaras()
+        self.comboMonitores = ventanaParametros.obtenerComboMonitores()
         #self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
         #self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
 
@@ -336,6 +343,7 @@ class VentanaVideo(QMainWindow):
         self.botonConfiguracion.clicked.connect(self.configurar)
         self.botonProyectar.clicked.connect(self.proyectar)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
+        self.comboMonitores.currentIndexChanged.connect(self.cambio_monitor)
         self.botonROI.clicked.connect(self.crear_ROI)
         self.botonPreprocesamientos.clicked.connect(self.abrir_preprocesamiento)
 
@@ -657,6 +665,14 @@ class VentanaVideo(QMainWindow):
             print("Error", ex)
             self.cap.release()
         self.actualizar_video()
+    
+    def cambio_monitor(self, index):
+        global display_monitor
+        opcion = self.comboMonitores.itemText(index)
+        print(f"monitor: {opcion}")
+        numero = int(re.search(r'\d+', opcion).group())
+        display_monitor = numero
+        self.ventanaProyeccion.set_nroMonitor(display_monitor)
 
     def distancia_media_entre_puntos(self, x1, x2):
         distancia = (x2 - x1)
@@ -664,6 +680,7 @@ class VentanaVideo(QMainWindow):
 
     def proyectar(self):
         global proyectando, cerrarProyeccion
+        self.cambio_monitor(display_monitor-1)
         if(proyectando==False):
             proyectando = True
             self.ventanaProyeccion.show()
@@ -672,6 +689,7 @@ class VentanaVideo(QMainWindow):
             proyectando=False
             cerrarProyeccion = True
             ventanaProyeccion.close()
+        
 
     def configurar(self):
         self.controlWindow.show()

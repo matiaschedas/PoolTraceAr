@@ -1,8 +1,11 @@
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIntValidator, QIcon
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLineEdit, QLabel, QGridLayout, QPushButton, QCheckBox, QComboBox
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLineEdit, QLabel, QGridLayout, QPushButton, QCheckBox, QComboBox, QApplication
 import cv2
 import os
+import sys
+import ctypes
+
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -15,6 +18,13 @@ def obtener_webcams():
                 webcams.append(webcam_name)
                 cap.release()
         return webcams
+
+
+
+def obtener_numeros_monitores_conectados():
+    num_monitores = ctypes.windll.user32.GetSystemMetrics(80)  # 80 es el código para SM_CMONITORS
+    numeros_monitores = ["Monitor " + str(i + 1) for i in range(num_monitores)]
+    return numeros_monitores
 
 
 class ControlWindow(QMainWindow):
@@ -162,8 +172,11 @@ class ControlWindow(QMainWindow):
 
 
         webcams = obtener_webcams()
+        monitores = obtener_numeros_monitores_conectados()
+
         self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
         self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
+        self.comboMonitores = self.crear_combobox(monitores, 1290, 35, 100, 30, 0)
         self.labelNombrePreset = self.crear_label("Nombre archivo:", 1290,5,50,30)
         self.textNombrePreset = QLineEdit(self)
         
@@ -180,6 +193,7 @@ class ControlWindow(QMainWindow):
         layout.addWidget(self.textNombrePreset,8,3)
         layout.addWidget(self.comboCamaras,8,0)
         layout.addWidget(self.botonProyectar, 9, 0)
+        layout.addWidget(self.comboMonitores, 10, 0)
         layout.addWidget(self.botonConfigurarROI, 9, 1)
         layout.addWidget(self.botonPreprocesamientos, 9, 2)
         layout.addWidget(self.botonGuardarPreset,9,3)
@@ -193,6 +207,9 @@ class ControlWindow(QMainWindow):
     
     def obtenerComboCamaras(self):
         return self.comboCamaras
+    
+    def obtenerComboMonitores(self):
+        return self.comboMonitores
     
     def obtenerBotones(self):
         return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset
@@ -352,4 +369,12 @@ class ControlWindow(QMainWindow):
         self.minDist_text.setText(str(self.minDist))
         self.minDist_slider.setValue(self.minDist)
     
-      
+    
+# def main():
+#     app = QApplication(sys.argv)
+#     window = ControlWindow()
+#     window.show()
+#     sys.exit(app.exec_())
+
+# if __name__ == "__main__":
+#     main()
