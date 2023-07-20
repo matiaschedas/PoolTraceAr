@@ -185,13 +185,14 @@ class ControlWindow(QMainWindow):
         self.botonPreprocesamientos = self.crear_boton("Preprocesamientos", 1290, 125, 100, 30)
         self.botonGuardarPreset = self.crear_boton("Guardar Preset", 1290,125,100,30)
         self.botonCargarPreset = self.crear_boton("Cargar Preset", 1290,125,100, 30)
-
+        self.botonSetearIDS = self.crear_boton("Setear IDS", 1290,125,100,30)
 
 
         layout.addWidget(self.labelCamara,7,0)
         layout.addWidget(self.labelNombrePreset,7,3)
         layout.addWidget(self.textNombrePreset,8,3)
         layout.addWidget(self.comboCamaras,8,0)
+        layout.addWidget(self.botonSetearIDS,8,1)
         layout.addWidget(self.botonProyectar, 9, 0)
         layout.addWidget(self.comboMonitores, 10, 0)
         layout.addWidget(self.botonConfigurarROI, 9, 1)
@@ -212,7 +213,7 @@ class ControlWindow(QMainWindow):
         return self.comboMonitores
     
     def obtenerBotones(self):
-        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset
+        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonSetearIDS
 
     def crear_boton(self, texto, x, y, ancho, alto):
         boton = QPushButton(texto, self)

@@ -55,10 +55,12 @@ Alpha = 1
 Beta = 1
 Blur = 1
 
+N_PUNTOS_RASTRO = 50
+bolas= []
 # bloqueo del hilo1 desde el main
 bloqueo = threading.Lock()
 hilo1 = HiloEjemplo(bloqueo)
-
+setearIDS = False
 
 dp = 1  # El inverso de la resolución de acumulador. Por defecto es 1.
 # La distancia mínima entre los centros de los círculos detectados. Por defecto es 25.
@@ -269,7 +271,7 @@ class VentanaVideo(QMainWindow):
 
         self.init_ui()
         self.circlesProyeccion = None
-
+        self.rastros = []
         webcams = obtener_webcams()
         self.seguirActualizando = True
         self.ventanaProyeccion = ventanaProyeccion
@@ -328,7 +330,7 @@ class VentanaVideo(QMainWindow):
         # endregion
 
         #region creacion de interfaz
-        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset, self.botonCargarPreset = ventanaParametros.obtenerBotones()
+        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset, self.botonCargarPreset, self.botonSetearIDS = ventanaParametros.obtenerBotones()
         self.comboCamaras = ventanaParametros.obtenerComboCamaras()
         self.comboMonitores = ventanaParametros.obtenerComboMonitores()
         #self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
@@ -353,6 +355,7 @@ class VentanaVideo(QMainWindow):
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
         self.check2Tiros = self.crear_checkbox(80,820,50,30)
         self.check2Tiros.stateChanged.connect(self.dos_tiros)
+        self.botonSetearIDS.clicked.connect(self.SetearIDS)
 
         self.botonGuardarPreset.clicked.connect(self.guardar_preset)
         self.botonCargarPreset.clicked.connect(self.cargar_preset)
@@ -417,6 +420,11 @@ class VentanaVideo(QMainWindow):
         inicioHilos()
 
         self.actualizar_video()
+
+    def SetearIDS(self):
+        global setearIDS
+        setearIDS=True
+        print(f"Setear IDS {setearIDS}")
 
     def es_nombre_archivo_valido(self, texto):
         patron = r"^(?!^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$)[^\x00-\x1f\\?*:\";|/<>]+$"
@@ -779,6 +787,8 @@ class VentanaVideo(QMainWindow):
                         clickEnBola = True
                         bolaSeleccionada=(x,y,r)
                         self.resaltar_bola_seleccionada()
+                        #borrar cuando se llame donde corresponda:
+                        self.calcular_posibles_tiros()
         if clickEnBola == False and self.moverVertices == False:
             self.deseleccionar_bola()
 
@@ -791,6 +801,100 @@ class VentanaVideo(QMainWindow):
         global resaltarBola, bolaSeleccionada
         resaltarBola = False
         bolaSeleccionada = None
+
+    def obtener_troneras(self):
+        troneras = []
+        troneras.append(self.tronera1)
+        troneras.append(self.tronera2)
+        troneras.append(self.tronera3)
+        troneras.append(self.tronera4)
+        troneras.append(self.tronera5)
+        troneras.append(self.tronera6)
+        return troneras
+
+    def calcular_posibles_tiros(self):
+        global bolaSeleccionada
+        if bolaSeleccionada is None:
+            return
+        troneras = self.obtener_troneras()
+        tronerasPosibles = []
+        for tronera in troneras:
+            (xb,yb,rb)=bolaSeleccionada
+            (x,y)=tronera
+            vertices = []
+            vertices.append((xb-rb,yb))
+            vertices.append((xb+rb,yb))
+            vertices.append((x-rb,y))
+            vertices.append((x+rb,y))
+            posible = self.ningun_circulo_en_trapecio(self.circles,vertices)
+            if posible:
+                tronerasPosibles.append(tronera)
+            
+    def distancia_punto_recta(punto, linea):
+        x, y = punto
+        x1, y1 = linea[0]
+        x2, y2 = linea[1]
+        return abs((x2 - x1) * (y1 - y) - (x1 - x) * (y2 - y1)) / math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+    def ordenar_vertices(self, vertices):
+        # Ordena los vértices en sentido horario o antihorario
+        # Devuelve los vértices ordenados consecutivamente.
+
+        # Encontrar el vértice con menor coordenada x (izquierda) y el de mayor coordenada x (derecha)
+        izquierda = min(vertices, key=lambda vertex: vertex[0])
+        derecha = max(vertices, key=lambda vertex: vertex[0])
+
+        # Encontrar el vértice con menor coordenada y (abajo) y el de mayor coordenada y (arriba)
+        abajo = min(vertices, key=lambda vertex: vertex[1])
+        arriba = max(vertices, key=lambda vertex: vertex[1])
+
+        # Devolver los vértices ordenados consecutivamente.
+        return [izquierda, abajo, derecha, arriba]
+
+    def esta_dentro_trapecio(self, punto, vertices):
+        x, y = punto
+        vertices_ordenados = self.ordenar_vertices(vertices)
+
+        x1, y1 = vertices_ordenados[0]
+        x2, y2 = vertices_ordenados[1]
+        x3, y3 = vertices_ordenados[2]
+        x4, y4 = vertices_ordenados[3]
+
+        d1 = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1)
+        d2 = (x - x2) * (y3 - y2) - (y - y2) * (x3 - x2)
+        d3 = (x - x3) * (y4 - y3) - (y - y3) * (x4 - x3)
+        d4 = (x - x4) * (y1 - y4) - (y - y4) * (x1 - x4)
+
+        return d1 >= 0 and d2 >= 0 and d3 >= 0 and d4 >= 0
+
+    def ningun_circulo_en_trapecio(self, circles, vertices):
+        for circle in circles:
+            x_circulo, y_circulo, radio = circle
+
+            if not self.esta_dentro_trapecio((x_circulo, y_circulo), vertices):
+                # Comprobamos si el círculo está completamente fuera del trapecio
+                linea1 = (vertices[0], vertices[1])
+                linea2 = (vertices[1], vertices[2])
+                linea3 = (vertices[2], vertices[3])
+                linea4 = (vertices[3], vertices[0])
+
+                distancias = [
+                    self.distancia_punto_recta((x_circulo, y_circulo), linea1),
+                    self.distancia_punto_recta((x_circulo, y_circulo), linea2),
+                    self.distancia_punto_recta((x_circulo, y_circulo), linea3),
+                    self.distancia_punto_recta((x_circulo, y_circulo), linea4),
+                ]
+
+                if all(d > radio for d in distancias):
+                    # El círculo está completamente fuera del trapecio
+                    continue
+                else:
+                    return False
+
+        return True
+            
+   
+                        
 
     def mouseMoveEvent(self, event):
         if self.moverVertices and self.verticeSeleccionado is not None:
@@ -840,6 +944,38 @@ class VentanaVideo(QMainWindow):
             cv2.resizeWindow("Frame", ResolucionX, ResolucionY)
         return image
 
+    def agregar_o_actualizar_bola(self,x,y,r):
+        global bolas
+        actualizada = False
+        encontrada = False
+        for bola in bolas:
+            distancia = math.sqrt((bola.x- x)**2 + (bola.y-y)**2)
+            if distancia <= 30:
+                bola.actualizar_posicion(x,y,r)
+                actualizada = True
+                break
+        if actualizada==False:
+            bolas.append(Bola(x,y,r))
+        for bola in bolas:
+            for (xd,yd,rd) in self.circles:
+                distancia = math.sqrt((bola.x - xd)**2 + (bola.y - yd)**2)
+                if distancia <= 30:
+                    encontrada = True
+                    break
+            if encontrada == False:
+                 bolas.remove(bola)
+            encontrada = False
+
+    def obtener_id_bola(self,x,y):
+        global bolas
+        encontrada = False
+        for bola in bolas:
+            distancia = math.sqrt((bola.x- x)**2 + (bola.y-y)**2)
+            if distancia <= 4:
+                encontrada = True
+                return bola.id
+        if encontrada == False:
+            return -1
 
     def actualizar_video(self):
         if not self.seguirActualizando:
@@ -866,16 +1002,12 @@ class VentanaVideo(QMainWindow):
                 desplazamiento = int(math.sqrt(((radioTronera)**2)/2))
                 troneras = [(self.XIROI-desplazamiento, self.YIROI-desplazamiento), (self.XDROI+desplazamiento, self.YDROI+desplazamiento), (self.XIROI-desplazamiento, self.YDROI+desplazamiento),
                             (self.XDROI+desplazamiento, self.YIROI-desplazamiento), (self.XIROI+mitadMesa, self.YIROI-desplazamiento), (self.XIROI+mitadMesa, self.YDROI+desplazamiento)]
-                self.tronera2 = (self.XDROI+desplazamiento,
-                                 self.YDROI+desplazamiento)
-                self.tronera3 = (self.XIROI-desplazamiento,
-                                 self.YDROI+desplazamiento)
-                self.tronera4 = (self.XDROI+desplazamiento,
-                                 self.YIROI-desplazamiento)
-                self.tronera5 = (self.XIROI+mitadMesa,
-                                 self.YIROI-desplazamiento)
-                self.tronera6 = (self.XIROI+mitadMesa,
-                                 self.YDROI+desplazamiento)
+                self.tronera1 = (self.XIROI,self.YIROI)
+                self.tronera2 = (self.XDROI,self.YDROI)
+                self.tronera3 = (self.XIROI,self.YDROI)
+                self.tronera4 = (self.XDROI,self.YIROI)
+                self.tronera5 = (self.XIROI+mitadMesa,self.YIROI)
+                self.tronera6 = (self.XIROI+mitadMesa,self.YDROI)
                 for tronera in troneras:
                     cv2.circle(self.frame, tronera,
                                radioTronera, (255, 255, 0), 2)
@@ -911,20 +1043,37 @@ class VentanaVideo(QMainWindow):
                     radioProm = int((minRadius+maxRadius)/2)
                     algunaEstaSeleccionada = False
                     
+                    
+
+                    i=0
                     for (x, y, r) in self.circles:
+                        if(setearIDS):
+                            self.agregar_o_actualizar_bola(x,y,r)
                         # se dibujan los circulos en la interfaz:
                         xCircle = x + self.XIROI 
                         yCircle = y + self.YIROI 
                         cv2.circle(self.frame, (xCircle, yCircle),
                                    radioProm, (0, 255, 0), 2)
-                        
+                        id = self.obtener_id_bola(x,y)
+                        if id != -1:
+                            cv2.putText(self.frame, str(id),(xCircle,yCircle),cv2.FONT_HERSHEY_SIMPLEX, 2,(255,255,0),2)
                         if resaltarBola == True and bolaSeleccionada is not None:
                             (xs,ys,rs) = bolaSeleccionada
+                            (xTronera, yTronera) = self.tronera1
+                            #cv2.line(self.frame, self.tronera1, (xs,ys),(255,0,255),2)
+                            cv2.line(self.frame, (xTronera-rs,yTronera), (xs-rs,ys),(255,0,255),2)
+                            cv2.line(self.frame, (xTronera+rs,yTronera), (xs+rs,ys),(255,0,255),2)
+                            # cv2.line(self.frame, self.tronera2, (xs,ys),(255,0,255),2)
+                            # cv2.line(self.frame, self.tronera3, (xs,ys),(255,0,255),2)
+                            # cv2.line(self.frame, self.tronera4, (xs,ys),(255,0,255),2)
+                            # cv2.line(self.frame, self.tronera5, (xs,ys),(255,0,255),2)
+                            # cv2.line(self.frame, self.tronera6, (xs,ys),(255,0,255),2)
                             dist = np.sqrt((xCircle-xs)**2 + (yCircle-ys)**2)
                             if dist <=10:
                                 cv2.circle(self.frame, (xCircle, yCircle),
                                     radioProm+6, (0, 0, 255), 3)
                                 algunaEstaSeleccionada = True
+                        i+=1
                     if(algunaEstaSeleccionada == False):
                         bolaSeleccionada = None
                         resaltarBola = False
@@ -988,8 +1137,21 @@ def levantar_configuracion():
     computo = data["computo"]
     print(f"computo: {computo}")
 
-
-
+class Bola:
+    contador = 0  # Variable de clase para el ID autoincremental
+    
+    def __init__(self, x, y, r):
+        Bola.contador += 1
+        self.id = Bola.contador
+        self.x = x
+        self.y = y
+        self.r = r
+    
+    def actualizar_posicion(self, x, y, r):
+        self.x = x
+        self.y = y
+        self.r = r
+  
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
