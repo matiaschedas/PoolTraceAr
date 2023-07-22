@@ -418,7 +418,7 @@ class VentanaVideo(QMainWindow):
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.on_resize_timeout)
         inicioHilos()
-
+        self.poligonos = None
         self.actualizar_video()
 
     def SetearIDS(self):
@@ -814,6 +814,7 @@ class VentanaVideo(QMainWindow):
 
     def calcular_posibles_tiros(self):
         global bolaSeleccionada
+        self.poligonos = []
         if bolaSeleccionada is None:
             return
         troneras = self.obtener_troneras()
@@ -827,11 +828,28 @@ class VentanaVideo(QMainWindow):
             vertices.append((x-rb,y))
             vertices.append((x+rb,y))
             posible = self.ningun_circulo_en_trapecio(self.circles,vertices)
+            verticesOrdenados = self.ordenar_vertices(vertices)
+            puntos = np.array(verticesOrdenados, np.int32)
+            puntos = puntos.reshape((-1, 1, 2))
+            self.poligonos.append(puntos)
             if posible:
                 tronerasPosibles.append(tronera)
+    def ordenar_vertices(self, vertices):
+        # Encontrar el vértice con menor coordenada x (izquierda) y el de mayor coordenada x (derecha)
+        izquierda = min(vertices, key=lambda vertex: vertex[0])
+        derecha = max(vertices, key=lambda vertex: vertex[0])
+
+        # Encontrar el vértice con menor coordenada y (abajo) y el de mayor coordenada y (arriba)
+        abajo = min(vertices, key=lambda vertex: vertex[1])
+        arriba = max(vertices, key=lambda vertex: vertex[1])
+
+        # Devolver los vértices ordenados consecutivamente en sentido horario
+        ordenados = [izquierda, abajo, derecha, arriba]
+
+        # Convertir a un array numpy para facilitar la manipulación en OpenCV si es necesario
+        return np.array(ordenados)
             
-    def distancia_punto_recta(punto, linea):
-        x, y = punto
+    def distancia_punto_recta(self, x, y, linea):
         x1, y1 = linea[0]
         x2, y2 = linea[1]
         return abs((x2 - x1) * (y1 - y) - (x1 - x) * (y2 - y1)) / math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
@@ -866,7 +884,7 @@ class VentanaVideo(QMainWindow):
         d4 = (x - x4) * (y1 - y4) - (y - y4) * (x1 - x4)
 
         return d1 >= 0 and d2 >= 0 and d3 >= 0 and d4 >= 0
-
+    
     def ningun_circulo_en_trapecio(self, circles, vertices):
         for circle in circles:
             x_circulo, y_circulo, radio = circle
@@ -879,10 +897,10 @@ class VentanaVideo(QMainWindow):
                 linea4 = (vertices[3], vertices[0])
 
                 distancias = [
-                    self.distancia_punto_recta((x_circulo, y_circulo), linea1),
-                    self.distancia_punto_recta((x_circulo, y_circulo), linea2),
-                    self.distancia_punto_recta((x_circulo, y_circulo), linea3),
-                    self.distancia_punto_recta((x_circulo, y_circulo), linea4),
+                    self.distancia_punto_recta(x_circulo, y_circulo, linea1),
+                    self.distancia_punto_recta(x_circulo, y_circulo, linea2),
+                    self.distancia_punto_recta(x_circulo, y_circulo, linea3),
+                    self.distancia_punto_recta(x_circulo, y_circulo, linea4),
                 ]
 
                 if all(d > radio for d in distancias):
@@ -976,7 +994,28 @@ class VentanaVideo(QMainWindow):
                 return bola.id
         if encontrada == False:
             return -1
-
+    def eliminar_circulos_repetidos(self, circulos):
+    # Creamos un diccionario para agrupar los círculos por sus coordenadas (x, y).
+        circulos_dict = {}
+        
+        for x, y, radio in circulos:
+            # Redondeamos las coordenadas al entero más cercano dividido por 3 (margen).
+            # Esto nos permite agrupar los círculos que estén cerca.
+            x_key = round(x / 3)
+            y_key = round(y / 3)
+            
+            # Si no existe la clave en el diccionario, la creamos con el círculo actual.
+            if (x_key, y_key) not in circulos_dict:
+                circulos_dict[(x_key, y_key)] = (x, y, radio)
+            else:
+                # Si ya existe la clave, comparamos los radios y conservamos el círculo con el radio más grande.
+                if radio > circulos_dict[(x_key, y_key)][2]:
+                    circulos_dict[(x_key, y_key)] = (x, y, radio)
+        
+        # Convertimos los valores del diccionario de nuevo en una lista para obtener los círculos únicos.
+        círculos_únicos = list(circulos_dict.values())
+        
+        return círculos_únicos
     def actualizar_video(self):
         if not self.seguirActualizando:
             return
@@ -1026,7 +1065,7 @@ class VentanaVideo(QMainWindow):
             # Cargar el fotograma actual en el objeto cv2.cuda_GpuMat
             if(computo == "GPU"):
                 d_frame.upload(image)
-                self.circles = hough.detect(d_frame)
+                self.circles = hough.detect(d_frame)                
             elif (computo == "CPU"):
                 self.circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
             global circles_prev
@@ -1046,6 +1085,11 @@ class VentanaVideo(QMainWindow):
                     
 
                     i=0
+                    if(self.poligonos is not None):
+                        for poligono in self.poligonos:                            
+                            # Dibujamos el trapecio en la imagen
+                            cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
+                    self.circles  = self.eliminar_circulos_repetidos(self.circles)
                     for (x, y, r) in self.circles:
                         if(setearIDS):
                             self.agregar_o_actualizar_bola(x,y,r)
@@ -1120,6 +1164,7 @@ class VentanaVideo(QMainWindow):
             self.frame_count += 1
             # Establecer el tiempo de espera en base a los fps del video
             tiempo_espera = 1
+            
             QTimer.singleShot(tiempo_espera, self.actualizar_video)
 
     async def getCircles(self):
