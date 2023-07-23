@@ -1,3 +1,7 @@
 PyQt5
 opencv-python
 numpy
+pypiwin32
+pyautogui
+pywin32
+screeninfo
