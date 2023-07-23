@@ -810,12 +810,19 @@ class VentanaVideo(QMainWindow):
         tronera4 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
         tronera5 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
         tronera6 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
-        troneras.append(tronera1)
+        troneras.append(self.tronera1)
         troneras.append(self.tronera2)
         troneras.append(self.tronera3)
         troneras.append(self.tronera4)
         troneras.append(self.tronera5)
         troneras.append(self.tronera6)
+
+        # troneras.append(tronera1)
+        # troneras.append(tronera2)
+        # troneras.append(tronera3)
+        # troneras.append(tronera4)
+        # troneras.append(tronera5)
+        # troneras.append(tronera6)
         return troneras
 
     def calcular_posibles_tiros(self):
@@ -868,28 +875,75 @@ class VentanaVideo(QMainWindow):
         x2, y2 = punto2
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-    def esta_dentro_del_trapecio(self,trapecio, centro_circulo, radio_circulo):
-        # Calculamos la distancia entre el centro del círculo y los cuatro vértices del trapecio
-        distancias = [self.distancia_puntos(vertice, centro_circulo) for vertice in trapecio]
+    
+    def esta_dentro_del_trapecio(self, trapecio, centro_circulo, radio_circulo):
+        x, y = centro_circulo
+        x1, y1 = trapecio[0]
+        x2, y2 = trapecio[1]
+        x3, y3 = trapecio[2]
+        x4, y4 = trapecio[3]
 
-        # Si alguna distancia es menor que el radio del círculo, entonces el círculo intersecta el trapecio
-        if any(distancia < radio_circulo for distancia in distancias):
-            return True
+        # Función para calcular la distancia entre dos puntos
+        def distancia_entre_puntos(x1, y1, x2, y2):
+            return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
-        # Si todas las distancias son mayores que el radio del círculo, entonces el círculo está fuera del trapecio
-        if all(distancia > radio_circulo for distancia in distancias):
-            return False
+        # Proyectar el punto (x, y) sobre el segmento definido por los puntos (x1, y1) y (x2, y2)
+        def proyectar_punto_en_segmento(x, y, x1, y1, x2, y2):
+            vx, vy = x2 - x1, y2 - y1
+            wx, wy = x - x1, y - y1
+            c1 = max(0, min(vx * wx + vy * wy, vx * vx + vy * vy))
+            px = x1 + (c1 * vx) / (vx * vx + vy * vy)
+            py = y1 + (c1 * vy) / (vx * vx + vy * vy)
+            return px, py
 
-        # Si no se cumple ninguna de las condiciones anteriores, el círculo está parcialmente dentro del trapecio
-        return True
+        # Verificar si el centro del círculo está dentro de cada segmento definido por los lados del trapecio
+        proy_1 = proyectar_punto_en_segmento(x, y, x1, y1, x2, y2)
+        proy_2 = proyectar_punto_en_segmento(x, y, x2, y2, x3, y3)
+        proy_3 = proyectar_punto_en_segmento(x, y, x3, y3, x4, y4)
+        proy_4 = proyectar_punto_en_segmento(x, y, x4, y4, x1, y1)
+
+        # Verificar si las proyecciones están dentro del segmento que define cada lado
+        def esta_dentro_del_segmento(x, y, x1, y1, x2, y2):
+            return (min(x1, x2) <= x <= max(x1, x2) and min(y1, y2) <= y <= max(y1, y2))
+
+        if esta_dentro_del_segmento(*proy_1, x1, y1, x2, y2) and \
+        esta_dentro_del_segmento(*proy_2, x2, y2, x3, y3) and \
+        esta_dentro_del_segmento(*proy_3, x3, y3, x4, y4) and \
+        esta_dentro_del_segmento(*proy_4, x4, y4, x1, y1):
+
+            # Verificamos si está completamente dentro o parcialmente dentro
+            distancia_minima = min(
+                distancia_entre_puntos(x, y, x1, y1),
+                distancia_entre_puntos(x, y, x2, y2),
+                distancia_entre_puntos(x, y, x3, y3),
+                distancia_entre_puntos(x, y, x4, y4)
+            )
+
+            if distancia_minima <= radio_circulo:
+                # La distancia mínima es menor o igual al radio del círculo, entonces el círculo está parcialmente dentro del trapecio
+                return "Partially Inside"
+            else:
+                # El centro del círculo está completamente dentro del trapecio
+                return "Entirely Inside"
+        else:
+            # El centro del círculo está fuera del trapecio
+            return "Outside"
+
 
     def revisar_circulos(self,trapecio_vertices, circulos):
         trapecio_valido = True
         for circulo in circulos:
             x, y, radio = circulo
+            x=x+self.XIROI
+            y=y+self.YIROI
+            distancia = math.sqrt((bolaSeleccionada[0]-x)**2 + (bolaSeleccionada[1]-y)**2)
+            #se saltea a si misma (la seleccionada)
+            if distancia < radio + 1:
+                continue  
             centro_circulo = (x, y)
             print("Circulo :"+ str(centro_circulo) +" "+ self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio))
             print("Vertices de trapecio " + str(trapecio_vertices) )
+            print("Radio: "+str(radio))
             
             if self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio) != "Outside":
                 trapecio_valido = False
@@ -906,40 +960,36 @@ class VentanaVideo(QMainWindow):
         x3, y3 = trapecio[2]
         x4, y4 = trapecio[3]
 
-        # Calcula el área total del trapecio
-        area_total = self.calcular_area(x1, y1, x2, y2, x3, y3) + self.calcular_area(x1, y1, x4, y4, x3, y3)
+        # Función para calcular la distancia entre dos puntos
+        def distancia_entre_puntos(x1, y1, x2, y2):
+            return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
-        # Calcula las áreas de los triángulos formados por el centro del círculo y tres vértices del trapecio
-        area_punto_ab = self.calcular_area(x, y, x1, y1, x2, y2)
-        area_punto_bc = self.calcular_area(x, y, x2, y2, x3, y3)
-        area_punto_cd = self.calcular_area(x, y, x3, y3, x4, y4)
-        area_punto_da = self.calcular_area(x, y, x1, y1, x4, y4)
+        # Comprobar si el centro del círculo está dentro o sobre el trapecio
+        def punto_dentro_del_trapecio(x, y):
+            return (min(x1, x2) <= x <= max(x1, x2) and min(y1, y2) <= y <= max(y1, y2)) or \
+                (min(x2, x3) <= x <= max(x2, x3) and min(y2, y3) <= y <= max(y2, y3)) or \
+                (min(x3, x4) <= x <= max(x3, x4) and min(y3, y4) <= y <= max(y3, y4)) or \
+                (min(x4, x1) <= x <= max(x4, x1) and min(y4, y1) <= y <= max(y4, y1))
 
-        # Suma las áreas de los triángulos
-        suma_areas_triangulos = area_punto_ab + area_punto_bc + area_punto_cd + area_punto_da
-
-        # Compara la suma de las áreas de los triángulos con el área total del trapecio
-        # Usamos una pequeña tolerancia para tener en cuenta errores de punto flotante
-        tolerancia = 1e-6
-
-        if abs(suma_areas_triangulos - area_total) < tolerancia:
-            # El centro del círculo está dentro del trapecio, entonces el círculo está enteramente contenido en el trapecio
-            return "Entirely Inside"
-        else:
-            # El centro del círculo no está dentro del trapecio, verifica la distancia mínima a las líneas del trapecio
+        # Verificar si el centro del círculo está dentro o sobre el trapecio
+        if punto_dentro_del_trapecio(x, y):
+            # Verificamos si está completamente dentro o parcialmente dentro
             distancia_minima = min(
-                self.distancia_punto_a_linea(x, y, x1, y1, x2, y2),
-                self.distancia_punto_a_linea(x, y, x2, y2, x3, y3),
-                self.distancia_punto_a_linea(x, y, x3, y3, x4, y4),
-                self.distancia_punto_a_linea(x, y, x4, y4, x1, y1)
+                distancia_entre_puntos(x, y, x1, y1),
+                distancia_entre_puntos(x, y, x2, y2),
+                distancia_entre_puntos(x, y, x3, y3),
+                distancia_entre_puntos(x, y, x4, y4)
             )
 
             if distancia_minima <= radio_circulo:
                 # La distancia mínima es menor o igual al radio del círculo, entonces el círculo está parcialmente dentro del trapecio
                 return "Partially Inside"
             else:
-                # La distancia mínima es mayor al radio del círculo, entonces el círculo está completamente fuera del trapecio
-                return "Outside"
+                # El centro del círculo está completamente dentro del trapecio
+                return "Entirely Inside"
+        else:
+            # El centro del círculo está fuera del trapecio
+            return "Outside"
 
     def distancia_punto_a_linea(self,x, y, x1, y1, x2, y2):
         # Calcula la distancia entre el punto (x, y) y la línea definida por los puntos (x1, y1) y (x2, y2)
