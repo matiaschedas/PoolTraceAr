@@ -804,7 +804,13 @@ class VentanaVideo(QMainWindow):
 
     def obtener_troneras(self):
         troneras = []
-        troneras.append(self.tronera1)
+        tronera1 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
+        tronera2 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
+        tronera3 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
+        tronera4 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
+        tronera5 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
+        tronera6 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
+        troneras.append(tronera1)
         troneras.append(self.tronera2)
         troneras.append(self.tronera3)
         troneras.append(self.tronera4)
@@ -823,97 +829,122 @@ class VentanaVideo(QMainWindow):
             (xb,yb,rb)=bolaSeleccionada
             (x,y)=tronera
             vertices = []
-            vertices.append((xb-rb,yb))
-            vertices.append((xb+rb,yb))
-            vertices.append((x-rb,y))
-            vertices.append((x+rb,y))
-            posible = self.ningun_circulo_en_trapecio(self.circles,vertices)
-            verticesOrdenados = self.ordenar_vertices(vertices)
+            vertices.append((xb-maxRadius,yb))
+            vertices.append((xb+maxRadius,yb))
+            vertices.append((x-maxRadius,y))
+            vertices.append((x+maxRadius,y))
+            verticesOrdenados = self.sort_vertices(vertices)
             puntos = np.array(verticesOrdenados, np.int32)
-            puntos = puntos.reshape((-1, 1, 2))
-            self.poligonos.append(puntos)
+            puntos = puntos.reshape((-1, 1, 2))      
+            cv2.polylines(self.frame, [puntos], isClosed=True, color=(0, 255, 0), thickness=2)
+            cv2.imshow('Imagen', self.frame) 
+
+            posible = self.revisar_circulos(verticesOrdenados,self.circles)
+            puntos = np.array(verticesOrdenados, np.int32)
+            puntos = puntos.reshape((-1, 1, 2))            
             if posible:
+                self.poligonos.append(puntos)
                 tronerasPosibles.append(tronera)
-    def ordenar_vertices(self, vertices):
-        # Encontrar el vértice con menor coordenada x (izquierda) y el de mayor coordenada x (derecha)
-        izquierda = min(vertices, key=lambda vertex: vertex[0])
-        derecha = max(vertices, key=lambda vertex: vertex[0])
+                
+    def sort_vertices(self, vertices):
+        # Calcula el centroide del polígono
+        cx = int(sum(x for x, y in vertices) / len(vertices))
+        cy = int(sum(y for x, y in vertices) / len(vertices))
+        centroid = (cx, cy)
 
-        # Encontrar el vértice con menor coordenada y (abajo) y el de mayor coordenada y (arriba)
-        abajo = min(vertices, key=lambda vertex: vertex[1])
-        arriba = max(vertices, key=lambda vertex: vertex[1])
+        # Calcula los ángulos de los puntos respecto al centroide
+        angles = []
+        for x, y in vertices:
+            angle = np.arctan2(cy - y, cx - x)
+            angles.append(angle)
 
-        # Devolver los vértices ordenados consecutivamente en sentido horario
-        ordenados = [izquierda, abajo, derecha, arriba]
+        # Ordena los puntos en función de sus ángulos
+        sorted_vertices = [v for _, v in sorted(zip(angles, vertices), key=lambda x: x[0])]
 
-        # Convertir a un array numpy para facilitar la manipulación en OpenCV si es necesario
-        return np.array(ordenados)
-            
-    def distancia_punto_recta(self, x, y, linea):
-        x1, y1 = linea[0]
-        x2, y2 = linea[1]
-        return abs((x2 - x1) * (y1 - y) - (x1 - x) * (y2 - y1)) / math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        return sorted_vertices
 
-    def ordenar_vertices(self, vertices):
-        # Ordena los vértices en sentido horario o antihorario
-        # Devuelve los vértices ordenados consecutivamente.
+    def distancia_puntos(self,punto1, punto2):
+        x1, y1 = punto1
+        x2, y2 = punto2
+        return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-        # Encontrar el vértice con menor coordenada x (izquierda) y el de mayor coordenada x (derecha)
-        izquierda = min(vertices, key=lambda vertex: vertex[0])
-        derecha = max(vertices, key=lambda vertex: vertex[0])
+    def esta_dentro_del_trapecio(self,trapecio, centro_circulo, radio_circulo):
+        # Calculamos la distancia entre el centro del círculo y los cuatro vértices del trapecio
+        distancias = [self.distancia_puntos(vertice, centro_circulo) for vertice in trapecio]
 
-        # Encontrar el vértice con menor coordenada y (abajo) y el de mayor coordenada y (arriba)
-        abajo = min(vertices, key=lambda vertex: vertex[1])
-        arriba = max(vertices, key=lambda vertex: vertex[1])
+        # Si alguna distancia es menor que el radio del círculo, entonces el círculo intersecta el trapecio
+        if any(distancia < radio_circulo for distancia in distancias):
+            return True
 
-        # Devolver los vértices ordenados consecutivamente.
-        return [izquierda, abajo, derecha, arriba]
+        # Si todas las distancias son mayores que el radio del círculo, entonces el círculo está fuera del trapecio
+        if all(distancia > radio_circulo for distancia in distancias):
+            return False
 
-    def esta_dentro_trapecio(self, punto, vertices):
-        x, y = punto
-        vertices_ordenados = self.ordenar_vertices(vertices)
-
-        x1, y1 = vertices_ordenados[0]
-        x2, y2 = vertices_ordenados[1]
-        x3, y3 = vertices_ordenados[2]
-        x4, y4 = vertices_ordenados[3]
-
-        d1 = (x - x1) * (y2 - y1) - (y - y1) * (x2 - x1)
-        d2 = (x - x2) * (y3 - y2) - (y - y2) * (x3 - x2)
-        d3 = (x - x3) * (y4 - y3) - (y - y3) * (x4 - x3)
-        d4 = (x - x4) * (y1 - y4) - (y - y4) * (x1 - x4)
-
-        return d1 >= 0 and d2 >= 0 and d3 >= 0 and d4 >= 0
-    
-    def ningun_circulo_en_trapecio(self, circles, vertices):
-        for circle in circles:
-            x_circulo, y_circulo, radio = circle
-
-            if not self.esta_dentro_trapecio((x_circulo, y_circulo), vertices):
-                # Comprobamos si el círculo está completamente fuera del trapecio
-                linea1 = (vertices[0], vertices[1])
-                linea2 = (vertices[1], vertices[2])
-                linea3 = (vertices[2], vertices[3])
-                linea4 = (vertices[3], vertices[0])
-
-                distancias = [
-                    self.distancia_punto_recta(x_circulo, y_circulo, linea1),
-                    self.distancia_punto_recta(x_circulo, y_circulo, linea2),
-                    self.distancia_punto_recta(x_circulo, y_circulo, linea3),
-                    self.distancia_punto_recta(x_circulo, y_circulo, linea4),
-                ]
-
-                if all(d > radio for d in distancias):
-                    # El círculo está completamente fuera del trapecio
-                    continue
-                else:
-                    return False
-
+        # Si no se cumple ninguna de las condiciones anteriores, el círculo está parcialmente dentro del trapecio
         return True
-            
-   
-                        
 
+    def revisar_circulos(self,trapecio_vertices, circulos):
+        trapecio_valido = True
+        for circulo in circulos:
+            x, y, radio = circulo
+            centro_circulo = (x, y)
+            print("Circulo :"+ str(centro_circulo) +" "+ self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio))
+            print("Vertices de trapecio " + str(trapecio_vertices) )
+            
+            if self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio) != "Outside":
+                trapecio_valido = False
+                return trapecio_valido
+        return trapecio_valido
+    
+    def calcular_area(self,x1, y1, x2, y2, x3, y3):
+        return abs((x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)) / 2.0)
+
+    def esta_dentro_del_trapecio(self, trapecio, centro_circulo, radio_circulo):
+        x, y = centro_circulo
+        x1, y1 = trapecio[0]
+        x2, y2 = trapecio[1]
+        x3, y3 = trapecio[2]
+        x4, y4 = trapecio[3]
+
+        # Calcula el área total del trapecio
+        area_total = self.calcular_area(x1, y1, x2, y2, x3, y3) + self.calcular_area(x1, y1, x4, y4, x3, y3)
+
+        # Calcula las áreas de los triángulos formados por el centro del círculo y tres vértices del trapecio
+        area_punto_ab = self.calcular_area(x, y, x1, y1, x2, y2)
+        area_punto_bc = self.calcular_area(x, y, x2, y2, x3, y3)
+        area_punto_cd = self.calcular_area(x, y, x3, y3, x4, y4)
+        area_punto_da = self.calcular_area(x, y, x1, y1, x4, y4)
+
+        # Suma las áreas de los triángulos
+        suma_areas_triangulos = area_punto_ab + area_punto_bc + area_punto_cd + area_punto_da
+
+        # Compara la suma de las áreas de los triángulos con el área total del trapecio
+        # Usamos una pequeña tolerancia para tener en cuenta errores de punto flotante
+        tolerancia = 1e-6
+
+        if abs(suma_areas_triangulos - area_total) < tolerancia:
+            # El centro del círculo está dentro del trapecio, entonces el círculo está enteramente contenido en el trapecio
+            return "Entirely Inside"
+        else:
+            # El centro del círculo no está dentro del trapecio, verifica la distancia mínima a las líneas del trapecio
+            distancia_minima = min(
+                self.distancia_punto_a_linea(x, y, x1, y1, x2, y2),
+                self.distancia_punto_a_linea(x, y, x2, y2, x3, y3),
+                self.distancia_punto_a_linea(x, y, x3, y3, x4, y4),
+                self.distancia_punto_a_linea(x, y, x4, y4, x1, y1)
+            )
+
+            if distancia_minima <= radio_circulo:
+                # La distancia mínima es menor o igual al radio del círculo, entonces el círculo está parcialmente dentro del trapecio
+                return "Partially Inside"
+            else:
+                # La distancia mínima es mayor al radio del círculo, entonces el círculo está completamente fuera del trapecio
+                return "Outside"
+
+    def distancia_punto_a_linea(self,x, y, x1, y1, x2, y2):
+        # Calcula la distancia entre el punto (x, y) y la línea definida por los puntos (x1, y1) y (x2, y2)
+        return abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1) / math.sqrt((y2 - y1)**2 + (x2 - x1)**2)
+    
     def mouseMoveEvent(self, event):
         if self.moverVertices and self.verticeSeleccionado is not None:
             print(f"moviendo vertice: {self.verticeSeleccionado}")
@@ -1081,8 +1112,6 @@ class VentanaVideo(QMainWindow):
                     global bolaSeleccionada, resaltarBola, minRadius, maxRadius
                     radioProm = int((minRadius+maxRadius)/2)
                     algunaEstaSeleccionada = False
-                    
-                    
 
                     i=0
                     if(self.poligonos is not None):
@@ -1105,8 +1134,8 @@ class VentanaVideo(QMainWindow):
                             (xs,ys,rs) = bolaSeleccionada
                             (xTronera, yTronera) = self.tronera1
                             #cv2.line(self.frame, self.tronera1, (xs,ys),(255,0,255),2)
-                            cv2.line(self.frame, (xTronera-rs,yTronera), (xs-rs,ys),(255,0,255),2)
-                            cv2.line(self.frame, (xTronera+rs,yTronera), (xs+rs,ys),(255,0,255),2)
+                            # cv2.line(self.frame, (xTronera-rs,yTronera), (xs-rs,ys),(255,0,255),2)
+                            # cv2.line(self.frame, (xTronera+rs,yTronera), (xs+rs,ys),(255,0,255),2)
                             # cv2.line(self.frame, self.tronera2, (xs,ys),(255,0,255),2)
                             # cv2.line(self.frame, self.tronera3, (xs,ys),(255,0,255),2)
                             # cv2.line(self.frame, self.tronera4, (xs,ys),(255,0,255),2)
