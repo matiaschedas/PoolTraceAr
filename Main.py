@@ -804,25 +804,12 @@ class VentanaVideo(QMainWindow):
 
     def obtener_troneras(self):
         troneras = []
-        tronera1 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
-        tronera2 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
-        tronera3 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
-        tronera4 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
-        tronera5 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
-        tronera6 = (self.tronera1[0]-self.XIROI,self.tronera1[1]-self.YIROI)
         troneras.append(self.tronera1)
         troneras.append(self.tronera2)
         troneras.append(self.tronera3)
         troneras.append(self.tronera4)
         troneras.append(self.tronera5)
         troneras.append(self.tronera6)
-
-        # troneras.append(tronera1)
-        # troneras.append(tronera2)
-        # troneras.append(tronera3)
-        # troneras.append(tronera4)
-        # troneras.append(tronera5)
-        # troneras.append(tronera6)
         return troneras
 
     def calcular_posibles_tiros(self):
@@ -832,6 +819,7 @@ class VentanaVideo(QMainWindow):
             return
         troneras = self.obtener_troneras()
         tronerasPosibles = []
+        show = True
         for tronera in troneras:
             (xb,yb,rb)=bolaSeleccionada
             (x,y)=tronera
@@ -842,9 +830,11 @@ class VentanaVideo(QMainWindow):
             vertices.append((x+maxRadius,y))
             verticesOrdenados = self.sort_vertices(vertices)
             puntos = np.array(verticesOrdenados, np.int32)
-            puntos = puntos.reshape((-1, 1, 2))      
-            cv2.polylines(self.frame, [puntos], isClosed=True, color=(0, 255, 0), thickness=2)
-            cv2.imshow('Imagen', self.frame) 
+            puntos = puntos.reshape((-1, 1, 2))
+            if(show):
+                cv2.polylines(self.frame, [puntos], isClosed=True, color=(0, 255, 0), thickness=2)
+                cv2.imshow('Imagen', self.frame) 
+                show = False
 
             posible = self.revisar_circulos(verticesOrdenados,self.circles)
             puntos = np.array(verticesOrdenados, np.int32)
@@ -853,7 +843,8 @@ class VentanaVideo(QMainWindow):
                 self.poligonos.append(puntos)
                 tronerasPosibles.append(tronera)
                 
-    def sort_vertices(self, vertices):
+
+    def sort_vertices(self,vertices):
         # Calcula el centroide del polígono
         cx = int(sum(x for x, y in vertices) / len(vertices))
         cy = int(sum(y for x, y in vertices) / len(vertices))
@@ -865,10 +856,11 @@ class VentanaVideo(QMainWindow):
             angle = np.arctan2(cy - y, cx - x)
             angles.append(angle)
 
-        # Ordena los puntos en función de sus ángulos
-        sorted_vertices = [v for _, v in sorted(zip(angles, vertices), key=lambda x: x[0])]
-
+        # Ordena los puntos en función de sus ángulos y el producto cruzado con el vector (-1, 0)
+        sorted_vertices = [v for _, v in sorted(zip(angles, vertices), key=lambda x: (x[0], np.cross(centroid, x[1])))]
+        
         return sorted_vertices
+
 
     def distancia_puntos(self,punto1, punto2):
         x1, y1 = punto1
@@ -941,11 +933,11 @@ class VentanaVideo(QMainWindow):
             if distancia < radio + 1:
                 continue  
             centro_circulo = (x, y)
-            print("Circulo :"+ str(centro_circulo) +" "+ self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio))
+            print("Circulo :"+ str(centro_circulo) +" "+ str(self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio)))
             print("Vertices de trapecio " + str(trapecio_vertices) )
             print("Radio: "+str(radio))
             
-            if self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio) != "Outside":
+            if self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio):
                 trapecio_valido = False
                 return trapecio_valido
         return trapecio_valido
@@ -954,6 +946,12 @@ class VentanaVideo(QMainWindow):
         return abs((x1*(y2-y3) + x2*(y3-y1) + x3*(y1-y2)) / 2.0)
 
     def esta_dentro_del_trapecio(self, trapecio, centro_circulo, radio_circulo):
+        x, y = centro_circulo
+        if (self.punto_dentro_del_trapecio(trapecio,(x,y))== False):
+            return self.circulo_barely_inside_trapecio(trapecio,centro_circulo,radio_circulo)
+        else:
+            return True
+    def circulo_barely_inside_trapecio(self, trapecio, centro_circulo, radio_circulo):
         x, y = centro_circulo
         x1, y1 = trapecio[0]
         x2, y2 = trapecio[1]
@@ -964,32 +962,60 @@ class VentanaVideo(QMainWindow):
         def distancia_entre_puntos(x1, y1, x2, y2):
             return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
-        # Comprobar si el centro del círculo está dentro o sobre el trapecio
-        def punto_dentro_del_trapecio(x, y):
-            return (min(x1, x2) <= x <= max(x1, x2) and min(y1, y2) <= y <= max(y1, y2)) or \
-                (min(x2, x3) <= x <= max(x2, x3) and min(y2, y3) <= y <= max(y2, y3)) or \
-                (min(x3, x4) <= x <= max(x3, x4) and min(y3, y4) <= y <= max(y3, y4)) or \
-                (min(x4, x1) <= x <= max(x4, x1) and min(y4, y1) <= y <= max(y4, y1))
+        # Función para calcular la distancia mínima entre un punto (x, y) y un segmento definido por dos puntos (x1, y1) y (x2, y2)
+        def distancia_minima_punto_segmento(x, y, x1, y1, x2, y2):
+            A = x - x1
+            B = y - y1
+            C = x2 - x1
+            D = y2 - y1
 
-        # Verificar si el centro del círculo está dentro o sobre el trapecio
-        if punto_dentro_del_trapecio(x, y):
-            # Verificamos si está completamente dentro o parcialmente dentro
-            distancia_minima = min(
-                distancia_entre_puntos(x, y, x1, y1),
-                distancia_entre_puntos(x, y, x2, y2),
-                distancia_entre_puntos(x, y, x3, y3),
-                distancia_entre_puntos(x, y, x4, y4)
-            )
+            dot = A * C + B * D
+            len_sq = C * C + D * D
+            param = dot / len_sq
 
-            if distancia_minima <= radio_circulo:
-                # La distancia mínima es menor o igual al radio del círculo, entonces el círculo está parcialmente dentro del trapecio
-                return "Partially Inside"
+            if param < 0:
+                xx = x1
+                yy = y1
+            elif param > 1:
+                xx = x2
+                yy = y2
             else:
-                # El centro del círculo está completamente dentro del trapecio
-                return "Entirely Inside"
+                xx = x1 + param * C
+                yy = y1 + param * D
+
+            dx = x - xx
+            dy = y - yy
+            return (dx ** 2 + dy ** 2) ** 0.5
+
+        # Calcular las distancias mínimas desde el centro del círculo a cada uno de los lados del trapecio
+        distancias_minimas = [
+            distancia_minima_punto_segmento(x, y, x1, y1, x2, y2),
+            distancia_minima_punto_segmento(x, y, x2, y2, x3, y3),
+            distancia_minima_punto_segmento(x, y, x3, y3, x4, y4),
+            distancia_minima_punto_segmento(x, y, x4, y4, x1, y1)
+        ]
+
+        # Verificar si la distancia mínima es mayor que el radio del círculo
+        distancia_minima = min(distancias_minimas)
+        if distancia_minima > radio_circulo:
+            return False
         else:
-            # El centro del círculo está fuera del trapecio
-            return "Outside"
+            return True
+
+
+
+    def punto_dentro_del_trapecio(self,trapecio, punto):
+        x, y = punto
+        vertices = trapecio + [trapecio[0]]  # Añadir el primer vértice al final para cerrar el trapecio
+
+        def producto_cruzado(p1, p2, p3):
+            return (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0])
+
+        # Verificar si el punto está dentro del trapecio
+        for i in range(4):
+            if producto_cruzado(vertices[i], vertices[i + 1], (x, y)) < 0:
+                return False
+        return True
 
     def distancia_punto_a_linea(self,x, y, x1, y1, x2, y2):
         # Calcula la distancia entre el punto (x, y) y la línea definida por los puntos (x1, y1) y (x2, y2)
