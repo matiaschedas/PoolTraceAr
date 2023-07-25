@@ -419,6 +419,7 @@ class VentanaVideo(QMainWindow):
         self.resize_timer.timeout.connect(self.on_resize_timeout)
         inicioHilos()
         self.poligonos = None
+        self.poligonosImposibles = None
         self.actualizar_video()
 
     def SetearIDS(self):
@@ -788,7 +789,7 @@ class VentanaVideo(QMainWindow):
                         bolaSeleccionada=(x,y,r)
                         self.resaltar_bola_seleccionada()
                         #borrar cuando se llame donde corresponda:
-                        self.calcular_posibles_tiros()
+                        tronerasPosibles = self.calcular_posibles_troneras()
         if clickEnBola == False and self.moverVertices == False:
             self.deseleccionar_bola()
 
@@ -811,10 +812,37 @@ class VentanaVideo(QMainWindow):
         troneras.append(self.tronera5)
         troneras.append(self.tronera6)
         return troneras
+    
+    def distance_between_points(self, punto1, punto2):
+        x1, y1 = punto1
+        x2, y2 = punto2
+        return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-    def calcular_posibles_tiros(self):
+    def parallel_line(self, punto1, punto2, distancia):
+        # Desempaquetar los puntos en coordenadas (x, y)
+        x1, y1 = punto1
+        x2, y2 = punto2
+
+        # Calcular la longitud y dirección de la línea original
+        original_length = self.distance_between_points(punto1, punto2)
+        dx = (x2 - x1) / original_length
+        dy = (y2 - y1) / original_length
+
+        # Calcular los nuevos puntos de la recta paralela desplazada
+        new_x1 = x1 + distancia * dy
+        new_y1 = y1 - distancia * dx
+        new_x2 = x2 + distancia * dy
+        new_y2 = y2 - distancia * dx
+
+        new_punto1 = (new_x1, new_y1)
+        new_punto2 = (new_x2, new_y2)
+        # Devolver los dos puntos de la nueva recta paralela desplazada
+        return new_punto1, new_punto2
+
+    def calcular_posibles_troneras(self):
         global bolaSeleccionada
         self.poligonos = []
+        self.poligonosImposibles = []
         if bolaSeleccionada is None:
             return
         troneras = self.obtener_troneras()
@@ -824,17 +852,27 @@ class VentanaVideo(QMainWindow):
             (xb,yb,rb)=bolaSeleccionada
             (x,y)=tronera
             vertices = []
-            vertices.append((xb-maxRadius,yb))
-            vertices.append((xb+maxRadius,yb))
-            vertices.append((x-maxRadius,y))
-            vertices.append((x+maxRadius,y))
+
+            (xp1,yp1), (xp2,yp2) = self.parallel_line((xb,yb),(x,y),rb)
+            (xp3,yp3), (xp4,yp4) = self.parallel_line((xb,yb),(x,y),-rb)
+
+            vertices.append((xp1,yp1))
+            vertices.append((xp2,yp2))
+            vertices.append((xp3,yp3))
+            vertices.append((xp4,yp4))
+
+            # vertices.append((xb-maxRadius,yb))
+            # vertices.append((xb+maxRadius,yb))
+            # vertices.append((x-maxRadius,y))
+            # vertices.append((x+maxRadius,y))
+
             verticesOrdenados = self.sort_vertices(vertices)
             puntos = np.array(verticesOrdenados, np.int32)
             puntos = puntos.reshape((-1, 1, 2))
-            if(show):
-                cv2.polylines(self.frame, [puntos], isClosed=True, color=(0, 255, 0), thickness=2)
-                cv2.imshow('Imagen', self.frame) 
-                show = False
+            # if(show):
+            #     cv2.polylines(self.frame, [puntos], isClosed=True, color=(0, 255, 0), thickness=2)
+            #     cv2.imshow('Imagen', self.frame) 
+            #     show = False
 
             posible = self.revisar_circulos(verticesOrdenados,self.circles)
             puntos = np.array(verticesOrdenados, np.int32)
@@ -842,7 +880,9 @@ class VentanaVideo(QMainWindow):
             if posible:
                 self.poligonos.append(puntos)
                 tronerasPosibles.append(tronera)
-                
+            else:
+                self.poligonosImposibles.append(puntos)
+        return tronerasPosibles        
 
     def sort_vertices(self,vertices):
         # Calcula el centroide del polígono
@@ -1194,6 +1234,10 @@ class VentanaVideo(QMainWindow):
                         for poligono in self.poligonos:                            
                             # Dibujamos el trapecio en la imagen
                             cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
+                    if(self.poligonosImposibles is not None):
+                        for poligono in self.poligonosImposibles:
+                            cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
+
                     self.circles  = self.eliminar_circulos_repetidos(self.circles)
                     for (x, y, r) in self.circles:
                         if(setearIDS):
