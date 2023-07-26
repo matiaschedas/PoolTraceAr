@@ -26,9 +26,9 @@ screen_width, screen_height = pyautogui.size()
 
 computo = None
 
-ResolucionX = (int)(screen_width*0.8)
-ResolucionY = (int)(screen_height*0.8)
-resoluciones = [(426, 240), (640, 360), (800, 450), (896, 504), (912, 513), (928, 522), (960, 540), (1024, 576), (1136, 640),
+ResolucionX = 1280
+ResolucionY = 720
+resoluciones = [(426, 240), (640, 360), (800, 450), (896, 504), (912, 513), (928, 522), (960, 540), (1024, 576), (1152, 648),
                 (1200, 675), (1248, 702), (1280, 720), (1440, 810), (1520, 855), (1560, 877), (1584, 891), (1600, 900), (1680, 945), (1920, 1080)]
 radios       = [(4, 5), (5, 6), (6, 7), (7, 8),
           (8, 9), (9, 10), (10, 11), (11, 12),(12,13),(13,14),(14,15),(15,16),(16,17),(17,18),(18,19),(19,20),(20,21),(21,22),(22,23)]
@@ -78,6 +78,7 @@ maxCircles = 100
 hough = None
 d_frame = None
 d_circles = None
+alpha = 0.0
 
 def iniciar_GPU():
     global hough,d_frame,d_circles
@@ -420,6 +421,7 @@ class VentanaVideo(QMainWindow):
         inicioHilos()
         self.poligonos = None
         self.poligonosImposibles = None
+        self.tronerasPosibles = None
         self.actualizar_video()
 
     def SetearIDS(self):
@@ -789,7 +791,7 @@ class VentanaVideo(QMainWindow):
                         bolaSeleccionada=(x,y,r)
                         self.resaltar_bola_seleccionada()
                         #borrar cuando se llame donde corresponda:
-                        tronerasPosibles = self.calcular_posibles_troneras()
+                        self.tronerasPosibles = self.calcular_posibles_troneras()
         if clickEnBola == False and self.moverVertices == False:
             self.deseleccionar_bola()
 
@@ -847,7 +849,6 @@ class VentanaVideo(QMainWindow):
             return
         troneras = self.obtener_troneras()
         tronerasPosibles = []
-        show = True
         for tronera in troneras:
             (xb,yb,rb)=bolaSeleccionada
             (x,y)=tronera
@@ -861,18 +862,9 @@ class VentanaVideo(QMainWindow):
             vertices.append((xp3,yp3))
             vertices.append((xp4,yp4))
 
-            # vertices.append((xb-maxRadius,yb))
-            # vertices.append((xb+maxRadius,yb))
-            # vertices.append((x-maxRadius,y))
-            # vertices.append((x+maxRadius,y))
-
             verticesOrdenados = self.sort_vertices(vertices)
             puntos = np.array(verticesOrdenados, np.int32)
             puntos = puntos.reshape((-1, 1, 2))
-            # if(show):
-            #     cv2.polylines(self.frame, [puntos], isClosed=True, color=(0, 255, 0), thickness=2)
-            #     cv2.imshow('Imagen', self.frame) 
-            #     show = False
 
             posible = self.revisar_circulos(verticesOrdenados,self.circles)
             puntos = np.array(verticesOrdenados, np.int32)
@@ -1230,13 +1222,7 @@ class VentanaVideo(QMainWindow):
                     algunaEstaSeleccionada = False
 
                     i=0
-                    if(self.poligonos is not None):
-                        for poligono in self.poligonos:                            
-                            # Dibujamos el trapecio en la imagen
-                            cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
-                    if(self.poligonosImposibles is not None):
-                        for poligono in self.poligonosImposibles:
-                            cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
+                   
 
                     self.circles  = self.eliminar_circulos_repetidos(self.circles)
                     for (x, y, r) in self.circles:
@@ -1253,19 +1239,35 @@ class VentanaVideo(QMainWindow):
                         if resaltarBola == True and bolaSeleccionada is not None:
                             (xs,ys,rs) = bolaSeleccionada
                             (xTronera, yTronera) = self.tronera1
-                            #cv2.line(self.frame, self.tronera1, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, (xTronera-rs,yTronera), (xs-rs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, (xTronera+rs,yTronera), (xs+rs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera2, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera3, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera4, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera5, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera6, (xs,ys),(255,0,255),2)
                             dist = np.sqrt((xCircle-xs)**2 + (yCircle-ys)**2)
                             if dist <=10:
                                 cv2.circle(self.frame, (xCircle, yCircle),
                                     radioProm+6, (0, 0, 255), 3)
                                 algunaEstaSeleccionada = True
+                            
+                            ## Dibujo de los trapecios posibles y no posibles:
+                            # if(self.poligonos is not None):
+                            #     for poligono in self.poligonos:                            
+                            #         Dibujamos el trapecio en la imagen
+                            #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
+                            # if(self.poligonosImposibles is not None):
+                            #     for poligono in self.poligonosImposibles:
+                            #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
+
+                            #Dibujo de las troneras posibles:
+                            if self.tronerasPosibles is not None:
+                                elapsed_time = time.time() - start_time
+                                global alpha
+                                frequency = 2.0 
+                                amplitude = 0.5 
+                                alpha = 0.5 + amplitude + np.sin(2 * np.pi * frequency * elapsed_time)
+
+                                temp_frame = self.frame.copy()
+                                for tronera in self.tronerasPosibles:
+                                    (xtp, ytp) = tronera
+                                    cv2.circle(temp_frame, (xtp,ytp), maxRadius, (0, 255, 0), -1)
+                                cv2.addWeighted(temp_frame, alpha, self.frame, 1 - alpha, 0, self.frame)                   
+                                
                         i+=1
                     if(algunaEstaSeleccionada == False):
                         bolaSeleccionada = None
