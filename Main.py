@@ -26,9 +26,9 @@ screen_width, screen_height = pyautogui.size()
 
 computo = None
 
-ResolucionX = (int)(screen_width*0.8)
-ResolucionY = (int)(screen_height*0.8)
-resoluciones = [(426, 240), (640, 360), (800, 450), (896, 504), (912, 513), (928, 522), (960, 540), (1024, 576), (1136, 640),
+ResolucionX = 1280
+ResolucionY = 720
+resoluciones = [(426, 240), (640, 360), (800, 450), (896, 504), (912, 513), (928, 522), (960, 540), (1024, 576), (1152, 648),
                 (1200, 675), (1248, 702), (1280, 720), (1440, 810), (1520, 855), (1560, 877), (1584, 891), (1600, 900), (1680, 945), (1920, 1080)]
 radios       = [(4, 5), (5, 6), (6, 7), (7, 8),
           (8, 9), (9, 10), (10, 11), (11, 12),(12,13),(13,14),(14,15),(15,16),(16,17),(17,18),(18,19),(19,20),(20,21),(21,22),(22,23)]
@@ -610,6 +610,9 @@ class VentanaVideo(QMainWindow):
 
     def encontrar_resolucion(self, resoluciones, ResolucionX, ResolucionY):
         print(f"resX: {ResolucionX} resY: {ResolucionY}")
+        ancho, alto = resoluciones[len(resoluciones)-1]
+        if(ResolucionX > ancho or ResolucionY > alto):
+            return resoluciones[len(resoluciones)-1]
         for i in range(len(resoluciones)):
             ancho, alto = resoluciones[i]
             if ResolucionX > ancho and ResolucionY-tamPanelBotones > alto:
