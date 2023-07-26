@@ -612,6 +612,9 @@ class VentanaVideo(QMainWindow):
 
     def encontrar_resolucion(self, resoluciones, ResolucionX, ResolucionY):
         print(f"resX: {ResolucionX} resY: {ResolucionY}")
+        ancho, alto = resoluciones[len(resoluciones)-1]
+        if(ResolucionX > ancho or ResolucionY > alto):
+            return resoluciones[len(resoluciones)-1]
         for i in range(len(resoluciones)):
             ancho, alto = resoluciones[i]
             if ResolucionX > ancho and ResolucionY-tamPanelBotones > alto:
