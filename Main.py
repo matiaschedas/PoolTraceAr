@@ -807,7 +807,7 @@ class VentanaVideo(QMainWindow):
                         pathCaptura = script_dir + "/Capturas/" + nombre_archivo
                         pathOutput = script_dir + "/Capturas/Bolas/" 
                         cv2.imwrite(pathCaptura, roi)
-                        ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
+                        ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
                         self.tronerasPosibles = self.calcular_posibles_troneras()
 
         if clickEnBola == False and self.moverVertices == False:

@@ -1,12 +1,13 @@
 from PIL import Image, ImageDraw
 import os
-
+from datetime import datetime
 
 def crop_circles(image_path, coordinates, output_dir):
-    try:
         # Cargamos la imagen original
         image = Image.open(image_path)
         margin = 5
+        id=0
+        listaApareada = []
         # Iteramos sobre las coordenadas para recortar círculos
         for i, (x, y, r) in enumerate(coordinates):
             left = x - r - margin
@@ -26,13 +27,17 @@ def crop_circles(image_path, coordinates, output_dir):
             crop.putalpha(mask)
 
             # Guardamos el recorte como una imagen individual
-            output_path = f"{output_dir}/crop_{i+1}.png"
+            fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+            id=id+1
+            nombreBola = "crop_"+ str(id)+ "_" + fecha_hora_actual + ".png"
+            output_path = f"{output_dir}/" + nombreBola
             crop.save(output_path)
+            listaApareada.append(((x,y,r), nombreBola))
 
         print("Círculos recortados y guardados como imágenes individuales en:", output_dir)
         os.remove(image_path)
-    except Exception as e:
-        print("Error:", str(e))
+        return listaApareada
+
 
 
 if __name__ == "__main__":
