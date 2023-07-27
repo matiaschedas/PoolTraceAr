@@ -21,6 +21,8 @@ import os
 import sys
 import json
 from screeninfo import get_monitors
+from datetime import datetime
+import ImageProcessor
 
 screen_width, screen_height = pyautogui.size()
 
@@ -205,7 +207,7 @@ class HiloProyeccion(threading.Thread):
         super().__init__()
         self.detener = False
         self.bloqueo = bloqueo
-        self.hora_inicio = datetime.datetime.now()
+        self.hora_inicio = datetime.now()
         self.ventanaProyeccion = ventanaProyeccion
         self.actualizar_interfaz = False
         self.circles = None
@@ -422,6 +424,7 @@ class VentanaVideo(QMainWindow):
         self.poligonos = None
         self.poligonosImposibles = None
         self.tronerasPosibles = None
+        self.roiRAW = None
         self.actualizar_video()
 
     def SetearIDS(self):
@@ -793,8 +796,20 @@ class VentanaVideo(QMainWindow):
                         clickEnBola = True
                         bolaSeleccionada=(x,y,r)
                         self.resaltar_bola_seleccionada()
+
                         #borrar cuando se llame donde corresponda:
+                        fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+                             # Construir el nombre del archivo
+                        nombre_archivo = f"Mesa_{fecha_hora_actual}.png"
+                        ret, frame = self.cap.read()
+                        roi = frame[self.YIROI:self.YDROI 
+                             , self.XIROI:self.XDROI]
+                        pathCaptura = script_dir + "/Capturas/" + nombre_archivo
+                        pathOutput = script_dir + "/Capturas/Bolas/" 
+                        cv2.imwrite(pathCaptura, roi)
+                        ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
                         self.tronerasPosibles = self.calcular_posibles_troneras()
+
         if clickEnBola == False and self.moverVertices == False:
             self.deseleccionar_bola()
 
@@ -1173,6 +1188,7 @@ class VentanaVideo(QMainWindow):
 
             roi = self.frame[self.YIROI:self.YDROI 
                              , self.XIROI:self.XDROI]
+            
             if self.verROI:
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
                               (self.XDROI, self.YDROI), (0, 255, 0), 2)
@@ -1248,28 +1264,28 @@ class VentanaVideo(QMainWindow):
                                     radioProm+6, (0, 0, 255), 3)
                                 algunaEstaSeleccionada = True
                             
-                            ## Dibujo de los trapecios posibles y no posibles:
-                            # if(self.poligonos is not None):
-                            #     for poligono in self.poligonos:                            
-                            #         Dibujamos el trapecio en la imagen
-                            #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
-                            # if(self.poligonosImposibles is not None):
-                            #     for poligono in self.poligonosImposibles:
-                            #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
+                            # Dibujo de los trapecios posibles y no posibles:
+                            if(self.poligonos is not None):
+                                for poligono in self.poligonos:                            
+                                    #Dibujamos el trapecio en la imagen
+                                    cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
+                            if(self.poligonosImposibles is not None):
+                                for poligono in self.poligonosImposibles:
+                                    cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
 
-                            #Dibujo de las troneras posibles:
-                            if self.tronerasPosibles is not None:
-                                elapsed_time = time.time() - start_time
-                                global alpha
-                                frequency = 2.0 
-                                amplitude = 0.5 
-                                alpha = 0.5 + amplitude + np.sin(2 * np.pi * frequency * elapsed_time)
+                            # #Dibujo de las troneras posibles: (esto esta bueno pero lagea)
+                            # if self.tronerasPosibles is not None:
+                            #     elapsed_time = time.time() - start_time
+                            #     global alpha
+                            #     frequency = 2.0 
+                            #     amplitude = 0.5 
+                            #     alpha = 0.5 + amplitude + np.sin(2 * np.pi * frequency * elapsed_time)
 
-                                temp_frame = self.frame.copy()
-                                for tronera in self.tronerasPosibles:
-                                    (xtp, ytp) = tronera
-                                    cv2.circle(temp_frame, (xtp,ytp), maxRadius, (0, 255, 0), -1)
-                                cv2.addWeighted(temp_frame, alpha, self.frame, 1 - alpha, 0, self.frame)                   
+                            #     temp_frame = self.frame.copy()
+                            #     for tronera in self.tronerasPosibles:
+                            #         (xtp, ytp) = tronera
+                            #         cv2.circle(temp_frame, (xtp,ytp), maxRadius, (0, 255, 0), -1)
+                            #     cv2.addWeighted(temp_frame, alpha, self.frame, 1 - alpha, 0, self.frame)                   
                                 
                         i+=1
                     if(algunaEstaSeleccionada == False):
