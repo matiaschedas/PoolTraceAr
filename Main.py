@@ -450,6 +450,10 @@ class VentanaVideo(QMainWindow):
         valido = self.es_nombre_archivo_valido(nombreArchivo)
         if valido:
             nombreArchivo = nombreArchivo + ".json"
+            carpeta = Path(script_dir + '/presets/')
+            if not carpeta.exists():
+            # Creamos la carpeta
+                carpeta.mkdir(parents=True, exist_ok=True)
             path = script_dir + "\\presets\\" + nombreArchivo
             datos = {
                 "dp": dp,
@@ -1199,7 +1203,7 @@ class VentanaVideo(QMainWindow):
                     # Verificamos si la carpeta no existe
                     if not carpeta.exists():
                         # Creamos la carpeta
-                        carpeta.mkdir(parents=True, exist_ok=True)                    
+                        carpeta.mkdir(parents=True, exist_ok=True)
                         
                     pathCaptura = script_dir + "/Capturas/" + nombre_archivo
                     pathOutput = script_dir + "/Capturas/Bolas/" 
