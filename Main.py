@@ -1204,6 +1204,8 @@ class VentanaVideo(QMainWindow):
                     if not carpeta.exists():
                         # Creamos la carpeta
                         carpeta.mkdir(parents=True, exist_ok=True)
+                        carpeta = Path(script_dir + '/Capturas/Bolas/')
+                        carpeta.mkdir(parents=True, exist_ok=True)
                         
                     pathCaptura = script_dir + "/Capturas/" + nombre_archivo
                     pathOutput = script_dir + "/Capturas/Bolas/" 
@@ -1228,8 +1230,12 @@ class VentanaVideo(QMainWindow):
                     self.etiquetando = False
                     with variable_compartida_lock:
                         listaEtiquetada = ListaApareadaConEtiquetas
-            
-
+                    if( listaEtiquetada is not None ):
+                        #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
+                        if( self.cambiaron_bolas_previo_al_tiro( listaEtiquetada , self.circles ) ):
+                            print("Error, las bolas cambiaron de posicion.")
+                        listaEtiquetada = None
+                            
 
             if self.verROI:
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
@@ -1381,7 +1387,23 @@ class VentanaVideo(QMainWindow):
 
     async def getCircles(self):
         return self.circlesProyeccion
-
+    
+    def cambiaron_bolas_previo_al_tiro(self, listaEtiquetadas, actuales):
+        lista2_set = set(actuales)        
+        encontrado = False
+        if( len(lista2_set) != len(listaEtiquetadas)):
+            return True
+        for (x1,y1,r1), _, _ in listaEtiquetadas:
+            for (x2,y2,r2) in lista2_set:
+                if  math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) <= r1: 
+                    encontrado = True
+                    break
+            if(encontrado == False):
+                #Cambiaron bolas previo al tiro, por eso no se encontro la bola
+                return True
+            encontrado = False
+        #Devolvemos false porque no cambiaron las bolas previo al tiro y todas fueron encontradas                         
+        return False
 
 resXProy = 1080
 resYProy = 1920
