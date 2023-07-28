@@ -11,7 +11,8 @@ import time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter, QFileDialog, QDesktopWidget
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QWindow, QScreen, QGuiApplication
 from PyQt5.QtCore import Qt, QTimer, QEvent
-from fchola import HiloEjemplo
+from HiloEtiquetador import ListaApareadaConEtiquetas, variable_compartida_lock
+from HiloEtiquetador import Etiquetar
 from Clases.ControlWindow import ControlWindow
 from Clases.PreprocesamientoWindow import PreprocesamientoWindow
 import win32con
@@ -61,7 +62,7 @@ N_PUNTOS_RASTRO = 50
 bolas= []
 # bloqueo del hilo1 desde el main
 bloqueo = threading.Lock()
-hilo1 = HiloEjemplo(bloqueo)
+
 setearIDS = False
 
 dp = 1  # El inverso de la resolución de acumulador. Por defecto es 1.
@@ -808,6 +809,13 @@ class VentanaVideo(QMainWindow):
                         pathOutput = script_dir + "/Capturas/Bolas/" 
                         cv2.imwrite(pathCaptura, roi)
                         ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
+                        hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada))
+                        hiloEtiquetador.start()
+                        hiloEtiquetador.join()
+                        with variable_compartida_lock:
+                            listaEtiquetada = ListaApareadaConEtiquetas
+                        
+
                         self.tronerasPosibles = self.calcular_posibles_troneras()
 
         if clickEnBola == False and self.moverVertices == False:
