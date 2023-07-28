@@ -103,7 +103,7 @@ def inicioHilos():
 
 
 def pararHilos():
-    hilo1.detener_hilo()
+    
     hiloProyeccion.detener_hilo()
 
 
@@ -253,6 +253,11 @@ class VentanaVideo(QMainWindow):
     def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow):
         super().__init__()
         global script_dir 
+
+        self.hiloEtiquetador = None
+        self.etiquetar = False
+        self.etiquetando = False
+
         self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
@@ -797,25 +802,8 @@ class VentanaVideo(QMainWindow):
                         clickEnBola = True
                         bolaSeleccionada=(x,y,r)
                         self.resaltar_bola_seleccionada()
-
-                        #borrar cuando se llame donde corresponda:
-                        fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
-                             # Construir el nombre del archivo
-                        nombre_archivo = f"Mesa_{fecha_hora_actual}.png"
-                        ret, frame = self.cap.read()
-                        roi = frame[self.YIROI:self.YDROI 
-                             , self.XIROI:self.XDROI]
-                        pathCaptura = script_dir + "/Capturas/" + nombre_archivo
-                        pathOutput = script_dir + "/Capturas/Bolas/" 
-                        cv2.imwrite(pathCaptura, roi)
-                        ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
-                        hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada))
-                        hiloEtiquetador.start()
-                        hiloEtiquetador.join()
-                        with variable_compartida_lock:
-                            listaEtiquetada = ListaApareadaConEtiquetas
-                        
-
+                        #Borrar de aca cuando se llame donde corresponda:
+                        self.etiquetar=True
                         self.tronerasPosibles = self.calcular_posibles_troneras()
 
         if clickEnBola == False and self.moverVertices == False:
@@ -1197,6 +1185,40 @@ class VentanaVideo(QMainWindow):
             roi = self.frame[self.YIROI:self.YDROI 
                              , self.XIROI:self.XDROI]
             
+            if self.etiquetar:
+                #se generan las imagenes de cada bola:
+                if self.etiquetando == False:
+                    fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    nombre_archivo = f"Mesa_{fecha_hora_actual}.png"
+                    ret, frame = self.cap.read()
+                    roi = frame[self.YIROI:self.YDROI 
+                            , self.XIROI:self.XDROI]
+                    pathCaptura = script_dir + "/Capturas/" + nombre_archivo
+                    pathOutput = script_dir + "/Capturas/Bolas/" 
+                    cv2.imwrite(pathCaptura, roi)
+                    ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
+
+                #se manda un hilo a etiquetar cada bola de las imagenes generadas:
+                if self.etiquetando == False:
+                    #en prod pasarle True para que borre las capturas que usa:
+                    self.hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada,False))
+                    self.hiloEtiquetador.start()
+                    self.etiquetando = True
+                
+                self.hiloEtiquetador.join(timeout=0.01)
+
+                if  self.hiloEtiquetador.is_alive():
+                    #aca se puede poner un spin en la interfaz:
+                    print("etiquetando...")
+                else:
+                    print("fin de etiquetado")
+                    self.etiquetar = False
+                    self.etiquetando = False
+                    with variable_compartida_lock:
+                        listaEtiquetada = ListaApareadaConEtiquetas
+            
+
+
             if self.verROI:
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
                               (self.XDROI, self.YDROI), (0, 255, 0), 2)
