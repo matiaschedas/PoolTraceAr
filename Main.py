@@ -24,6 +24,7 @@ import json
 from screeninfo import get_monitors
 from datetime import datetime
 import ImageProcessor
+from pathlib import Path
 
 screen_width, screen_height = pyautogui.size()
 
@@ -163,7 +164,7 @@ class VentanaProyeccion(QMainWindow):
         self.resize(1920, 1080)
         # Establecer el icono de la ventana
 
-        icon_path = os.path.join(script_dir, "proyector.png")
+        icon_path = os.path.join(script_dir, "images/proyector.png")
         icon = QIcon(icon_path)
         self.setWindowIcon(icon)
         self.showFullScreen() 
@@ -274,7 +275,7 @@ class VentanaVideo(QMainWindow):
         self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
         self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
 
-        icon_path = os.path.join(script_dir, "bola8.png")
+        icon_path = os.path.join(script_dir, "images/bola8.png")
         icon = QIcon(icon_path)
         self.setWindowIcon(icon)
 
@@ -449,7 +450,7 @@ class VentanaVideo(QMainWindow):
         valido = self.es_nombre_archivo_valido(nombreArchivo)
         if valido:
             nombreArchivo = nombreArchivo + ".json"
-            path = script_dir + "\\" + nombreArchivo
+            path = script_dir + "\\presets\\" + nombreArchivo
             datos = {
                 "dp": dp,
                 "minDist": minDist,
@@ -1193,6 +1194,13 @@ class VentanaVideo(QMainWindow):
                     ret, frame = self.cap.read()
                     roi = frame[self.YIROI:self.YDROI 
                             , self.XIROI:self.XDROI]
+                    carpeta = Path(script_dir + '/Capturas/')
+
+                    # Verificamos si la carpeta no existe
+                    if not carpeta.exists():
+                        # Creamos la carpeta
+                        carpeta.mkdir(parents=True, exist_ok=True)                    
+                        
                     pathCaptura = script_dir + "/Capturas/" + nombre_archivo
                     pathOutput = script_dir + "/Capturas/Bolas/" 
                     cv2.imwrite(pathCaptura, roi)

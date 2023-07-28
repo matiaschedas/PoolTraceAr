@@ -56,7 +56,7 @@ class ControlWindow(QMainWindow):
         self.maxCircles = 100
 
         
-        icon_path = os.path.join(script_dir, "config.png")
+        icon_path = os.path.join(script_dir.replace("Clases", "images"), "config.png")
         icon = QIcon(icon_path)
         self.setWindowIcon(icon)
 
