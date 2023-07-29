@@ -31,6 +31,8 @@ def crop_circles(image_path, coordinates, output_dir):
             id=id+1
             nombreBola = "crop_"+ str(id)+ "_" + fecha_hora_actual + ".png"
             output_path = f"{output_dir}/" + nombreBola
+            if crop.mode == "RGBA":
+                crop = crop.convert("RGB")
             crop.save(output_path)
             listaApareada.append(((x,y,r), nombreBola))
 

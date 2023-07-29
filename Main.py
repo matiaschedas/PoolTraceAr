@@ -26,6 +26,7 @@ from datetime import datetime
 import ImageProcessor
 from pathlib import Path
 
+
 screen_width, screen_height = pyautogui.size()
 
 computo = None
@@ -422,7 +423,7 @@ class VentanaVideo(QMainWindow):
         self.ventanaPrepro.contrastChecked.connect(self.aplicarContraste)
         self.ventanaPrepro.histChecked.connect(self.aplicarHist)
 
-
+        
 
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
@@ -1198,17 +1199,17 @@ class VentanaVideo(QMainWindow):
                     ret, frame = self.cap.read()
                     roi = frame[self.YIROI:self.YDROI 
                             , self.XIROI:self.XDROI]
-                    carpeta = Path(script_dir + '/Capturas/')
+                    carpeta = Path(script_dir + '\\Capturas\\')
 
                     # Verificamos si la carpeta no existe
                     if not carpeta.exists():
                         # Creamos la carpeta
                         carpeta.mkdir(parents=True, exist_ok=True)
-                        carpeta = Path(script_dir + '/Capturas/Bolas/')
+                        carpeta = Path(script_dir + '\\Capturas\\Bolas\\')
                         carpeta.mkdir(parents=True, exist_ok=True)
                         
-                    pathCaptura = script_dir + "/Capturas/" + nombre_archivo
-                    pathOutput = script_dir + "/Capturas/Bolas/" 
+                    pathCaptura = script_dir + "\\Capturas\\" + nombre_archivo
+                    pathOutput = script_dir + "\\Capturas\\Bolas\\" 
                     cv2.imwrite(pathCaptura, roi)
                     ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
 
