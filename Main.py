@@ -11,7 +11,8 @@ import time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter, QFileDialog, QDesktopWidget
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QWindow, QScreen, QGuiApplication
 from PyQt5.QtCore import Qt, QTimer, QEvent
-from fchola import HiloEjemplo
+from HiloEtiquetador import ListaApareadaConEtiquetas, variable_compartida_lock
+from HiloEtiquetador import Etiquetar
 from Clases.ControlWindow import ControlWindow
 from Clases.PreprocesamientoWindow import PreprocesamientoWindow
 import win32con
@@ -21,6 +22,9 @@ import os
 import sys
 import json
 from screeninfo import get_monitors
+from datetime import datetime
+import ImageProcessor
+from pathlib import Path
 
 screen_width, screen_height = pyautogui.size()
 
@@ -59,7 +63,7 @@ N_PUNTOS_RASTRO = 50
 bolas= []
 # bloqueo del hilo1 desde el main
 bloqueo = threading.Lock()
-hilo1 = HiloEjemplo(bloqueo)
+
 setearIDS = False
 
 dp = 1  # El inverso de la resolución de acumulador. Por defecto es 1.
@@ -78,6 +82,7 @@ maxCircles = 100
 hough = None
 d_frame = None
 d_circles = None
+alpha = 0.0
 
 def iniciar_GPU():
     global hough,d_frame,d_circles
@@ -99,7 +104,7 @@ def inicioHilos():
 
 
 def pararHilos():
-    hilo1.detener_hilo()
+    
     hiloProyeccion.detener_hilo()
 
 
@@ -159,7 +164,7 @@ class VentanaProyeccion(QMainWindow):
         self.resize(1920, 1080)
         # Establecer el icono de la ventana
 
-        icon_path = os.path.join(script_dir, "proyector.png")
+        icon_path = os.path.join(script_dir, "images/proyector.png")
         icon = QIcon(icon_path)
         self.setWindowIcon(icon)
         self.showFullScreen() 
@@ -204,7 +209,7 @@ class HiloProyeccion(threading.Thread):
         super().__init__()
         self.detener = False
         self.bloqueo = bloqueo
-        self.hora_inicio = datetime.datetime.now()
+        self.hora_inicio = datetime.now()
         self.ventanaProyeccion = ventanaProyeccion
         self.actualizar_interfaz = False
         self.circles = None
@@ -249,6 +254,11 @@ class VentanaVideo(QMainWindow):
     def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow):
         super().__init__()
         global script_dir 
+
+        self.hiloEtiquetador = None
+        self.etiquetar = False
+        self.etiquetando = False
+
         self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
@@ -265,7 +275,7 @@ class VentanaVideo(QMainWindow):
         self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
         self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
 
-        icon_path = os.path.join(script_dir, "bola8.png")
+        icon_path = os.path.join(script_dir, "images/bola8.png")
         icon = QIcon(icon_path)
         self.setWindowIcon(icon)
 
@@ -420,6 +430,8 @@ class VentanaVideo(QMainWindow):
         inicioHilos()
         self.poligonos = None
         self.poligonosImposibles = None
+        self.tronerasPosibles = None
+        self.roiRAW = None
         self.actualizar_video()
 
     def SetearIDS(self):
@@ -438,7 +450,11 @@ class VentanaVideo(QMainWindow):
         valido = self.es_nombre_archivo_valido(nombreArchivo)
         if valido:
             nombreArchivo = nombreArchivo + ".json"
-            path = script_dir + "\\" + nombreArchivo
+            carpeta = Path(script_dir + '/presets/')
+            if not carpeta.exists():
+            # Creamos la carpeta
+                carpeta.mkdir(parents=True, exist_ok=True)
+            path = script_dir + "\\presets\\" + nombreArchivo
             datos = {
                 "dp": dp,
                 "minDist": minDist,
@@ -791,8 +807,10 @@ class VentanaVideo(QMainWindow):
                         clickEnBola = True
                         bolaSeleccionada=(x,y,r)
                         self.resaltar_bola_seleccionada()
-                        #borrar cuando se llame donde corresponda:
-                        tronerasPosibles = self.calcular_posibles_troneras()
+                        #Borrar de aca cuando se llame donde corresponda:
+                        self.etiquetar=True
+                        self.tronerasPosibles = self.calcular_posibles_troneras()
+
         if clickEnBola == False and self.moverVertices == False:
             self.deseleccionar_bola()
 
@@ -850,7 +868,6 @@ class VentanaVideo(QMainWindow):
             return
         troneras = self.obtener_troneras()
         tronerasPosibles = []
-        show = True
         for tronera in troneras:
             (xb,yb,rb)=bolaSeleccionada
             (x,y)=tronera
@@ -864,18 +881,9 @@ class VentanaVideo(QMainWindow):
             vertices.append((xp3,yp3))
             vertices.append((xp4,yp4))
 
-            # vertices.append((xb-maxRadius,yb))
-            # vertices.append((xb+maxRadius,yb))
-            # vertices.append((x-maxRadius,y))
-            # vertices.append((x+maxRadius,y))
-
             verticesOrdenados = self.sort_vertices(vertices)
             puntos = np.array(verticesOrdenados, np.int32)
             puntos = puntos.reshape((-1, 1, 2))
-            # if(show):
-            #     cv2.polylines(self.frame, [puntos], isClosed=True, color=(0, 255, 0), thickness=2)
-            #     cv2.imshow('Imagen', self.frame) 
-            #     show = False
 
             posible = self.revisar_circulos(verticesOrdenados,self.circles)
             puntos = np.array(verticesOrdenados, np.int32)
@@ -1181,6 +1189,54 @@ class VentanaVideo(QMainWindow):
 
             roi = self.frame[self.YIROI:self.YDROI 
                              , self.XIROI:self.XDROI]
+            
+            if self.etiquetar:
+                #se generan las imagenes de cada bola:
+                if self.etiquetando == False:
+                    fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    nombre_archivo = f"Mesa_{fecha_hora_actual}.png"
+                    ret, frame = self.cap.read()
+                    roi = frame[self.YIROI:self.YDROI 
+                            , self.XIROI:self.XDROI]
+                    carpeta = Path(script_dir + '/Capturas/')
+
+                    # Verificamos si la carpeta no existe
+                    if not carpeta.exists():
+                        # Creamos la carpeta
+                        carpeta.mkdir(parents=True, exist_ok=True)
+                        carpeta = Path(script_dir + '/Capturas/Bolas/')
+                        carpeta.mkdir(parents=True, exist_ok=True)
+                        
+                    pathCaptura = script_dir + "/Capturas/" + nombre_archivo
+                    pathOutput = script_dir + "/Capturas/Bolas/" 
+                    cv2.imwrite(pathCaptura, roi)
+                    ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
+
+                #se manda un hilo a etiquetar cada bola de las imagenes generadas:
+                if self.etiquetando == False:
+                    #en prod pasarle True para que borre las capturas que usa:
+                    self.hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada,False))
+                    self.hiloEtiquetador.start()
+                    self.etiquetando = True
+                
+                self.hiloEtiquetador.join(timeout=0.01)
+
+                if  self.hiloEtiquetador.is_alive():
+                    #aca se puede poner un spin en la interfaz:
+                    print("etiquetando...")
+                else:
+                    print("fin de etiquetado")
+                    self.etiquetar = False
+                    self.etiquetando = False
+                    with variable_compartida_lock:
+                        listaEtiquetada = ListaApareadaConEtiquetas
+                    if( listaEtiquetada is not None ):
+                        #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
+                        if( self.cambiaron_bolas_previo_al_tiro( listaEtiquetada , self.circles ) ):
+                            print("Error, las bolas cambiaron de posicion.")
+                        listaEtiquetada = None
+                            
+
             if self.verROI:
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
                               (self.XDROI, self.YDROI), (0, 255, 0), 2)
@@ -1233,13 +1289,7 @@ class VentanaVideo(QMainWindow):
                     algunaEstaSeleccionada = False
 
                     i=0
-                    if(self.poligonos is not None):
-                        for poligono in self.poligonos:                            
-                            # Dibujamos el trapecio en la imagen
-                            cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
-                    if(self.poligonosImposibles is not None):
-                        for poligono in self.poligonosImposibles:
-                            cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
+                   
 
                     self.circles  = self.eliminar_circulos_repetidos(self.circles)
                     for (x, y, r) in self.circles:
@@ -1256,19 +1306,35 @@ class VentanaVideo(QMainWindow):
                         if resaltarBola == True and bolaSeleccionada is not None:
                             (xs,ys,rs) = bolaSeleccionada
                             (xTronera, yTronera) = self.tronera1
-                            #cv2.line(self.frame, self.tronera1, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, (xTronera-rs,yTronera), (xs-rs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, (xTronera+rs,yTronera), (xs+rs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera2, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera3, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera4, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera5, (xs,ys),(255,0,255),2)
-                            # cv2.line(self.frame, self.tronera6, (xs,ys),(255,0,255),2)
                             dist = np.sqrt((xCircle-xs)**2 + (yCircle-ys)**2)
                             if dist <=10:
                                 cv2.circle(self.frame, (xCircle, yCircle),
                                     radioProm+6, (0, 0, 255), 3)
                                 algunaEstaSeleccionada = True
+                            
+                            # Dibujo de los trapecios posibles y no posibles:
+                            if(self.poligonos is not None):
+                                for poligono in self.poligonos:                            
+                                    #Dibujamos el trapecio en la imagen
+                                    cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
+                            if(self.poligonosImposibles is not None):
+                                for poligono in self.poligonosImposibles:
+                                    cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
+
+                            # #Dibujo de las troneras posibles: (esto esta bueno pero lagea)
+                            # if self.tronerasPosibles is not None:
+                            #     elapsed_time = time.time() - start_time
+                            #     global alpha
+                            #     frequency = 2.0 
+                            #     amplitude = 0.5 
+                            #     alpha = 0.5 + amplitude + np.sin(2 * np.pi * frequency * elapsed_time)
+
+                            #     temp_frame = self.frame.copy()
+                            #     for tronera in self.tronerasPosibles:
+                            #         (xtp, ytp) = tronera
+                            #         cv2.circle(temp_frame, (xtp,ytp), maxRadius, (0, 255, 0), -1)
+                            #     cv2.addWeighted(temp_frame, alpha, self.frame, 1 - alpha, 0, self.frame)                   
+                                
                         i+=1
                     if(algunaEstaSeleccionada == False):
                         bolaSeleccionada = None
@@ -1321,7 +1387,23 @@ class VentanaVideo(QMainWindow):
 
     async def getCircles(self):
         return self.circlesProyeccion
-
+    
+    def cambiaron_bolas_previo_al_tiro(self, listaEtiquetadas, actuales):
+        lista2_set = set(actuales)        
+        encontrado = False
+        if( len(lista2_set) != len(listaEtiquetadas)):
+            return True
+        for (x1,y1,r1), _, _ in listaEtiquetadas:
+            for (x2,y2,r2) in lista2_set:
+                if  math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) <= r1: 
+                    encontrado = True
+                    break
+            if(encontrado == False):
+                #Cambiaron bolas previo al tiro, por eso no se encontro la bola
+                return True
+            encontrado = False
+        #Devolvemos false porque no cambiaron las bolas previo al tiro y todas fueron encontradas                         
+        return False
 
 resXProy = 1080
 resYProy = 1920
