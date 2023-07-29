@@ -1235,7 +1235,7 @@ class VentanaVideo(QMainWindow):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
                         if( self.cambiaron_bolas_previo_al_tiro( listaEtiquetada , self.circles ) ):
                             print("Error, las bolas cambiaron de posicion.")
-                        listaEtiquetada = None
+                        listaEtiquetada.clear()
                             
 
             if self.verROI:

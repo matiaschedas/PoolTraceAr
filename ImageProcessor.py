@@ -5,7 +5,7 @@ from datetime import datetime
 def crop_circles(image_path, coordinates, output_dir):
         # Cargamos la imagen original
         image = Image.open(image_path)
-        margin = 5
+        margin = 3
         id=0
         listaApareada = []
         # Iteramos sobre las coordenadas para recortar círculos
