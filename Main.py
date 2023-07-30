@@ -1216,7 +1216,7 @@ class VentanaVideo(QMainWindow):
                 #se manda un hilo a etiquetar cada bola de las imagenes generadas:
                 if self.etiquetando == False:
                     #en prod pasarle True para que borre las capturas que usa:
-                    self.hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada,False))
+                    self.hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada,True))
                     self.hiloEtiquetador.start()
                     self.etiquetando = True
                 
