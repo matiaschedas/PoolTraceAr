@@ -9,7 +9,7 @@ ListaApareadaConEtiquetas = []
 variable_compartida_lock = threading.Lock()
 
 
-def Etiquetar(path, ListaApareada, eliminarCapturas):
+def Etiquetar(path, ListaApareada, eliminarCapturas, guardarHistorial):
     print("inicia hilo etiquetador") 
     global ListaApareadaConEtiquetas
     clasificador = clasificadorTipoBola()
@@ -19,10 +19,12 @@ def Etiquetar(path, ListaApareada, eliminarCapturas):
             #reemplazar por llamada al metodo:
             pathFoto = os.path.join(path, nombreBola)
             img = Image.open(pathFoto)
-            etiqueta,porcentaje=clasificador.clasificar(img)
+            etiqueta,porcentaje=clasificador.clasificar(img,guardarHistorial)
             ListaApareadaConEtiquetas.append(((x,y,r),nombreBola,etiqueta))
             if(eliminarCapturas):
                 BorrarFoto(path, nombreBola)
+
+
 
 def BorrarFoto (path, nombreFoto):
     rutaCompleta = os.path.join(path, nombreFoto)

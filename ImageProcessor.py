@@ -42,23 +42,24 @@ def crop_circles(image_path, coordinates, output_dir):
 
 
 
-if __name__ == "__main__":
-    image_path = "C:\\Users\\matia\\Desktop\\Proyecto fin de carrera\\repo\\Proyecto-fin-de-carrera\\grupo113-PoolTraceAR\\Capturas\\Mesa_20230727_185813.png"
-    coordinates = ([544, 340,  16],
-       [ 76, 436,  16],
-       [ 50, 466,  14],
-       [ 50, 466,  16],
-       [132, 122,  15],
-       [132, 122,  18],
-       [102, 324,  13],
-       [102, 324,  16],
-       [322, 152,  16],
-       [608, 312,  16],
-       [500, 372,  14],
-       [500, 372,  16],
-       [828,  28,  13],
-       [828,  28,  16],
-       [ 54, 192,  16])  
-    output_dir="C:/Users/matia/Desktop/Proyecto fin de carrera/repo/Proyecto-fin-de-carrera/grupo113-PoolTraceAR/Capturas/Bolas"
-    crop_circles(image_path,coordinates,output_dir)
+
+# if __name__ == "__main__":
+#     image_path = "C:\\Users\\matia\\Desktop\\Proyecto fin de carrera\\repo\\Proyecto-fin-de-carrera\\grupo113-PoolTraceAR\\Capturas\\Mesa_20230727_185813.png"
+#     coordinates = ([544, 340,  16],
+#        [ 76, 436,  16],
+#        [ 50, 466,  14],
+#        [ 50, 466,  16],
+#        [132, 122,  15],
+#        [132, 122,  18],
+#        [102, 324,  13],
+#        [102, 324,  16],
+#        [322, 152,  16],
+#        [608, 312,  16],
+#        [500, 372,  14],
+#        [500, 372,  16],
+#        [828,  28,  13],
+#        [828,  28,  16],
+#        [ 54, 192,  16])  
+#     output_dir="C:/Users/matia/Desktop/Proyecto fin de carrera/repo/Proyecto-fin-de-carrera/grupo113-PoolTraceAR/Capturas/Bolas"
+#     crop_circles(image_path,coordinates,output_dir)
     # Lista de coordenadas (x, y) # Tamaño del recorte (ancho y alto)

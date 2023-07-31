@@ -16,7 +16,7 @@ class clasificadorTipoBola():
         self.model = tf.keras.models.load_model(script_dir + "\\classification-model\\v1.0\\")
         self.id = 0
 
-    def clasificar(self, img:Image):    
+    def clasificar(self, img:Image, guardarHistorial):    
         img=img.resize((self.img_height,self.img_width))
         img_array = tf.keras.utils.img_to_array(img)
         img_array = tf.expand_dims(img_array, 0)
@@ -29,8 +29,8 @@ class clasificadorTipoBola():
         carpeta = Path(script_dir + '/Capturas/Historial/')
         if not carpeta.exists():
             carpeta.mkdir(parents=True, exist_ok=True)
-
-        img.save(script_dir + "\\Capturas\\Historial\\" + nombreImg)
+        if(guardarHistorial):
+            img.save(script_dir + "\\Capturas\\Historial\\" + nombreImg)
         print(
             "{}. {:.2f}"
             .format(self.class_names[np.argmax(score)], 100 * np.max(score))

@@ -796,7 +796,7 @@ class VentanaVideo(QMainWindow):
                     self.verticeSeleccionado = i
                     self.moverVertices = True
                     break
-        if self.moverVertices == False:
+        if self.moverVertices == False and self.etiquetando==False:
             global bolaSeleccionada
             if self.circles is not None:
                 for (x, y, r) in self.circles:
@@ -808,11 +808,12 @@ class VentanaVideo(QMainWindow):
                         clickEnBola = True
                         bolaSeleccionada=(x,y,r)
                         self.resaltar_bola_seleccionada()
-                        #Borrar de aca cuando se llame donde corresponda:
                         self.etiquetar=True
                         self.tronerasPosibles = self.calcular_posibles_troneras()
+        if (self.etiquetando==True):
+            print("Espere por favor, se esta calculando el tiro")
 
-        if clickEnBola == False and self.moverVertices == False:
+        if clickEnBola == False and self.moverVertices == False and self.etiquetando==False:
             self.deseleccionar_bola()
 
     def resaltar_bola_seleccionada(self):
@@ -1153,6 +1154,7 @@ class VentanaVideo(QMainWindow):
                 return bola.id
         if encontrada == False:
             return -1
+        
     def eliminar_circulos_repetidos(self, circulos):
     # Creamos un diccionario para agrupar los círculos por sus coordenadas (x, y).
         circulos_dict = {}
@@ -1212,11 +1214,14 @@ class VentanaVideo(QMainWindow):
                     pathOutput = script_dir + "\\Capturas\\Bolas\\" 
                     cv2.imwrite(pathCaptura, roi)
                     ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
+                    
+                
+
 
                 #se manda un hilo a etiquetar cada bola de las imagenes generadas:
                 if self.etiquetando == False:
                     #en prod pasarle True para que borre las capturas que usa:
-                    self.hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada,True))
+                    self.hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada,True,True))
                     self.hiloEtiquetador.start()
                     self.etiquetando = True
                 
@@ -1231,10 +1236,14 @@ class VentanaVideo(QMainWindow):
                     self.etiquetando = False
                     with variable_compartida_lock:
                         listaEtiquetada = ListaApareadaConEtiquetas
+
                     if( listaEtiquetada is not None ):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
                         if( self.cambiaron_bolas_previo_al_tiro( listaEtiquetada , self.circles ) ):
                             print("Error, las bolas cambiaron de posicion.")
+                        if( self.selecciono_la_blanca(listaEtiquetada)):
+                            print ("Error, se selecciono la bola blanca para embocar")
+                            self.deseleccionar_bola()
                         listaEtiquetada.clear()
                             
 
@@ -1404,6 +1413,16 @@ class VentanaVideo(QMainWindow):
                 return True
             encontrado = False
         #Devolvemos false porque no cambiaron las bolas previo al tiro y todas fueron encontradas                         
+        return False
+
+    def selecciono_la_blanca(self, listaEtiquetadas):
+        (xs, ys, rs) = bolaSeleccionada
+        for(x1,y1,r1), _, etiqueta in listaEtiquetadas:
+            x1=x1+self.XIROI
+            y1=y1+self.YIROI
+            if math.sqrt((x1-xs)**2 + (y1-ys)**2) <= rs:
+                if(etiqueta == "Blanca"):
+                    return True
         return False
 
 resXProy = 1080
