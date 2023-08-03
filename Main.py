@@ -694,13 +694,6 @@ class VentanaVideo(QMainWindow):
             if self.cap is not None and self.cap.isOpened():
                 self.cap.release()
             self.cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
-            # ret, frame = cap.read()
-            # fps = cap.get(cv2.CAP_PROP_FPS)
-            # if ret and fps <= 1:
-            #     self.frame = None
-            #     self.cap = None
-            #     return
-            # self.cap = cap
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
             self.fps = self.cap.get(cv2.CAP_PROP_FPS)
