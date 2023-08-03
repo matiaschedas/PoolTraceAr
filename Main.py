@@ -112,17 +112,6 @@ def pararHilos():
 def parar_de_actualizar(self):
     self.seguirActualizando = False
 
-
-def obtener_webcams():
-    webcams = []
-    for index in range(10):
-        cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
-        if cap.isOpened():
-            webcam_name = f"Webcam {index}"
-            webcams.append(webcam_name)
-            cap.release()
-    return webcams
-
 # Obtener el identificador de la ventana de PyQt5
 
 
@@ -132,7 +121,20 @@ def get_win_id(window):
     return None
 
 # Configurar el estilo de la ventana para mostrar el botón de maximizar de Windows
+def is_frame_black(frame):
+    if frame is None:
+        return True
+    # Convertir el frame a escala de grises
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+    # Calcular la suma de intensidades de píxeles
+    sum_intensity = np.sum(gray_frame)
+  
+    # Verificar si la suma de intensidades es igual a cero
+    if sum_intensity == 0:
+        return True
+    else:
+        return False
 
 def enable_maximize_button(window):
     if sys.platform == 'win32':
@@ -283,7 +285,6 @@ class VentanaVideo(QMainWindow):
         self.init_ui()
         self.circlesProyeccion = None
         self.rastros = []
-        webcams = obtener_webcams()
         self.seguirActualizando = True
         self.ventanaProyeccion = ventanaProyeccion
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
@@ -428,12 +429,21 @@ class VentanaVideo(QMainWindow):
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.on_resize_timeout)
-        inicioHilos()
         self.poligonos = None
         self.poligonosImposibles = None
         self.tronerasPosibles = None
         self.roiRAW = None
-        self.actualizar_video()
+        self.frame = None
+        self.current_camera_index = 0
+        inicioHilos()
+        self.initCameras()
+
+    def initCameras(self):
+        self.cambio_camara(self.current_camera_index)  # Llamar al método para mostrar la primera cámara
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.actualizar_video)
+        self.timer.start(16)  # 30 ms (30 FPS)
 
     def SetearIDS(self):
         global setearIDS
@@ -529,10 +539,6 @@ class VentanaVideo(QMainWindow):
         global aplicarContraste
         aplicarContraste = value
 
-      
-
-
-
     def ver_frame(self):
         global mostrarFrameRaw
         if mostrarFrameRaw  == True:
@@ -607,7 +613,8 @@ class VentanaVideo(QMainWindow):
             if event.spontaneous():
                 # Código que se ejecuta al inicio del evento de redimensionamiento
                 print("Inicio del evento de redimensionamiento")
-                self.cap.release()
+                if self.cap is not None and self.cap.isOpened():
+                    self.cap.release()
 
         return super().eventFilter(obj, event)
 
@@ -620,7 +627,8 @@ class VentanaVideo(QMainWindow):
 
          # Reiniciar el temporizador en cada redimensionamiento
         self.resize_timer.start(500)  # Establecer un tiempo de espera adecuado
-        self.cap.release()
+        if self.cap is not None and self.cap.isOpened():
+            self.cap.release()
         global ResolucionX, ResolucionY
         ResolucionX = event.size().width()
         ResolucionY = event.size().height()
@@ -682,19 +690,20 @@ class VentanaVideo(QMainWindow):
 
     def cambio_camara(self, index):
         opcion = self.comboCamaras.itemText(index)
-        print(f"opcion seleccionada: {opcion}")
-        numero = int(re.search(r'\d+', opcion).group())
+        print(f"opcion seleccionada: {opcion}")    
         try:
-            self.cap.release()
-            self.cap = cv2.VideoCapture(numero, cv2.CAP_DSHOW)
+            if self.cap is not None and self.cap.isOpened():
+                self.cap.release()
+            self.cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
             self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+            ret, self.frame = self.cap.read()
         except Exception as ex:
+            self.frame = None
+            self.cap = None
             print("Error", ex)
-            self.cap.release()
-        self.actualizar_video()
-    
+
     def cambio_monitor(self, index):
         global display_monitor
         opcion = self.comboMonitores.itemText(index)
@@ -726,7 +735,7 @@ class VentanaVideo(QMainWindow):
     def closeEvent(self, event):
         global cerrarProyeccion
         parar_de_actualizar(self)
-        if self.cap is not None:
+        if self.cap is not None and self.cap.isOpened():
             self.cap.release()
         pararHilos()
         cerrarProyeccion=True
@@ -1180,9 +1189,17 @@ class VentanaVideo(QMainWindow):
     def actualizar_video(self):
         if not self.seguirActualizando:
             return
-
-        ret, self.frame = self.cap.read()
-        if self.frame is not None:
+        if self.cap is not None and not is_frame_black(self.frame):
+            ret, self.frame = self.cap.read()
+        else:
+            ret = False
+            width, height = ResolucionX, ResolucionY
+            frame = frame = np.zeros((height, width, 3), dtype=np.uint8)
+            h, w, ch = frame.shape
+            bytes_per_line = ch * w
+            q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+            self.label.setPixmap(QPixmap.fromImage(q_image)) 
+        if ret and not is_frame_black(self.frame):
             if self.inicio:
                 self.XIROI, self.YIROI = 100, 100
                 self.XDROI, self.YDROI = 150, 150
@@ -1383,17 +1400,13 @@ class VentanaVideo(QMainWindow):
                 frames_previos = self.frame_count
                 previous_time = current_time
 
-            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-            imagen = QImage(
-                frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
-            imagen = QPixmap.fromImage(imagen)
-            self.label.setPixmap(imagen)
+            frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = frame.shape
+            bytes_per_line = ch * w
+            q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+            self.label.setPixmap(QPixmap.fromImage(q_image))            
 
             self.frame_count += 1
-            # Establecer el tiempo de espera en base a los fps del video
-            tiempo_espera = 1
-            
-            QTimer.singleShot(tiempo_espera, self.actualizar_video)
 
     async def getCircles(self):
         return self.circlesProyeccion
