@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIntValidator, QIcon
+from PyQt5.QtGui import QIntValidator, QIcon, QDoubleValidator
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLineEdit, QLabel, QGridLayout, QPushButton, QCheckBox, QComboBox, QApplication
 import cv2
 import os
@@ -175,11 +175,11 @@ class ControlWindow(QMainWindow):
         angulo_label = QLabel("Ángulo de cámara")
         self.angulo_slider = QSlider(Qt.Horizontal)
         self.angulo_slider.setRange(-150, 150)
-        self.angulo_slider.setValue(self.angulo * 10)
+        self.angulo_slider.setValue(int(self.angulo * 10))
         self.angulo_slider.valueChanged.connect(
             self.onanguloSliderChange)
         self.angulo_text = QLineEdit()
-        self.angulo_text.setValidator(QIntValidator())
+        self.angulo_text.setValidator(QDoubleValidator())
         self.angulo_text.setText(str(self.angulo))
         self.angulo_text.textChanged.connect(
             self.onanguloTextChange)
@@ -187,7 +187,6 @@ class ControlWindow(QMainWindow):
         layout.addWidget(angulo_label, 7, 0)
         layout.addWidget(self.angulo_slider, 7, 1)
         layout.addWidget(self.angulo_text, 7, 2)
-
 
         webcams = obtener_webcams()
         monitores = obtener_numeros_monitores_conectados()
@@ -262,9 +261,9 @@ class ControlWindow(QMainWindow):
         self.dp_text.setText(str(self.dp))
 
     def onanguloSliderChange(self, value):
-        self.angulo = value / 10.0
-        self.anguloChanged.emit(self.angulo)
+        self.angulo = value / 10.0  # Dividir por 10.0 para obtener el valor decimal
         self.angulo_text.setText(str(self.angulo))
+        self.anguloChanged.emit(self.angulo)
 
     def onDpTextChange(self, text):
         if text:
@@ -287,10 +286,12 @@ class ControlWindow(QMainWindow):
             self.minDist_slider.setValue(self.minDist)
 
     def onanguloTextChange(self, text):
-        if text: 
-            self.angulo = float(text)
-            self.anguloChanged.emit(self.angulo)
-            self.angulo_slider.setValue(int(self.angulo*10))
+        try:
+            self.angulo = float(text)  # Dividir por 10 para obtener el valor decimal
+            self.angulo_slider.setValue(int(self.angulo * 10))
+        except ValueError:
+            pass
+    
 
     def onCannyThresholdSliderChange(self, value):
         self.cannyThreshold = value
