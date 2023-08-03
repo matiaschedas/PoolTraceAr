@@ -30,7 +30,7 @@ from pathlib import Path
 screen_width, screen_height = pyautogui.size()
 
 computo = None
-
+anguloRotar = -15
 ResolucionX = 1280
 ResolucionY = 720
 resoluciones = [(426, 240), (640, 360), (800, 450), (896, 504), (912, 513), (928, 522), (960, 540), (1024, 576), (1152, 648),
@@ -112,6 +112,7 @@ def pararHilos():
 def parar_de_actualizar(self):
     self.seguirActualizando = False
 
+
 # Obtener el identificador de la ventana de PyQt5
 
 
@@ -121,20 +122,7 @@ def get_win_id(window):
     return None
 
 # Configurar el estilo de la ventana para mostrar el botón de maximizar de Windows
-def is_frame_black(frame):
-    if frame is None:
-        return True
-    # Convertir el frame a escala de grises
-    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # Calcular la suma de intensidades de píxeles
-    sum_intensity = np.sum(gray_frame)
-  
-    # Verificar si la suma de intensidades es igual a cero
-    if sum_intensity == 0:
-        return True
-    else:
-        return False
 
 def enable_maximize_button(window):
     if sys.platform == 'win32':
@@ -258,6 +246,7 @@ class VentanaVideo(QMainWindow):
         super().__init__()
         global script_dir 
 
+        self.roi = None
         self.hiloEtiquetador = None
         self.etiquetar = False
         self.etiquetando = False
@@ -277,6 +266,7 @@ class VentanaVideo(QMainWindow):
         self.controlWindow.minRadiusChanged.connect(self.onMinRadiusChanged)
         self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
         self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
+        self.controlWindow.anguloChanged.connect(self.onAnguloChanged)
 
         icon_path = os.path.join(script_dir, "images/bola8.png")
         icon = QIcon(icon_path)
@@ -285,6 +275,7 @@ class VentanaVideo(QMainWindow):
         self.init_ui()
         self.circlesProyeccion = None
         self.rastros = []
+       # webcams = obtener_webcams()
         self.seguirActualizando = True
         self.ventanaProyeccion = ventanaProyeccion
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
@@ -429,21 +420,12 @@ class VentanaVideo(QMainWindow):
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
         self.resize_timer.timeout.connect(self.on_resize_timeout)
+        inicioHilos()
         self.poligonos = None
         self.poligonosImposibles = None
         self.tronerasPosibles = None
         self.roiRAW = None
-        self.frame = None
-        self.current_camera_index = 0
-        inicioHilos()
-        self.initCameras()
-
-    def initCameras(self):
-        self.cambio_camara(self.current_camera_index)  # Llamar al método para mostrar la primera cámara
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.actualizar_video)
-        self.timer.start(16)  # 30 ms (30 FPS)
+        self.actualizar_video()
 
     def SetearIDS(self):
         global setearIDS
@@ -539,6 +521,10 @@ class VentanaVideo(QMainWindow):
         global aplicarContraste
         aplicarContraste = value
 
+      
+
+
+
     def ver_frame(self):
         global mostrarFrameRaw
         if mostrarFrameRaw  == True:
@@ -595,6 +581,10 @@ class VentanaVideo(QMainWindow):
         maxCircles = maxCirclesNew
         self.actualizarHough()
 
+    def onAnguloChanged(self, anguloNew):
+        global anguloRotar
+        anguloRotar = anguloNew
+
     def init_ui(self):
         # Configurar la ventana para mostrar el botón de maximizar de Windows
         enable_maximize_button(self)
@@ -613,8 +603,7 @@ class VentanaVideo(QMainWindow):
             if event.spontaneous():
                 # Código que se ejecuta al inicio del evento de redimensionamiento
                 print("Inicio del evento de redimensionamiento")
-                if self.cap is not None and self.cap.isOpened():
-                    self.cap.release()
+                self.cap.release()
 
         return super().eventFilter(obj, event)
 
@@ -627,8 +616,7 @@ class VentanaVideo(QMainWindow):
 
          # Reiniciar el temporizador en cada redimensionamiento
         self.resize_timer.start(500)  # Establecer un tiempo de espera adecuado
-        if self.cap is not None and self.cap.isOpened():
-            self.cap.release()
+        self.cap.release()
         global ResolucionX, ResolucionY
         ResolucionX = event.size().width()
         ResolucionY = event.size().height()
@@ -690,20 +678,19 @@ class VentanaVideo(QMainWindow):
 
     def cambio_camara(self, index):
         opcion = self.comboCamaras.itemText(index)
-        print(f"opcion seleccionada: {opcion}")    
+        print(f"opcion seleccionada: {opcion}")
+        numero = int(index)
         try:
-            if self.cap is not None and self.cap.isOpened():
-                self.cap.release()
-            self.cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+            self.cap.release()
+            self.cap = cv2.VideoCapture(numero, cv2.CAP_DSHOW)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, ResolucionX)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
             self.fps = self.cap.get(cv2.CAP_PROP_FPS)
-            ret, self.frame = self.cap.read()
         except Exception as ex:
-            self.frame = None
-            self.cap = None
             print("Error", ex)
-
+            self.cap.release()
+        self.actualizar_video()
+    
     def cambio_monitor(self, index):
         global display_monitor
         opcion = self.comboMonitores.itemText(index)
@@ -735,7 +722,7 @@ class VentanaVideo(QMainWindow):
     def closeEvent(self, event):
         global cerrarProyeccion
         parar_de_actualizar(self)
-        if self.cap is not None and self.cap.isOpened():
+        if self.cap is not None:
             self.cap.release()
         pararHilos()
         cerrarProyeccion=True
@@ -797,7 +784,7 @@ class VentanaVideo(QMainWindow):
         self.moverVertices = False
         clickEnBola = False
         if self.verVerticesROI:
-            vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI)]
+            vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI),(self.XIROI,self.YDROI),(self.XDROI,self.YIROI)]
             for i, vertice in enumerate(vertices):
                 distancia = np.sqrt(
                     (event.x() - vertice[0])**2 + (event.y() - vertice[1])**2)
@@ -1093,6 +1080,12 @@ class VentanaVideo(QMainWindow):
             elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() > 1 and event.x() < ResolucionX and event.y() < ResolucionY:
                 self.XDROI = event.x()
                 self.YDROI = event.y()
+            elif self.verticeSeleccionado == 2 and event.x() > self.XIROI+10 and event.y() > self.YDROI-10 and event.x() >1 and event.y() >1 and event.x()< ResolucionX and event.y() < ResolucionY:
+                self.XIROI = event.x()
+                self.YDROI = event.y()
+            elif self.verticeSeleccionado == 3 and event.x() > self.XDROI-10 and event.y() > self.YIROI+10 and event.x() >1 and event.y() >1 and event.x()< ResolucionX and event.y() < ResolucionY:
+                self.XDROI = event.x()
+                self.YIROI = event.y()
             self.hiloProyeccion.actualizar_roi(
                 xiroi=self.XIROI, yiroi=self.YIROI)
             
@@ -1186,20 +1179,28 @@ class VentanaVideo(QMainWindow):
         círculos_únicos = list(circulos_dict.values())
         
         return círculos_únicos
+    
+    def get_roi_with_four_points(self, points):
+            # Definir los puntos finales de la región rectangular del ROI
+            width, height = ResolucionX, ResolucionY  # Puedes ajustar estas dimensiones según tus necesidades
+            target_points = np.array([[0, 0], [width, 0], [width, height], [0, height]], dtype=np.float32)
+            
+            # Obtener la matriz de transformación que mapea los puntos iniciales a los puntos finales
+            matrix = cv2.getPerspectiveTransform(points, target_points)
+            
+            # Obtener el ROI utilizando la matriz de transformación
+            roi = cv2.warpPerspective(self.frame, matrix, (width, height))
+
+            return roi, matrix
+    
+    
+    
     def actualizar_video(self):
         if not self.seguirActualizando:
             return
-        if self.cap is not None and not is_frame_black(self.frame):
-            ret, self.frame = self.cap.read()
-        else:
-            ret = False
-            width, height = ResolucionX, ResolucionY
-            frame = frame = np.zeros((height, width, 3), dtype=np.uint8)
-            h, w, ch = frame.shape
-            bytes_per_line = ch * w
-            q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            self.label.setPixmap(QPixmap.fromImage(q_image)) 
-        if ret and not is_frame_black(self.frame):
+
+        ret, self.frame = self.cap.read()
+        if self.frame is not None:
             if self.inicio:
                 self.XIROI, self.YIROI = 100, 100
                 self.XDROI, self.YDROI = 150, 150
@@ -1207,8 +1208,15 @@ class VentanaVideo(QMainWindow):
                 self.hiloProyeccion.actualizar_roi(
                     xiroi=self.XIROI, yiroi=self.YIROI)
 
-            roi = self.frame[self.YIROI:self.YDROI 
-                             , self.XIROI:self.XDROI]
+           
+            altura, ancho = self.frame.shape[:2]
+
+            # Calcular el centro del frame para utilizarlo como punto de rotación
+            centro = (ancho // 2, altura // 2)
+            matriz_rotacion = cv2.getRotationMatrix2D(centro, anguloRotar, 1.0)
+            self.frame = cv2.warpAffine(self.frame,matriz_rotacion,(ancho,altura))
+            self.roi = self.frame[self.YIROI:self.YDROI 
+                            , self.XIROI:self.XDROI]
             
             if self.etiquetar:
                 #se generan las imagenes de cada bola:
@@ -1285,12 +1293,12 @@ class VentanaVideo(QMainWindow):
                                radioTronera, (255, 255, 0), 2)
 
             if self.verVerticesROI:
-                cv2.circle(self.frame, (self.XIROI, self.YIROI),
-                           8, (0, 255, 0), 2)
-                cv2.circle(self.frame, (self.XDROI, self.YDROI),
-                           8, (0, 255, 0), 2)
+                cv2.circle(self.frame, (self.XIROI, self.YIROI),int(radioMin/2), (0, 255, 0), 2)
+                cv2.circle(self.frame, (self.XDROI, self.YDROI),int(radioMin/2), (0, 255, 0), 2)
+                cv2.circle(self.frame, (self.XIROI, self.YDROI),int(radioMin/2), (0, 255, 0), 2)
+                cv2.circle(self.frame, (self.XDROI, self.YIROI),int(radioMin/2), (0, 255, 0), 2)
 
-            image = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            image = cv2.cvtColor(self.roi, cv2.COLOR_BGR2GRAY)
             image = self.aplicar_preprocesamientos(image)
            
 
@@ -1400,13 +1408,17 @@ class VentanaVideo(QMainWindow):
                 frames_previos = self.frame_count
                 previous_time = current_time
 
-            frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-            h, w, ch = frame.shape
-            bytes_per_line = ch * w
-            q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            self.label.setPixmap(QPixmap.fromImage(q_image))            
+            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+            imagen = QImage(
+                frame_rgb.data, frame_rgb.shape[1], frame_rgb.shape[0], QImage.Format_RGB888)
+            imagen = QPixmap.fromImage(imagen)
+            self.label.setPixmap(imagen)
 
             self.frame_count += 1
+            # Establecer el tiempo de espera en base a los fps del video
+            tiempo_espera = 1
+            
+            QTimer.singleShot(tiempo_espera, self.actualizar_video)
 
     async def getCircles(self):
         return self.circlesProyeccion

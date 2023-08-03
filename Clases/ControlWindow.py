@@ -28,6 +28,7 @@ def obtener_numeros_monitores_conectados():
 
 
 class ControlWindow(QMainWindow):
+    anguloChanged = pyqtSignal(float)
     dpChanged = pyqtSignal(int)
     minDistChanged = pyqtSignal(int)
     cannyThresholdChanged = pyqtSignal(int)
@@ -54,6 +55,7 @@ class ControlWindow(QMainWindow):
         self.minRadius = 14
         self.maxRadius = 16
         self.maxCircles = 100
+        self.angulo = 0
 
         
         icon_path = os.path.join(script_dir.replace("Clases", "images"), "config.png")
@@ -170,6 +172,22 @@ class ControlWindow(QMainWindow):
         layout.addWidget(self.maxCircles_slider, 6, 1)
         layout.addWidget(self.maxCircles_text, 6, 2)
 
+        angulo_label = QLabel("Ángulo de cámara")
+        self.angulo_slider = QSlider(Qt.Horizontal)
+        self.angulo_slider.setRange(-150, 150)
+        self.angulo_slider.setValue(self.angulo * 10)
+        self.angulo_slider.valueChanged.connect(
+            self.onanguloSliderChange)
+        self.angulo_text = QLineEdit()
+        self.angulo_text.setValidator(QIntValidator())
+        self.angulo_text.setText(str(self.angulo))
+        self.angulo_text.textChanged.connect(
+            self.onanguloTextChange)
+        self.angulo_text.setFixedWidth(30)
+        layout.addWidget(angulo_label, 7, 0)
+        layout.addWidget(self.angulo_slider, 7, 1)
+        layout.addWidget(self.angulo_text, 7, 2)
+
 
         webcams = obtener_webcams()
         monitores = obtener_numeros_monitores_conectados()
@@ -188,17 +206,17 @@ class ControlWindow(QMainWindow):
         self.botonSetearIDS = self.crear_boton("Setear IDS", 1290,125,100,30)
 
 
-        layout.addWidget(self.labelCamara,7,0)
-        layout.addWidget(self.labelNombrePreset,7,3)
-        layout.addWidget(self.textNombrePreset,8,3)
-        layout.addWidget(self.comboCamaras,8,0)
-        layout.addWidget(self.botonSetearIDS,8,1)
-        layout.addWidget(self.botonProyectar, 9, 0)
-        layout.addWidget(self.comboMonitores, 10, 0)
-        layout.addWidget(self.botonConfigurarROI, 9, 1)
-        layout.addWidget(self.botonPreprocesamientos, 9, 2)
-        layout.addWidget(self.botonGuardarPreset,9,3)
-        layout.addWidget(self.botonCargarPreset,10,3)
+        layout.addWidget(self.labelCamara,8,0)
+        layout.addWidget(self.labelNombrePreset,8,3)
+        layout.addWidget(self.textNombrePreset,9,3)
+        layout.addWidget(self.comboCamaras,9,0)
+        layout.addWidget(self.botonSetearIDS,9,1)
+        layout.addWidget(self.botonProyectar, 10, 0)
+        layout.addWidget(self.comboMonitores, 11, 0)
+        layout.addWidget(self.botonConfigurarROI, 10, 1)
+        layout.addWidget(self.botonPreprocesamientos, 10, 2)
+        layout.addWidget(self.botonGuardarPreset,10,3)
+        layout.addWidget(self.botonCargarPreset,11,3)
 
 
         widget = QWidget()
@@ -243,6 +261,11 @@ class ControlWindow(QMainWindow):
         # Actualizar el cuadro de texto correspondiente
         self.dp_text.setText(str(self.dp))
 
+    def onanguloSliderChange(self, value):
+        self.angulo = value / 10.0
+        self.anguloChanged.emit(self.angulo)
+        self.angulo_text.setText(str(self.angulo))
+
     def onDpTextChange(self, text):
         if text:
             self.dp = int(text)
@@ -262,6 +285,12 @@ class ControlWindow(QMainWindow):
             self.minDistChanged.emit(self.minDist)
             # Actualizar el slider correspondiente
             self.minDist_slider.setValue(self.minDist)
+
+    def onanguloTextChange(self, text):
+        if text: 
+            self.angulo = float(text)
+            self.anguloChanged.emit(self.angulo)
+            self.angulo_slider.setValue(int(self.angulo*10))
 
     def onCannyThresholdSliderChange(self, value):
         self.cannyThreshold = value
