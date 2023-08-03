@@ -5,18 +5,18 @@ import cv2
 import os
 import sys
 import ctypes
+from PyQt5.QtMultimedia import QCameraInfo
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 def obtener_webcams():
         webcams = []
-        for index in range(10):
-            cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
-            if cap.isOpened():
-                webcam_name = f"Webcam {index}"
-                webcams.append(webcam_name)
-                cap.release()
+        camera_infos = QCameraInfo.availableCameras()
+        camera_names = [info.description() for info in camera_infos]
+
+        for name in camera_names:
+            webcams.append(name)
         return webcams
 
 
