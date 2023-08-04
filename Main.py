@@ -318,6 +318,7 @@ class VentanaVideo(QMainWindow):
         # region Parametros de reglas de juego
         self.BolaEnMano = False
         self.Hay2Tiros = False
+        self.hayMesaAbierta = False
         self.hayMovimiento = False
         # endregion
 
@@ -366,10 +367,13 @@ class VentanaVideo(QMainWindow):
 
         self.labelBolaEnMano = self.crear_label("Bola en mano: ", 5, 820, 100, 25)
         self.label2Tiros = self.crear_label("2 Tiros: ", 5,820,100,25)
+        self.labelMesaAbierta = self.crear_label("Mesa abierta: ", 5, 820, 100, 25)
         self.checkBolaEnMano = self.crear_checkbox(80, 820, 50, 30)
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
         self.check2Tiros = self.crear_checkbox(80,820,50,30)
         self.check2Tiros.stateChanged.connect(self.dos_tiros)
+        self.checkMesaAbierta = self.crear_checkbox(80,820,50,30)
+        self.checkMesaAbierta.stateChanged.connect(self.mesa_abierta)
         self.botonSetearIDS.clicked.connect(self.SetearIDS)
 
         self.botonGuardarPreset.clicked.connect(self.guardar_preset)
@@ -407,8 +411,10 @@ class VentanaVideo(QMainWindow):
         self.layout2.addWidget(self.botonConfiguracion, 1, 0)
         self.layout2.addWidget(self.labelBolaEnMano, 2, 0)
         self.layout2.addWidget(self.label2Tiros,2,1)
+        self.layout2.addWidget(self.labelMesaAbierta, 2 ,2)
         self.layout2.addWidget(self.checkBolaEnMano, 3, 0)
         self.layout2.addWidget(self.check2Tiros,3,1)
+        self.layout2.addWidget(self.checkMesaAbierta, 3, 2)
 
         # Agregar el contador de FPS con alineación a la esquina inferior derecha
         self.layout2.addWidget(self.labelFps, 3, 10)
@@ -770,6 +776,15 @@ class VentanaVideo(QMainWindow):
         else:
             self.Hay2Tiros = False
             print("No hay 2 tiros")
+
+    def mesa_abierta(self):
+        estado_actual = self.checkMesaAbierta.isChecked()
+        if estado_actual == True:
+            self.hayMesaAbierta = True
+            print ("Hay Mesa Abierta")
+        else:
+            self.hayMesaAbierta = False
+            print("Hay Mesa Cerrada")
 
     def crear_checkbox(self, posX, posY, largo, ancho):
         checkbox = QCheckBox(self)

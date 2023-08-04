@@ -345,15 +345,11 @@ class ControlWindow(QMainWindow):
 
     def onMaxRadiusTextChange(self, text):
         if text:
-            self.maxRadius = int(text)
-            self.maxRadiusChanged.emit(self.maxRadius)
-            # Actualizar el slider correspondiente
-            self.maxRadius_slider.setValue(self.maxRadius)
-            # Validar que maxRadius sea mayor que minRadius
-            if self.maxRadius <= self.minRadius:
-                self.maxRadius = self.minRadius + 1
-                self.maxRadius_text.setText(str(self.maxRadius))
-                self.maxRadius_slider.setValue(self.maxRadius)
+            if int(text) > self.minRadius:
+                 self.maxRadius = int(text)
+                 self.maxRadiusChanged.emit(self.maxRadius)
+                 self.maxRadius_slider.setValue(self.maxRadius)
+                 self.maxRadius_text.setText(str(self.maxRadius))
 
     def onMaxCirclesSliderChange(self, value):
         self.maxCircles = value
