@@ -280,6 +280,7 @@ class VentanaVideo(QMainWindow):
         self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
         self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
         self.controlWindow.anguloChanged.connect(self.onAnguloChanged)
+        self.controlWindow.radioTroneraChanged.connect(self.onRadioTroneraChanged)
 
         icon_path = os.path.join(script_dir, "images/bola8.png")
         icon = QIcon(icon_path)
@@ -307,12 +308,10 @@ class VentanaVideo(QMainWindow):
         # endregion
 
         # region coordenadas de huecos(troneras):
-        self.tronera1 = [0, 0]
-        self.tronera2 = [0, 0]
-        self.tronera3 = [0, 0]
-        self.tronera4 = [0, 0]
-        self.tronera5 = [0, 0]
-        self.tronera6 = [0, 0]
+        self.troneras =[(0, 0),(0, 0),(0, 0),(0, 0),(0, 0),(0, 0)]
+        self.troneras_labels = ["T1", "T2", "T3", "T4", "T5", "T6"]
+        self.radioTronera = int(radioMax)+3
+        self.selected_tronera = None
         # endregion
 
         # region Parametros de reglas de juego
@@ -608,6 +607,10 @@ class VentanaVideo(QMainWindow):
         global anguloRotar
         anguloRotar = anguloNew
 
+    def onRadioTroneraChanged(self, radioTroneraNew):
+        global anguloRotar
+        self.radioTronera = radioTroneraNew    
+
     def init_ui(self):
         # Configurar la ventana para mostrar el botón de maximizar de Windows
         enable_maximize_button(self)
@@ -826,7 +829,17 @@ class VentanaVideo(QMainWindow):
                 if distancia <= 10:  # Si la distancia es menor o igual a 10 píxeles, se considera seleccionado
                     self.verticeSeleccionado = i
                     self.moverVertices = True
+                    break           
+
+            # Verificar si el click está dentro de alguna de las troneras
+            x, y = event.x(), event.y()
+            for i, tronera in enumerate(self.troneras):
+                tronera_x, tronera_y = tronera
+                distance = np.sqrt((x - tronera_x) ** 2 + (y - tronera_y) ** 2)
+                if distance < self.radioTronera:  # Radio del círculo
+                    self.selected_tronera = i
                     break
+
         if self.moverVertices == False and self.etiquetando==False:
             global bolaSeleccionada
             if self.circles is not None:
@@ -858,14 +871,7 @@ class VentanaVideo(QMainWindow):
         bolaSeleccionada = None
 
     def obtener_troneras(self):
-        troneras = []
-        troneras.append(self.tronera1)
-        troneras.append(self.tronera2)
-        troneras.append(self.tronera3)
-        troneras.append(self.tronera4)
-        troneras.append(self.tronera5)
-        troneras.append(self.tronera6)
-        return troneras
+            return self.troneras
     
     def distance_between_points(self, punto1, punto2):
         x1, y1 = punto1
@@ -1115,10 +1121,24 @@ class VentanaVideo(QMainWindow):
             elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() > 1 and event.x() < ResolucionX and event.y() < ResolucionY:
                 self.XDROI = event.x()
                 self.YDROI = event.y()
-            self.hiloProyeccion.actualizar_roi(
-                xiroi=self.XIROI, yiroi=self.YIROI)
-            
+            self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI)
+            self.actualizar_roi()
+        if self.selected_tronera is not None:
+            x, y = event.x(), event.y()
+            self.troneras[self.selected_tronera] = (x, y)
+            self.update()
 
+    def mouseReleaseEvent(self, event):
+        self.selected_tronera = None
+
+    def actualizar_roi(self):
+        mitadMesa = self.distancia_media_entre_puntos(self.XIROI, self.XDROI)
+        self.troneras[0] = (self.XIROI,self.YIROI)
+        self.troneras[1] = (self.XDROI,self.YDROI)
+        self.troneras[2] = (self.XIROI,self.YDROI)
+        self.troneras[3] = (self.XDROI,self.YIROI)
+        self.troneras[4] = (self.XIROI+mitadMesa,self.YIROI)
+        self.troneras[5] = (self.XIROI+mitadMesa,self.YDROI)    
     def crear_ROI(self):
         if self.creandoROI == False:
             self.creandoROI = True
@@ -1228,7 +1248,7 @@ class VentanaVideo(QMainWindow):
                 self.inicio = False
                 self.hiloProyeccion.actualizar_roi(
                     xiroi=self.XIROI, yiroi=self.YIROI)
-
+                self.actualizar_roi()
            
             altura, ancho = self.frame.shape[:2]
 
@@ -1297,21 +1317,11 @@ class VentanaVideo(QMainWindow):
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
                               (self.XDROI, self.YDROI), (0, 255, 0), 2)
                 # grafica los huecos (troneras):
-                mitadMesa = self.distancia_media_entre_puntos(
-                    self.XIROI, self.XDROI)
-                radioTronera = int(radioMax)+3
-                desplazamiento = int(math.sqrt(((radioTronera)**2)/2))
-                troneras = [(self.XIROI-desplazamiento, self.YIROI-desplazamiento), (self.XDROI+desplazamiento, self.YDROI+desplazamiento), (self.XIROI-desplazamiento, self.YDROI+desplazamiento),
-                            (self.XDROI+desplazamiento, self.YIROI-desplazamiento), (self.XIROI+mitadMesa, self.YIROI-desplazamiento), (self.XIROI+mitadMesa, self.YDROI+desplazamiento)]
-                self.tronera1 = (self.XIROI,self.YIROI)
-                self.tronera2 = (self.XDROI,self.YDROI)
-                self.tronera3 = (self.XIROI,self.YDROI)
-                self.tronera4 = (self.XDROI,self.YIROI)
-                self.tronera5 = (self.XIROI+mitadMesa,self.YIROI)
-                self.tronera6 = (self.XIROI+mitadMesa,self.YDROI)
-                for tronera in troneras:
-                    cv2.circle(self.frame, tronera,
-                               radioTronera, (255, 255, 0), 2)
+                for tronera, label in zip(self.troneras, self.troneras_labels):
+                    x, y = tronera
+                    cv2.circle(self.frame, (x, y), self.radioTronera, (255, 255, 0), 2)
+                    cv2.putText(self.frame, label, (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+                
 
             if self.verVerticesROI:
                 cv2.circle(self.frame, (self.XIROI, self.YIROI),int(radioMin/2), (0, 255, 0), 2)
@@ -1359,7 +1369,7 @@ class VentanaVideo(QMainWindow):
                             cv2.putText(self.frame, str(id),(xCircle,yCircle),cv2.FONT_HERSHEY_SIMPLEX, 2,(255,255,0),2)
                         if resaltarBola == True and bolaSeleccionada is not None:
                             (xs,ys,rs) = bolaSeleccionada
-                            (xTronera, yTronera) = self.tronera1
+                            (xTronera, yTronera) = self.troneras[0]
                             dist = np.sqrt((xCircle-xs)**2 + (yCircle-ys)**2)
                             if dist <=10:
                                 cv2.circle(self.frame, (xCircle, yCircle),
