@@ -31,6 +31,7 @@ class ControlWindow(QMainWindow):
     anguloChanged = pyqtSignal(float)
     dpChanged = pyqtSignal(int)
     minDistChanged = pyqtSignal(int)
+    radioTroneraChanged = pyqtSignal(int)
     cannyThresholdChanged = pyqtSignal(int)
     votesThresholdChanged = pyqtSignal(int)
     minRadiusChanged = pyqtSignal(int)
@@ -56,7 +57,7 @@ class ControlWindow(QMainWindow):
         self.maxRadius = 16
         self.maxCircles = 100
         self.angulo = 0
-
+        self.radio_tronera = 20        
         
         icon_path = os.path.join(script_dir.replace("Clases", "images"), "config.png")
         icon = QIcon(icon_path)
@@ -188,6 +189,20 @@ class ControlWindow(QMainWindow):
         layout.addWidget(self.angulo_slider, 7, 1)
         layout.addWidget(self.angulo_text, 7, 2)
 
+        radio_tronera_label = QLabel("Radio Tronera")
+        self.radio_tronera_slider = QSlider(Qt.Horizontal)
+        self.radio_tronera_slider.setRange(1, 30)
+        self.radio_tronera_slider.setValue(self.radio_tronera)
+        self.radio_tronera_slider.valueChanged.connect(self.onRadioTroneraSliderChange)
+        self.radio_tronera_text = QLineEdit()
+        self.radio_tronera_text.setValidator(QIntValidator())
+        self.radio_tronera_text.setText(str(self.radio_tronera))
+        self.radio_tronera_text.textChanged.connect(self.onRadioTroneraTextChange)
+        self.radio_tronera_text.setFixedWidth(30)
+        layout.addWidget(radio_tronera_label, 8, 0)
+        layout.addWidget(self.radio_tronera_slider, 8, 1)
+        layout.addWidget(self.radio_tronera_text, 8, 2)
+
         webcams = obtener_webcams()
         monitores = obtener_numeros_monitores_conectados()
 
@@ -205,17 +220,17 @@ class ControlWindow(QMainWindow):
         self.botonSetearIDS = self.crear_boton("Setear IDS", 1290,125,100,30)
 
 
-        layout.addWidget(self.labelCamara,8,0)
-        layout.addWidget(self.labelNombrePreset,8,3)
-        layout.addWidget(self.textNombrePreset,9,3)
-        layout.addWidget(self.comboCamaras,9,0)
-        layout.addWidget(self.botonSetearIDS,9,1)
-        layout.addWidget(self.botonProyectar, 10, 0)
-        layout.addWidget(self.comboMonitores, 11, 0)
-        layout.addWidget(self.botonConfigurarROI, 10, 1)
-        layout.addWidget(self.botonPreprocesamientos, 10, 2)
-        layout.addWidget(self.botonGuardarPreset,10,3)
-        layout.addWidget(self.botonCargarPreset,11,3)
+        layout.addWidget(self.labelCamara,9,0)
+        layout.addWidget(self.labelNombrePreset,9,3)
+        layout.addWidget(self.textNombrePreset,10,3)
+        layout.addWidget(self.comboCamaras,10,0)
+        layout.addWidget(self.botonSetearIDS,10,1)
+        layout.addWidget(self.botonProyectar, 11, 0)
+        layout.addWidget(self.botonConfigurarROI, 11, 1)
+        layout.addWidget(self.comboMonitores, 12, 0)
+        layout.addWidget(self.botonPreprocesamientos, 11, 2)
+        layout.addWidget(self.botonGuardarPreset,11,3)
+        layout.addWidget(self.botonCargarPreset,12,3)
 
 
         widget = QWidget()
@@ -223,6 +238,7 @@ class ControlWindow(QMainWindow):
         self.setCentralWidget(widget)
         
     
+
     def obtenerComboCamaras(self):
         return self.comboCamaras
     
@@ -350,7 +366,23 @@ class ControlWindow(QMainWindow):
                  self.maxRadiusChanged.emit(self.maxRadius)
                  self.maxRadius_slider.setValue(self.maxRadius)
                  self.maxRadius_text.setText(str(self.maxRadius))
+                 self.radioTroneraChanged.emit(self.radio_tronera)
 
+
+    def onRadioTroneraSliderChange(self):
+        value = self.radio_tronera_slider.value()
+        self.radio_tronera = value
+        self.radio_tronera_text.setText(str(value))
+        self.radioTroneraChanged.emit(self.radio_tronera)
+
+    def onRadioTroneraTextChange(self):
+        text = self.radio_tronera_text.text()
+        if text.isdigit():
+            value = int(text)
+            if 1 <= value <= 50:
+                self.radio_tronera = value
+                self.radio_tronera_slider.setValue(value)
+                
     def onMaxCirclesSliderChange(self, value):
         self.maxCircles = value
         self.maxCirclesChanged.emit(self.maxCircles)
