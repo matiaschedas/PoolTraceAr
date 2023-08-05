@@ -26,6 +26,7 @@ from datetime import datetime
 import ImageProcessor
 from pathlib import Path
 
+from Clases.Fisicas import Fisicas
 
 screen_width, screen_height = pyautogui.size()
 
@@ -866,6 +867,7 @@ class VentanaVideo(QMainWindow):
         troneras.append(self.tronera5)
         troneras.append(self.tronera6)
         return troneras
+
     
     def distance_between_points(self, punto1, punto2):
         x1, y1 = punto1
@@ -1209,6 +1211,7 @@ class VentanaVideo(QMainWindow):
         
         return círculos_únicos
     def actualizar_video(self):
+        global bolaSeleccionada, resaltarBola, minRadius, maxRadius
         if not self.seguirActualizando:
             return
         if self.cap is not None and not is_frame_black(self.frame):
@@ -1282,6 +1285,16 @@ class VentanaVideo(QMainWindow):
                     self.etiquetando = False
                     with variable_compartida_lock:
                         listaEtiquetada = ListaApareadaConEtiquetas
+                        bolaBlanca = self.obtenerBolaBlanca(listaEtiquetada)
+                        if bolaBlanca is not None:
+                            (xb, yb, rb) = bolaBlanca
+                            xb= xb + self.XIROI
+                            yb= yb + self.YIROI
+                            bolaBlanca = (xb,yb,rb)
+                        
+                        if (bolaBlanca is not None and bolaSeleccionada is not None):
+                            fisicas = Fisicas(listaEtiquetada, bolaSeleccionada, bolaBlanca)
+                            fisicas.simular()
 
                     if( listaEtiquetada is not None ):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
@@ -1338,7 +1351,7 @@ class VentanaVideo(QMainWindow):
                     self.circlesProyeccion = self.circles
                     self.hiloProyeccion.actualizar_circles(self.circles.copy())
 
-                    global bolaSeleccionada, resaltarBola, minRadius, maxRadius
+                    
                     radioProm = int((minRadius+maxRadius)/2)
                     algunaEstaSeleccionada = False
 
@@ -1464,6 +1477,15 @@ class VentanaVideo(QMainWindow):
                 if(etiqueta == "Blanca"):
                     return True
         return False
+    
+    def obtenerBolaBlanca(self, listaEtiquetadas):
+        for(x1,y1,r1), _, etiqueta in listaEtiquetadas:
+            bola = (x1,y1,r1) 
+            x1=x1+self.XIROI
+            y1=y1+self.YIROI
+            if(etiqueta == "Blanca"):
+                return bola
+        return None
 
 resXProy = 1080
 resYProy = 1920
