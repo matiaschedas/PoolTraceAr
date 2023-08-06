@@ -2,13 +2,15 @@ import pymunk
 import random
 import matplotlib.pyplot as plt
 import math
+import pygame
 
 bolaBlancaPrimerColision = False
 bolaPrimerColision = None
 
 class Fisicas():
     #el constructor luego va a recibir tambien todos los checkbox que debera tener en cuenta para cumplir las reglas de pool:
-    def __init__(self, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI, velBlancaX, velBlancaY, troneras):
+    def __init__(self, verSimulacion, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI, velBlancaX, velBlancaY, troneras):
+        self.verSimulacion = verSimulacion
         self.listaApareada = listaApareada
         self.bolaSeleccionada = bolaSeleccionada
         self.bolaBlanca = bolaBlanca
@@ -66,6 +68,14 @@ class Fisicas():
         return True 
 
     def simular(self):
+        if self.verSimulacion:
+            pygame.init()
+            screen_width, screen_height = 800, 600
+            screen = pygame.display.set_mode((screen_width, screen_height))
+            pygame.display.set_caption("Billiards Simulation")
+            clock = pygame.time.Clock()
+            screen.fill((255, 255, 255))
+
         space = pymunk.Space()
         space.gravity = (0, 0)
          
@@ -77,7 +87,6 @@ class Fisicas():
             ys = ys - self.YIROI
             if(etiqueta == "Blanca"):
                self.blanca  = self.create_ball(space, x, y, r, 1, etiqueta)
-               #en vez de  harcodearlo se debera enviar como parametro del contructor:
                self.blanca.velocity = (self.velBlancaX,self.velBlancaY)
                self.balls.append(self.blanca)
             elif(int(x) == int(xs) and int(y) == int(ys)):
@@ -86,14 +95,7 @@ class Fisicas():
             else:
                 self.balls.append(self.create_ball(space, x, y, r, 1, etiqueta))
 
-        # Crear una bola adicional en movimiento
-        #moving_ball = self.create_ball(space, 700, 500, 20, 1, "hola")
-        #vx0, vy0 = random.uniform(-50, 50), random.uniform(-50, 50)
-        #moving_ball.velocity = (vx0, vy0)
-        #balls.append(moving_ball)
-
         # Nuevas listas para almacenar las trayectorias de todas las bolas
-
 
         trajectories = [[] for _ in range(len(self.balls))]
         trayectoriaBlanca = []
@@ -112,11 +114,20 @@ class Fisicas():
         handler.begin = self.on_collision_begin
         
         while not all_balls_stopped:
+           if(self.verSimulacion):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    all_balls_stopped = True
+                    break
+
             for _ in range(5):
                 space.step(dt)
 
             for ball in self.balls:
                 self.apply_friction(ball, 0.01)
+            
+            if self.verSimulacion:
+                screen.fill((255, 255, 255))
 
             # Guardar la posición actual de todas las bolas en sus trayectorias
             for ball_index, ball in enumerate(self.balls):
@@ -131,6 +142,12 @@ class Fisicas():
                 else:
                     trajectories[ball_index].append((x, y))
 
+            if(self.verSimulacion):
+                for ball in self.balls:
+                    x, y = ball.position
+                    pygame.draw.circle(screen, (0, 0, 255), (int(x), int(y)), 20)
+                pygame.display.flip()
+                clock.tick(60)
 
             total_velocity = sum(ball.velocity.length for ball in self.balls)
             if total_velocity < 5:
@@ -152,7 +169,9 @@ class Fisicas():
             # Calcular la distancia desde el centro de la bola a las esquinas y comparar con el radio
             if min(distancia_a_esquinas) < 60:
                 ball_selected_approached_corner = True
-        
+        #comentar si no necesito ver animacion:    
+        if(self.verSimulacion):   
+            pygame.quit()
 
         # # Graficar las trayectorias después de cerrar la simulación
         #esto grafica las rectas de todas las trayectorias, son las misma rectas que vamos a tener que retornar y luego graficar con opencv

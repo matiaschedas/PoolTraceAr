@@ -1313,7 +1313,7 @@ class VentanaVideo(QMainWindow):
                         
                         if (bolaBlanca is not None and bolaSeleccionada is not None):
                             tamROI = self.obtener_tam_ROI()
-                            fisicas = Fisicas(listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, 30, 30, self.troneras)
+                            fisicas = Fisicas(True, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, 50, 22, self.troneras)
                             trayectoriasDelTiro, tiroValido = fisicas.simular()
 
                     if( listaEtiquetada is not None ):
