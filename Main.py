@@ -1316,6 +1316,7 @@ class VentanaVideo(QMainWindow):
                             tamROI = self.obtener_tam_ROI()
                             fisicas = Fisicas(True, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, random.randint(10, 100), random.randint(10, 100), self.troneras, self.radioTronera)
                             trayectoriasBlanca, trayectoriasSeleccionada, tiroValido = fisicas.simular()
+                            fisicas = None
 
                     if( listaEtiquetada is not None ):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar

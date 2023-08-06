@@ -29,6 +29,7 @@ class Fisicas():
         self.entraron = []
         self.seleccionadaEtiqueta = None
         self.primerColisionEtiqueta = None
+        self.entroLaBlanca = False
 
     def create_ball(self, space, x, y, radius, mass, etiqueta):
         body = pymunk.Body(mass, pymunk.moment_for_circle(mass, 0, radius))
@@ -155,7 +156,9 @@ class Fisicas():
 
         handler = space.add_collision_handler(0, 0)
         handler.begin = self.on_collision_begin
-        
+        # Escalar las coordenadas de las paredes para que coincidan con el sistema de coordenadas de Matplotlib
+        wall_vertices = [(wall.a.x, screen_height - wall.a.y) for wall in walls]  # Invertir el eje Y      
+
         while not all_balls_stopped:
            if(self.verSimulacion):
             for event in pygame.event.get():
@@ -197,6 +200,9 @@ class Fisicas():
 
             for ball in bolas_para_eliminar:
                 ball_shape = list(ball.shapes)[0]
+                etiqueta = ball_shape.userData
+                if (etiqueta == "Blanca"):
+                    self.entroLaBlanca=True
                 space.remove(ball_shape.body, ball_shape)
                 self.balls.remove(ball)
 
@@ -208,9 +214,9 @@ class Fisicas():
                     x,y = tronera.position
                     pygame.draw.circle(screen, (0, 255, 0), (int(x), int(y)), 20)
                 pygame.display.flip()
-                for wall in walls:
-                    p1 = wall.a
-                    p2 = wall.b
+                for i in range(len(wall_vertices)):
+                    p1 = wall_vertices[i]
+                    p2 = wall_vertices[(i+1) % len(wall_vertices)]
                     pygame.draw.line(screen, (255,0,0),p1,p2,5)
                 clock.tick(60)
 
@@ -234,16 +240,16 @@ class Fisicas():
         if len(trayectoriaBlanca) > 0:
             x_values, y_values = zip(*trayectoriaBlanca)
             plt.plot(x_values, y_values, color="black", label=f'Bola Blanca')
-            plt.scatter(x_values[-1], y_values[-1], color='black')
+            plt.scatter(x_values[-1], y_values[-1], color='black', s=self.radioTronera**2)
 
         if len(trayectoriaSeleccionada) > 0:
             x_values, y_values = zip(*trayectoriaSeleccionada)
             plt.plot(x_values, y_values, color ="red", label=f'Bola Seleccionada')
-            plt.scatter(x_values[-1], y_values[-1], color='red')
+            plt.scatter(x_values[-1], y_values[-1], color='red', s=self.radioTronera**2)
 
         for tronera in self.listaTroneras:
             (x,y) = tronera.position
-            plt.scatter(x,y,color="green")
+            plt.scatter(x,y,color="green", s=self.radioTronera**2)
         
         for wall in walls:
             p1 = wall.a
@@ -268,9 +274,13 @@ class Fisicas():
         print(f"La bola blanca choco?: {bolaBlancaPrimerColision}")
         tiroValido = False
         if(self.primerColisionEtiqueta is not None):
+            print(f"primer colision de la blanca fue con: {self.primerColisionEtiqueta}")
             if(self.seleccionadaEtiqueta == self.primerColisionEtiqueta):
                     tiroValido = True
+        if(self.entroLaBlanca):
+            tiroValido = False
         print(f"tiro valido: {tiroValido}")
+        print(f"Entro la blanca: {self.entroLaBlanca}")
         print("Bolas que entraron: ")
         for ball, etiqueta in self.entraron:
             print(etiqueta)
