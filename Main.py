@@ -25,13 +25,14 @@ from screeninfo import get_monitors
 from datetime import datetime
 import ImageProcessor
 from pathlib import Path
+import random
 
 from Clases.Fisicas import Fisicas
 
 screen_width, screen_height = pyautogui.size()
 
 computo = None
-anguloRotar = -15
+anguloRotar = 0
 ResolucionX = 1280
 ResolucionY = 720
 resoluciones = [(426, 240), (640, 360), (800, 450), (896, 504), (912, 513), (928, 522), (960, 540), (1024, 576), (1152, 648),
@@ -1313,7 +1314,7 @@ class VentanaVideo(QMainWindow):
                         
                         if (bolaBlanca is not None and bolaSeleccionada is not None):
                             tamROI = self.obtener_tam_ROI()
-                            fisicas = Fisicas(True, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, 50, 22, self.troneras)
+                            fisicas = Fisicas(True, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, random.randint(10, 100), random.randint(10, 100), self.troneras, self.radioTronera)
                             trayectoriasBlanca, trayectoriasSeleccionada, tiroValido = fisicas.simular()
 
                     if( listaEtiquetada is not None ):
