@@ -1,17 +1,18 @@
 import pymunk
-import random
 import matplotlib.pyplot as plt
 import math
 import pygame
-import copy
+
 
 bolaBlancaPrimerColision = False
 bolaPrimerColision = None
 
 class Fisicas():
     #el constructor luego va a recibir tambien todos los checkbox que debera tener en cuenta para cumplir las reglas de pool:
-    def __init__(self, verSimulacion, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI, velBlancaX, velBlancaY, troneras, radioTronera):
+    def __init__(self, verSimulacion, verGrafico, verResultadosConsola, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI, troneras, radioTronera, radioBolas):
         self.verSimulacion = verSimulacion
+        self.verGrafico = verGrafico
+        self.verResultadosConsola = verResultadosConsola
         self.listaApareada = listaApareada
         self.bolaSeleccionada = bolaSeleccionada
         self.bolaBlanca = bolaBlanca
@@ -20,8 +21,8 @@ class Fisicas():
         self.XIROI = XIROI
         self.YIROI = YIROI
         self.blanca = None
-        self.velBlancaX = velBlancaX
-        self.velBlancaY = velBlancaY
+        self.velBlancaX = 0
+        self.velBlancaY = 0
         self.troneras = troneras
         self.radioTronera = radioTronera
         self.seleccionada = None
@@ -30,6 +31,29 @@ class Fisicas():
         self.seleccionadaEtiqueta = None
         self.primerColisionEtiqueta = None
         self.entroLaBlanca = False
+        self.radioBolas = radioBolas
+        self.entroLaSeleccionada = False
+        self.entroLaNegra = False
+        self.pasos = 5
+
+    def setear_velocidad_inicial_blanca(self, viX, viY):
+        self.velBlancaX = viX
+        self.velBlancaY = viY
+    
+    def setear_pasos_tiempo(self, pasos):
+        self.pasos = pasos
+
+    def reiniciar_simulacion(self):
+        self.balls = []
+        self.blanca = None
+        self.seleccionada = None
+        self.listaTroneras = []
+        self.entraron = []
+        self.seleccionadaEtiqueta = None
+        self.primerColisionEtiqueta = None
+        self.entroLaBlanca = False
+        self.entroLaSeleccionada = False
+        self.entroLaNegra = False
 
     def create_ball(self, space, x, y, radius, mass, etiqueta):
         body = pymunk.Body(mass, pymunk.moment_for_circle(mass, 0, radius))
@@ -157,18 +181,19 @@ class Fisicas():
         handler = space.add_collision_handler(0, 0)
         handler.begin = self.on_collision_begin
         # Escalar las coordenadas de las paredes para que coincidan con el sistema de coordenadas de Matplotlib
-        wall_vertices = [(wall.a.x, screen_height - wall.a.y) for wall in walls]  # Invertir el eje Y      
+  
 
         while not all_balls_stopped:
-           if(self.verSimulacion):
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    all_balls_stopped = True
-                    break
+           
+            if(self.verSimulacion):
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        all_balls_stopped = True
+                        break
             
             bolas_para_eliminar = []
 
-            for _ in range(5):
+            for _ in range(self.pasos):
                 space.step(dt)
 
             for ball in self.balls:
@@ -182,7 +207,7 @@ class Fisicas():
                 x, y = ball.position
                 ball_shape = list(ball.shapes)[0]
                 etiqueta_bola = ball_shape.userData
-         
+            
                 if (ball == self.seleccionada):
                     trayectoriaSeleccionada.append((x,y))
                 elif(ball == self.blanca):
@@ -202,7 +227,11 @@ class Fisicas():
                 ball_shape = list(ball.shapes)[0]
                 etiqueta = ball_shape.userData
                 if (etiqueta == "Blanca"):
-                    self.entroLaBlanca=True
+                    self.entroLaBlanca = True
+                if(self.seleccionada == ball):
+                    self.entroLaSeleccionada = True
+                if(etiqueta == "Negra"):
+                    self.entroLaNegra = True
                 space.remove(ball_shape.body, ball_shape)
                 self.balls.remove(ball)
 
@@ -214,9 +243,9 @@ class Fisicas():
                     x,y = tronera.position
                     pygame.draw.circle(screen, (0, 255, 0), (int(x), int(y)), 20)
                 pygame.display.flip()
-                for i in range(len(wall_vertices)):
-                    p1 = wall_vertices[i]
-                    p2 = wall_vertices[(i+1) % len(wall_vertices)]
+                for wall in walls:
+                    p1 = wall.a
+                    p2 = wall.b
                     pygame.draw.line(screen, (255,0,0),p1,p2,5)
                 clock.tick(60)
 
@@ -231,69 +260,62 @@ class Fisicas():
 
         # # Graficar las trayectorias después de cerrar la simulación
         #esto grafica las rectas de todas las trayectorias, son las misma rectas que vamos a tener que retornar y luego graficar con opencv
-        for ball_index, trajectory in enumerate(trajectories):
-            if len(trajectory) > 0:
-                x_values, y_values = zip(*trajectory)
-                plt.plot(x_values, y_values, color="blue", label=f'Bola {ball_index + 1}')
-                plt.scatter(x_values[-1], y_values[-1], color='blue')
+        if(self.verGrafico):
+            plt.figure()
+            for ball_index, trajectory in enumerate(trajectories):
+                if len(trajectory) > 0:
+                    x_values, y_values = zip(*trajectory)
+                    plt.plot(x_values, y_values, color="blue", label=f'Bola {ball_index + 1}')
+                    plt.scatter(x_values[-1], y_values[-1], color='blue', s=self.radioBolas*2)
 
-        if len(trayectoriaBlanca) > 0:
-            x_values, y_values = zip(*trayectoriaBlanca)
-            plt.plot(x_values, y_values, color="black", label=f'Bola Blanca')
-            plt.scatter(x_values[-1], y_values[-1], color='black', s=self.radioTronera**2)
+            if len(trayectoriaBlanca) > 0:
+                x_values, y_values = zip(*trayectoriaBlanca)
+                plt.plot(x_values, y_values, color="black", label=f'Bola Blanca')
+                plt.scatter(x_values[-1], y_values[-1], color='black', s=self.radioBolas*2)
 
-        if len(trayectoriaSeleccionada) > 0:
-            x_values, y_values = zip(*trayectoriaSeleccionada)
-            plt.plot(x_values, y_values, color ="red", label=f'Bola Seleccionada')
-            plt.scatter(x_values[-1], y_values[-1], color='red', s=self.radioTronera**2)
+            if len(trayectoriaSeleccionada) > 0:
+                x_values, y_values = zip(*trayectoriaSeleccionada)
+                plt.plot(x_values, y_values, color ="red", label=f'Bola Seleccionada')
+                plt.scatter(x_values[-1], y_values[-1], color='red', s=self.radioBolas*2)
 
-        for tronera in self.listaTroneras:
-            (x,y) = tronera.position
-            plt.scatter(x,y,color="green", s=self.radioTronera**2)
-        
-        for wall in walls:
-            p1 = wall.a
-            p2 = wall.b
-            x_values = [p1.x, p2.x]
-            y_values = [p1.y, p2.y]
-            plt.plot(x_values,y_values, color="green")
+            for tronera in self.listaTroneras:
+                (x,y) = tronera.position
+                plt.scatter(x,y,color="green", s=self.radioTronera*2)
             
+            for wall in walls:
+                p1 = wall.a
+                p2 = wall.b
+                x_values = [p1.x, p2.x]
+                y_values = [p1.y, p2.y]
+                plt.plot(x_values,y_values, color="green")
+            plt.xlabel('Posición X')
+            plt.ylabel('Posición Y')
+            plt.title('Trayectorias de Todas las Bolas')
+            (ancho, alto) = self.ROI
+            plt.xlim(-50, ancho+50)
+            plt.ylim(-50, alto+50)
+            plt.gca().invert_yaxis()
+            plt.legend()
+            plt.show()
 
                 
         
 
-        plt.xlabel('Posición X')
-        plt.ylabel('Posición Y')
-        plt.title('Trayectorias de Todas las Bolas')
-        (ancho, alto) = self.ROI
-        plt.xlim(-50, ancho+50)
-        plt.ylim(-50, alto+50)
-        plt.gca().invert_yaxis()
-        plt.legend()
-        plt.show()
-        print(f"La bola blanca choco?: {bolaBlancaPrimerColision}")
+        if(self.verResultadosConsola):
+            print(f"La bola blanca choco?: {bolaBlancaPrimerColision}")
         tiroValido = False
         if(self.primerColisionEtiqueta is not None):
-            print(f"primer colision de la blanca fue con: {self.primerColisionEtiqueta}")
+            if(self.verResultadosConsola):
+                print(f"primer colision de la blanca fue con: {self.primerColisionEtiqueta}")
             if(self.seleccionadaEtiqueta == self.primerColisionEtiqueta):
                     tiroValido = True
         if(self.entroLaBlanca):
             tiroValido = False
-        print(f"tiro valido: {tiroValido}")
-        print(f"Entro la blanca: {self.entroLaBlanca}")
-        print("Bolas que entraron: ")
-        for ball, etiqueta in self.entraron:
-            print(etiqueta)
-        return trayectoriaBlanca, trayectoriaSeleccionada, tiroValido
+        if(self.verResultadosConsola):
+            print(f"tiro valido: {tiroValido}")
+            print(f"Entro la blanca: {self.entroLaBlanca}")
+            print("Bolas que entraron: ")
+            for ball, etiqueta in self.entraron:
+                print(etiqueta)
+        return trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, self.entroLaBlanca, self.entroLaSeleccionada, self.entroLaNegra
          
-
-#main viejo: esto llamaba a simular 1000 veces:
-# if __name__ == "__main__":
-#     for i in range (1000):
-#         entro = main()
-#         if entro:
-#             lista.append((i, entro))
-#             contador = contador + 1
-#     print (lista)
-#     print ("entraron: ")
-#     print (contador)

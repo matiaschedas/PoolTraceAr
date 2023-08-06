@@ -1314,9 +1314,22 @@ class VentanaVideo(QMainWindow):
                         
                         if (bolaBlanca is not None and bolaSeleccionada is not None):
                             tamROI = self.obtener_tam_ROI()
-                            fisicas = Fisicas(True, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, random.randint(10, 100), random.randint(10, 100), self.troneras, self.radioTronera)
-                            trayectoriasBlanca, trayectoriasSeleccionada, tiroValido = fisicas.simular()
-                            fisicas = None
+                            trayectoriasValidasBlanca = []
+                            trayectoriasValidasSeleccionada = []
+                            fisicas = Fisicas(False, True, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, self.troneras, self.radioTronera, maxRadius)
+                            fisicas.setear_pasos_tiempo(5)
+                            for i in range(10):
+                                #print(f"calculando {i+1} de 1000...")
+                                #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
+                                #fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
+                                fisicas.setear_velocidad_inicial_blanca(15,23)
+                                trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra= fisicas.simular()
+                                fisicas.reiniciar_simulacion()
+                                if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
+                                    trayectoriasValidasBlanca.append(trayectoriasBlanca)
+                                    trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
+                            print("fin calculo de trayectorias")
+                           
 
                     if( listaEtiquetada is not None ):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
