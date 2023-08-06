@@ -209,7 +209,7 @@ class Fisicas():
             if(seleccionadaShape.userData == bolaPrimerColision.userData):
                 tiroValido = True
         print(f"tiro valido: {tiroValido}")
-        return ball_selected_approached_corner, tiroValido
+        return trayectoriaBlanca, trayectoriaSeleccionada, tiroValido
 
 #main viejo: esto llamaba a simular() que antes era el main():
 # if __name__ == "__main__":
