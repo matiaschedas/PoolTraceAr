@@ -3,8 +3,8 @@ import random
 import matplotlib.pyplot as plt
 import math
 
-lista = []
-contador = 0
+bolaBlancaPrimerColision = False
+bolaPrimerColision = None
 
 class Fisicas():
     #el constructor luego va a recibir tambien todos los checkbox que debera tener en cuenta para cumplir las reglas de pool:
@@ -20,6 +20,7 @@ class Fisicas():
         self.velBlancaX = velBlancaX
         self.velBlancaY = velBlancaY
         self.troneras = troneras
+        self.seleccionada = None
 
     def create_ball(self, space, x, y, radius, mass, etiqueta):
         body = pymunk.Body(mass, pymunk.moment_for_circle(mass, 0, radius))
@@ -46,19 +47,42 @@ class Fisicas():
 
     def distancia(self, punto1, punto2):
         return math.sqrt((punto1[0] - punto2[0]) ** 2 + (punto1[1] - punto2[1]) ** 2)
+    
+    def on_collision_begin(self, arbiter, space, data):
+        global bolaBlancaPrimerColision, bolaPrimerColision
+        # Obtiene los cuerpos involucrados en la colisión
+        ball_shape_1, ball_shape_2 = arbiter.shapes
+        if(isinstance(ball_shape_1, pymunk.Circle) and isinstance( ball_shape_2, pymunk.Circle)):
+            etiqueta_bola_1 = ball_shape_1.userData
+            etiqueta_bola_2 = ball_shape_2.userData
+
+            # Verifica si una de las bolas es la bola blanca
+            if (etiqueta_bola_1 == "Blanca" or etiqueta_bola_2 == "Blanca") and (bolaBlancaPrimerColision==False):
+                bolaBlancaPrimerColision = True
+                if(etiqueta_bola_1 == "Blanca"):
+                    bolaPrimerColision = ball_shape_2
+                else:
+                    bolaPrimerColision = ball_shape_1
+        return True 
 
     def simular(self):
         space = pymunk.Space()
         space.gravity = (0, 0)
-
+         
         # Posiciones iniciales de las bolas que están quietas
         for bola in self.listaApareada:
             (x,y,r), _, etiqueta = bola
+            (xs,ys,rs) = self.bolaSeleccionada
+            xs = xs - self.XIROI
+            ys = ys - self.YIROI
             if(etiqueta == "Blanca"):
                self.blanca  = self.create_ball(space, x, y, r, 1, etiqueta)
                #en vez de  harcodearlo se debera enviar como parametro del contructor:
                self.blanca.velocity = (self.velBlancaX,self.velBlancaY)
                self.balls.append(self.blanca)
+            elif(int(x) == int(xs) and int(y) == int(ys)):
+                self.seleccionada = self.create_ball(space, x, y, r, 1, etiqueta)
+                self.balls.append(self.seleccionada)
             else:
                 self.balls.append(self.create_ball(space, x, y, r, 1, etiqueta))
 
@@ -84,6 +108,9 @@ class Fisicas():
         all_balls_stopped = False
         ball_selected_approached_corner = False
 
+        handler = space.add_collision_handler(0, 0)
+        handler.begin = self.on_collision_begin
+        
         while not all_balls_stopped:
             for _ in range(5):
                 space.step(dt)
@@ -93,23 +120,15 @@ class Fisicas():
 
             # Guardar la posición actual de todas las bolas en sus trayectorias
             for ball_index, ball in enumerate(self.balls):
-                agregado = False
                 x, y = ball.position
                 ball_shape = list(ball.shapes)[0]
                 etiqueta_bola = ball_shape.userData
-                (xs,ys,rs) = self.bolaSeleccionada
-                xs = xs - self.XIROI
-                ys = ys - self.YIROI
-                (xb,yb,rb) = self.bolaBlanca
-                xb = xb - self.XIROI
-                yb = yb - self.YIROI
-                if (int(x) == xs and int(y) == ys):
+         
+                if (ball == self.seleccionada):
                     trayectoriaSeleccionada.append((x,y))
-                    agregado = True
-                if(int(x) == xb and int(y) == yb):
+                elif(ball == self.blanca):
                     trayectoriaBlanca.append((x,y))
-                    agregado = True
-                if (agregado == False):
+                else:
                     trajectories[ball_index].append((x, y))
 
 
@@ -133,14 +152,11 @@ class Fisicas():
             # Calcular la distancia desde el centro de la bola a las esquinas y comparar con el radio
             if min(distancia_a_esquinas) < 60:
                 ball_selected_approached_corner = True
-
-        #print("¿La bola seleccionada se acercó a una esquina?:", ball_selected_approached_corner)
         
 
         # # Graficar las trayectorias después de cerrar la simulación
         #esto grafica las rectas de todas las trayectorias, son las misma rectas que vamos a tener que retornar y luego graficar con opencv
         for ball_index, trajectory in enumerate(trajectories):
-            print(f"Trayectoria de Bola {ball_index + 1}: {trajectory}")
             if len(trajectory) > 0:
                 x_values, y_values = zip(*trajectory)
                 plt.plot(x_values, y_values, label=f'Bola {ball_index + 1}')
@@ -167,9 +183,16 @@ class Fisicas():
         plt.gca().invert_yaxis()
         plt.legend()
         plt.show()
-        return ball_selected_approached_corner
+        print(f"La bola blanca choco?: {bolaBlancaPrimerColision}")
+        seleccionadaShape = list(self.seleccionada.shapes)[0]
+        tiroValido = False
+        if(bolaPrimerColision is not None):
+            if(seleccionadaShape.userData == bolaPrimerColision.userData):
+                tiroValido = True
+        print(f"tiro valido: {tiroValido}")
+        return ball_selected_approached_corner, tiroValido
 
-#main viejo: esto llamaba a simular que antes era el main:
+#main viejo: esto llamaba a simular() que antes era el main():
 # if __name__ == "__main__":
 #     for i in range (1000):
 #         entro = main()
