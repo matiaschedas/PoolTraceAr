@@ -354,7 +354,8 @@ class ControlWindow(QMainWindow):
                 self.minRadius_slider.setValue(self.minRadius)
 
     def onMaxRadiusSliderChange(self, value):
-        self.maxRadius = value
+        if value>self.minRadius:
+            self.maxRadius = value
         self.maxRadiusChanged.emit(self.maxRadius)
         # Actualizar el cuadro de texto correspondiente
         self.maxRadius_text.setText(str(self.maxRadius))

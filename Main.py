@@ -1312,8 +1312,9 @@ class VentanaVideo(QMainWindow):
                             bolaBlanca = (xb,yb,rb)
                         
                         if (bolaBlanca is not None and bolaSeleccionada is not None):
-                            fisicas = Fisicas(listaEtiquetada, bolaSeleccionada, bolaBlanca)
-                            fisicas.simular()
+                            tamROI = self.obtener_tam_ROI()
+                            fisicas = Fisicas(listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, 0, 0, self.troneras)
+                            trayectoriasDelTiro = fisicas.simular()
 
                     if( listaEtiquetada is not None ):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
@@ -1478,13 +1479,14 @@ class VentanaVideo(QMainWindow):
         return False
 
     def selecciono_la_blanca(self, listaEtiquetadas):
-        (xs, ys, rs) = bolaSeleccionada
-        for(x1,y1,r1), _, etiqueta in listaEtiquetadas:
-            x1=x1+self.XIROI
-            y1=y1+self.YIROI
-            if math.sqrt((x1-xs)**2 + (y1-ys)**2) <= rs:
-                if(etiqueta == "Blanca"):
-                    return True
+        if (bolaSeleccionada is not None):
+            (xs, ys, rs) = bolaSeleccionada
+            for(x1,y1,r1), _, etiqueta in listaEtiquetadas:
+                x1=x1+self.XIROI
+                y1=y1+self.YIROI
+                if math.sqrt((x1-xs)**2 + (y1-ys)**2) <= rs:
+                    if(etiqueta == "Blanca"):
+                        return True
         return False
     
     def obtenerBolaBlanca(self, listaEtiquetadas):
@@ -1495,6 +1497,20 @@ class VentanaVideo(QMainWindow):
             if(etiqueta == "Blanca"):
                 return bola
         return None
+    
+    def distancia_puntos(self, x1, y1, x2, y2):
+        return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+    def obtener_tam_ROI(self):
+        d1 = self.distancia_puntos(self.XIROI, self.YIROI, self.XDROI, self.YIROI)
+        d2 = self.distancia_puntos(self.XDROI, self.YIROI, self.XDROI, self.YDROI)
+        d3 = self.distancia_puntos(self.XDROI, self.YDROI, self.XIROI, self.YDROI)
+        d4 = self.distancia_puntos(self.XIROI, self.YDROI, self.XIROI, self.YIROI)
+        ancho = max(d1,d3)
+        alto = max(d2,d4)
+        return ancho, alto 
+
+        
 
 resXProy = 1080
 resYProy = 1920
