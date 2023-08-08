@@ -1318,12 +1318,12 @@ class VentanaVideo(QMainWindow):
                             trayectoriasValidasSeleccionada = []
                             fisicas = Fisicas(False, True, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, self.troneras, self.radioTronera, maxRadius)
                             fisicas.setear_pasos_tiempo(5)
-                            for i in range(10):
-                                #print(f"calculando {i+1} de 1000...")
+                            for i in range(2):
+                                #print(f"calculando {i+1} de 100...")
                                 #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
                                 #fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
                                 fisicas.setear_velocidad_inicial_blanca(15,23)
-                                trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra= fisicas.simular()
+                                trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra = fisicas.simular()
                                 fisicas.reiniciar_simulacion()
                                 if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
                                     trayectoriasValidasBlanca.append(trayectoriasBlanca)
