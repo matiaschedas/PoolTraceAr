@@ -1312,6 +1312,7 @@ class VentanaVideo(QMainWindow):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
                         if( self.cambiaron_bolas_previo_al_tiro( listaEtiquetada , self.circles ) ):
                             print("Error, las bolas cambiaron de posicion.")
+                            self.deseleccionar_bola()
                             listaEtiquetada.clear()
                             listaEtiquetada = None
                         if( self.selecciono_la_blanca(listaEtiquetada)):
@@ -1321,6 +1322,9 @@ class VentanaVideo(QMainWindow):
                             listaEtiquetada = None
                         if( self.existe_la_negra(listaEtiquetada)==False):
                             print("El jugador anterior emboco la bola negra, fin del partido")
+                            self.deseleccionar_bola()
+                            listaEtiquetada.clear()
+                            listaEtiquetada = None
                         
                         if(listaEtiquetada is not None):
                             if bolaBlanca is not None:
