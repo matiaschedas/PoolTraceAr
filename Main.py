@@ -1307,39 +1307,48 @@ class VentanaVideo(QMainWindow):
                     with variable_compartida_lock:
                         listaEtiquetada = ListaApareadaConEtiquetas
                         bolaBlanca = self.obtenerBolaBlanca(listaEtiquetada)
-                        if bolaBlanca is not None:
-                            (xb, yb, rb) = bolaBlanca
-                            xb= xb + self.XIROI
-                            yb= yb + self.YIROI
-                            bolaBlanca = (xb,yb,rb)
-                        
-                        if (bolaBlanca is not None and bolaSeleccionada is not None):
-                            tamROI = self.obtener_tam_ROI()
-                            trayectoriasValidasBlanca = []
-                            trayectoriasValidasSeleccionada = []
-                            fisicas = Fisicas(False, True, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, self.troneras, self.radioTronera, maxRadius)
-                            fisicas.setear_pasos_tiempo(5)
-                            for i in range(2):
-                                #print(f"calculando {i+1} de 100...")
-                                #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
-                                #fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
-                                fisicas.setear_velocidad_inicial_blanca(15,23)
-                                trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra = fisicas.simular()
-                                fisicas.reiniciar_simulacion()
-                                if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
-                                    trayectoriasValidasBlanca.append(trayectoriasBlanca)
-                                    trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
-                            print("fin calculo de trayectorias")
-                           
-
+                    
                     if( listaEtiquetada is not None ):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
                         if( self.cambiaron_bolas_previo_al_tiro( listaEtiquetada , self.circles ) ):
                             print("Error, las bolas cambiaron de posicion.")
+                            listaEtiquetada.clear()
+                            listaEtiquetada = None
                         if( self.selecciono_la_blanca(listaEtiquetada)):
                             print ("Error, se selecciono la bola blanca para embocar")
                             self.deseleccionar_bola()
-                        listaEtiquetada.clear()
+                            listaEtiquetada.clear()
+                            listaEtiquetada = None
+                        if( self.existe_la_negra(listaEtiquetada)==False):
+                            print("El jugador anterior emboco la bola negra, fin del partido")
+                        
+                        if(listaEtiquetada is not None):
+                            if bolaBlanca is not None:
+                                (xb, yb, rb) = bolaBlanca
+                                xb= xb + self.XIROI
+                                yb= yb + self.YIROI
+                                bolaBlanca = (xb,yb,rb)
+                            
+                            if (bolaBlanca is not None and bolaSeleccionada is not None):
+                                tamROI = self.obtener_tam_ROI()
+                                trayectoriasValidasBlanca = []
+                                trayectoriasValidasSeleccionada = []
+                                fisicas = Fisicas(False, True, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, self.troneras, self.radioTronera, maxRadius)
+                                fisicas.setear_pasos_tiempo(5)
+                                for i in range(2):
+                                    #print(f"calculando {i+1} de 100...")
+                                    #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
+                                    #fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
+                                    fisicas.setear_velocidad_inicial_blanca(15,23)
+                                    trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra = fisicas.simular()
+                                    fisicas.reiniciar_simulacion()
+                                    if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
+                                        trayectoriasValidasBlanca.append(trayectoriasBlanca)
+                                        trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
+                                print("fin calculo de trayectorias")
+                           
+
+                    
                             
 
             if self.verROI:
@@ -1437,7 +1446,7 @@ class VentanaVideo(QMainWindow):
                      
             # detectar si hay movimiento de alguna bola:
             if self.frame_count % 7 == 0:
-                print(f"movimiento: {self.hayMovimiento}")
+                #print(f"movimiento: {self.hayMovimiento}")
                 global movimientoDetectado
                 if circles_prev is not None and self.circles is not None:
                     movimientoDetectado = False
@@ -1454,8 +1463,9 @@ class VentanaVideo(QMainWindow):
                             break             
                 else:
                     movimientoDetectado = False
-                circles_prev= copy.deepcopy(self.circles)
-                circles_prev = self.circles
+                if(self.circles is not None):
+                    circles_prev= self.circles.copy()
+                    circles_prev = self.circles
             self.hay_movimiento(movimientoDetectado)
 
 
@@ -1515,6 +1525,12 @@ class VentanaVideo(QMainWindow):
             if(etiqueta == "Blanca"):
                 return bola
         return None
+
+    def existe_la_negra(self, listaEtiquetada):
+        for(x,y,r), _ ,etiqueta in listaEtiquetada:
+            if etiqueta == "Negra":
+                return True
+        return False
     
     def distancia_puntos(self, x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
