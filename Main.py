@@ -26,6 +26,7 @@ from datetime import datetime
 import ImageProcessor
 from pathlib import Path
 import random
+import copy
 
 from Clases.Fisicas import Fisicas
 
@@ -1435,8 +1436,8 @@ class VentanaVideo(QMainWindow):
                                 
                      
             # detectar si hay movimiento de alguna bola:
-            if self.frame_count % 5 == 0:
-                #print(f"movimiento: {self.hayMovimiento}")
+            if self.frame_count % 7 == 0:
+                print(f"movimiento: {self.hayMovimiento}")
                 global movimientoDetectado
                 if circles_prev is not None and self.circles is not None:
                     movimientoDetectado = False
@@ -1444,15 +1445,17 @@ class VentanaVideo(QMainWindow):
                     for (x, y, r) in self.circles:
                         for (prev_x, prev_y, prev_r) in circles_prev:
                             distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
-                            if distance < 4:  # Umbral para considerar movimiento
+                            if distance < minRadius/2:  # Umbral para considerar movimiento
                                 movimientoDetectado = False
                                 break
                             else:
-                                movimientoDetectado = True               
+                                movimientoDetectado = True  
+                        if(movimientoDetectado == True):
+                            break             
                 else:
                     movimientoDetectado = False
-            
-            circles_prev = self.circles
+                circles_prev= copy.deepcopy(self.circles)
+                circles_prev = self.circles
             self.hay_movimiento(movimientoDetectado)
 
 
