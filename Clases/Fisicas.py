@@ -245,11 +245,11 @@ class Fisicas():
             if(self.verSimulacion):
                 for ball in self.balls:
                     x, y = ball.position
-                    pygame.draw.circle(screen, (0, 0, 255), (int(x), int(y)), 20)
+                    pygame.draw.circle(screen, (0, 0, 255), (int(x), int(y)), self.radioBolas)
                 for tronera in self.listaTroneras:
                     x,y = tronera.position
-                    pygame.draw.circle(screen, (0, 255, 0), (int(x), int(y)), 20)
-                
+                    pygame.draw.circle(screen, (0, 255, 0), (int(x), int(y)), self.radioTronera)
+
                 for segment in space.shapes:
                     if isinstance(segment, pymunk.Segment):
                         body = segment.body

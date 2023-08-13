@@ -1342,8 +1342,8 @@ class VentanaVideo(QMainWindow):
                                 for i in range(2):
                                     #print(f"calculando {i+1} de 100...")
                                     #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
-                                    #fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
-                                    fisicas.setear_velocidad_inicial_blanca(15,23)
+                                    fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
+                                    #fisicas.setear_velocidad_inicial_blanca(15,23)
                                     trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra = fisicas.simular()
                                     fisicas.reiniciar_simulacion()
                                     if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
