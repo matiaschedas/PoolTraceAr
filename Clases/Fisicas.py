@@ -1,7 +1,7 @@
 import pymunk
 import matplotlib.pyplot as plt
 import math
-#import pygame
+import pygame
 
 
 bolaBlancaPrimerColision = False
@@ -81,19 +81,28 @@ class Fisicas():
         velocity = body.velocity
         body.apply_impulse_at_local_point((-velocity.x * friction_coefficient, -velocity.y * friction_coefficient))
 
+    def create_segment(self,space, x1,y1, x2,y2):
+        segment_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+        segment_shape = pymunk.Segment(segment_body, (x1, y1), (x2,y2),5)
+        segment_shape.elasticity = 1.0
+        segment_shape.friction = 0.8
+        segment_shape.filter = pymunk.ShapeFilter(categories=0b0100, mask=0b0010)
+        space.add(segment_body,segment_shape)
+        return segment_body
+
     def create_walls(self, space, width, height):
         mitad = width/2
-        walls = [pymunk.Segment(space.static_body, (0+self.radioTronera,0),(mitad-self.radioTronera,0),5),
-                 pymunk.Segment(space.static_body, (mitad+self.radioTronera,0),(width-self.radioTronera,0),5),
-                 pymunk.Segment(space.static_body, (width,0+self.radioTronera),(width,height-self.radioTronera),5),
-                 pymunk.Segment(space.static_body, (width-self.radioTronera,height),(mitad+self.radioTronera,height),5),
-                 pymunk.Segment(space.static_body, (mitad-self.radioTronera,height),(0+self.radioTronera,height),5),
-                 pymunk.Segment(space.static_body, (0,height-self.radioTronera),(0,0+self.radioTronera),5)]
+        wallsPy = []
+        walls = [[(0+self.radioTronera,0),(mitad-self.radioTronera,0)],
+                 [(mitad+self.radioTronera,0),(width-self.radioTronera,0)],
+                 [(width,0+self.radioTronera),(width,height-self.radioTronera)],
+                 [(width-self.radioTronera,height),(mitad+self.radioTronera,height)],
+                 [(mitad-self.radioTronera,height),(0+self.radioTronera,height)],
+                 [(0,height-self.radioTronera),(0,0+self.radioTronera)]]
  
         for wall in walls:
-            wall.elasticity = 1.0
-            wall.filter = pymunk.ShapeFilter(categories=0b0100,  mask=0b0010)
-            space.add(wall)
+            (x1, y1),(x2,y2) = wall 
+            wallsPy.append(self.create_segment(space,x1,y1,x2,y2))
         return walls
 
     def distancia(self, punto1, punto2):
@@ -121,16 +130,16 @@ class Fisicas():
 
     
     def simular(self):
-        # if self.verSimulacion:
-        #     pygame.init()
-        #     (ancho, alto) = self.ROI
-        #     plt.xlim(0, ancho)
-        #     plt.ylim(0, alto)
-        #     screen_width, screen_height = ancho+50, alto+50
-        #     screen = pygame.display.set_mode((screen_width, screen_height))
-        #     pygame.display.set_caption("Billiards Simulation")
-        #     clock = pygame.time.Clock()
-        #     screen.fill((255, 255, 255))
+        if self.verSimulacion:
+            pygame.init()
+            (ancho, alto) = self.ROI
+            plt.xlim(0, ancho)
+            plt.ylim(0, alto)
+            screen_width, screen_height = ancho+50, alto+50
+            screen = pygame.display.set_mode((screen_width, screen_height))
+            pygame.display.set_caption("Billiards Simulation")
+            clock = pygame.time.Clock()
+            screen.fill((255, 255, 255))
 
         space = pymunk.Space()
         space.gravity = (0, 0)
@@ -184,19 +193,19 @@ class Fisicas():
 
         while not all_balls_stopped:
         
-            # if(self.verSimulacion):
-            #     for event in pygame.event.get():
-            #         if event.type == pygame.QUIT:
-            #             all_balls_stopped = True
-            #             break
+            if(self.verSimulacion):
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        all_balls_stopped = True
+                        break
             
             bolas_para_eliminar = []
             #pasos de tiempo para la simulacion fisica:
             for _ in range(self.pasos):
                 space.step(dt)
 
-            # if self.verSimulacion:
-            #     screen.fill((255, 255, 255))
+            if self.verSimulacion:
+                screen.fill((255, 255, 255))
 
             # Guardar la posición actual de todas las bolas en sus trayectorias
             for ball_index, ball in enumerate(self.balls):
@@ -233,28 +242,31 @@ class Fisicas():
                 space.remove(ball_shape.body, ball_shape)
                 self.balls.remove(ball)
 
-            # if(self.verSimulacion):
-            #     for ball in self.balls:
-            #         x, y = ball.position
-            #         pygame.draw.circle(screen, (0, 0, 255), (int(x), int(y)), 20)
-            #     for tronera in self.listaTroneras:
-            #         x,y = tronera.position
-            #         pygame.draw.circle(screen, (0, 255, 0), (int(x), int(y)), 20)
-            #     pygame.display.flip()
-            #     for wall in walls:
-            #         p1 = wall.a
-            #         p2 = wall.b
-            #         pygame.draw.line(screen, (255,0,0),p1,p2,5)
-            #     clock.tick(60)
+            if(self.verSimulacion):
+                for ball in self.balls:
+                    x, y = ball.position
+                    pygame.draw.circle(screen, (0, 0, 255), (int(x), int(y)), 20)
+                for tronera in self.listaTroneras:
+                    x,y = tronera.position
+                    pygame.draw.circle(screen, (0, 255, 0), (int(x), int(y)), 20)
+                
+                for segment in space.shapes:
+                    if isinstance(segment, pymunk.Segment):
+                        body = segment.body
+                        p1 = body.local_to_world(segment.a)
+                        p2 = body.local_to_world(segment.b)
+                        pygame.draw.line(screen, (0, 255, 0), p1, p2)
+                pygame.display.flip()
+                clock.tick(60)
 
             total_velocity = sum(ball.velocity.length for ball in self.balls)
             if total_velocity < 5:
                 all_balls_stopped = True
 
 
-        #comentar si no necesito ver animacion:    
-        # if(self.verSimulacion):   
-        #     pygame.quit()
+
+        if(self.verSimulacion):   
+            pygame.quit()
 
         # # Graficar las trayectorias después de cerrar la simulación
         #esto grafica las rectas de todas las trayectorias, son las misma rectas que vamos a tener que retornar y luego graficar con opencv
@@ -282,11 +294,8 @@ class Fisicas():
                 plt.scatter(x,y,color="green", s=self.radioTronera*2)
             
             for wall in walls:
-                p1 = wall.a
-                p2 = wall.b
-                x_values = [p1.x, p2.x]
-                y_values = [p1.y, p2.y]
-                plt.plot(x_values,y_values, color="green")
+                (x1,y1) , (x2,y2) = wall
+                plt.plot([x1,x2],[y1,y2], color="green")
                 
             plt.xlabel('Posición X')
             plt.ylabel('Posición Y')
