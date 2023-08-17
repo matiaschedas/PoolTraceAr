@@ -104,11 +104,11 @@ frames_previos = 0
 
 def inicioHilos():
     # hilo1.start()
+    #hilo que se encarga de dar la imagen para el proyector
     hiloProyeccion.start()
 
 
 def pararHilos():
-    
     hiloProyeccion.detener_hilo()
 
 
@@ -124,7 +124,7 @@ def get_win_id(window):
         return window.winId()
     return None
 
-# Configurar el estilo de la ventana para mostrar el botón de maximizar de Windows
+#devuelve si el frame obtenido de la webcam es todo negro:
 def is_frame_black(frame):
     if frame is None:
         return True
@@ -139,7 +139,8 @@ def is_frame_black(frame):
         return True
     else:
         return False
-
+    
+# Configurar el estilo de la ventana para mostrar el botón de maximizar de Windows:
 def enable_maximize_button(window):
     if sys.platform == 'win32':
         hwnd = get_win_id(window)
@@ -185,11 +186,13 @@ class VentanaProyeccion(QMainWindow):
         else:
             event.ignore()
 
+    #mueve la imagen del proyector al monitor de la pc que se elija:
     def set_nroMonitor(self, numero):
         self.nroMonitor = numero
         monitor = QDesktopWidget().screenGeometry(self.nroMonitor)
         self.move(monitor.left() + 7, monitor.top())
 
+    #dibuja los circulos en la ventana de proyeccion:
     def dibujar_circulos(self, x, y, r, color, grosor):
             cv2.circle(self.frame, (x, y), r, color, grosor)
 
@@ -207,6 +210,7 @@ class VentanaProyeccion(QMainWindow):
         imagen = QPixmap.fromImage(imagen)
         self.label.setPixmap(imagen)
 
+    #limpia el frame para que no queden rastros de los circulos:
     def limpiar_circulos(self):
         self.frame = np.zeros((resXProy, resYProy, 3), dtype=np.uint8)
 
@@ -461,11 +465,13 @@ class VentanaVideo(QMainWindow):
         setearIDS=True
         print(f"Setear IDS {setearIDS}")
 
+    #comprueba si el nombre con el que el usuario intenta guardar un preset es valido:
     def es_nombre_archivo_valido(self, texto):
         patron = r"^(?!^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$)[^\x00-\x1f\\?*:\";|/<>]+$"
         coincide = re.match(patron, texto, re.IGNORECASE)
         return coincide is not None
     
+    #guardar presets de configuraciones:
     def guardar_preset(self):
         global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
         nombreArchivo = self.controlWindow.textNombrePreset.text()
@@ -489,6 +495,7 @@ class VentanaVideo(QMainWindow):
             with open(path, "w") as archivo:
                 json.dump(datos, archivo)
 
+    #cargar presets de configuraciones:
     def cargar_preset(self):
         global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
         campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles']
@@ -525,7 +532,8 @@ class VentanaVideo(QMainWindow):
             maxCircles = data["maxCircles"]
             self.controlWindow.actualizarParametros(
             dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
-           
+
+    # region cambios para preprocesamiento de imagen:     
     def onAlphaChanged(self, value):
         global Alpha
         Alpha = value
@@ -549,6 +557,7 @@ class VentanaVideo(QMainWindow):
     def aplicarContraste(self, value):
         global aplicarContraste
         aplicarContraste = value
+    #endregion
 
     def ver_frame(self):
         global mostrarFrameRaw
@@ -559,6 +568,7 @@ class VentanaVideo(QMainWindow):
         else:
             mostrarFrameRaw = True
 
+    #actualiza los parametros con los cuales se detectan las bolas en opencv con cuda:
     def actualizarHough(self):
         global hough, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, computo
         self.controlWindow.actualizarParametros(
@@ -571,6 +581,7 @@ class VentanaVideo(QMainWindow):
         except cv2.error as e:
             pass
 
+    #region cambios en los parametros de deteccion de circulos:
     def onDpChanged(self, newDP):
         global dp
         dp = newDP
@@ -605,11 +616,14 @@ class VentanaVideo(QMainWindow):
         global maxCircles
         maxCircles = maxCirclesNew
         self.actualizarHough()
+    #endregion
 
+    #cambio del angulo del video: 
     def onAnguloChanged(self, anguloNew):
         global anguloRotar
         anguloRotar = anguloNew
 
+    #cambio del radio de todas las troneras:
     def onRadioTroneraChanged(self, radioTroneraNew):
         global anguloRotar
         self.radioTronera = radioTroneraNew    
@@ -618,6 +632,7 @@ class VentanaVideo(QMainWindow):
         # Configurar la ventana para mostrar el botón de maximizar de Windows
         enable_maximize_button(self)
 
+    #evento maximizar ventana:
     def event(self, event):
         if event.type() == QEvent.WindowStateChange:
             if self.windowState() & Qt.WindowMaximized:
@@ -637,6 +652,7 @@ class VentanaVideo(QMainWindow):
 
         return super().eventFilter(obj, event)
 
+    #evento que se ejecuta cuando el usuario agranda o achica la ventana
     def resizeEvent(self, event):
         super().resizeEvent(event)
         minimum_size = self.minimumSize()
@@ -652,6 +668,7 @@ class VentanaVideo(QMainWindow):
         ResolucionX = event.size().width()
         ResolucionY = event.size().height()
 
+    #encuentra la resolucion de video para el tamaño de la ventana:
     def encontrar_resolucion(self, resoluciones, ResolucionX, ResolucionY):
         print(f"resX: {ResolucionX} resY: {ResolucionY}")
         ancho, alto = resoluciones[len(resoluciones)-1]
@@ -665,6 +682,7 @@ class VentanaVideo(QMainWindow):
                 return elegida
         return None
 
+    #encuentra un radio de los circulos para el tamaño del video:
     def encontrar_radio(self, resolucion_encontrada):
         global resoluciones, radios
         indiceResolucion = resoluciones.index(resolucion_encontrada)
@@ -673,6 +691,7 @@ class VentanaVideo(QMainWindow):
         radio = radios[indice_radio]
         return radio
 
+    #metodo que se ejecuta cuando termina el evento de resize de la ventana:
     def on_resize_timeout(self):
         # Código a ejecutar cuando finaliza el evento de redimensionamiento
         print("Final del evento de redimensionamiento")
@@ -707,6 +726,7 @@ class VentanaVideo(QMainWindow):
         self.hiloProyeccion.actualizar_proporcion_interfaz(
             ResolucionY, ResolucionX)
 
+    #cambia la webcam a la que selecciono el usuario:
     def cambio_camara(self, index):
         opcion = self.comboCamaras.itemText(index)
         print(f"opcion seleccionada: {opcion}")    
@@ -723,6 +743,7 @@ class VentanaVideo(QMainWindow):
             self.cap = None
             print("Error", ex)
 
+    #cambia el monitor al que selecciono el usuario:
     def cambio_monitor(self, index):
         global display_monitor
         opcion = self.comboMonitores.itemText(index)
@@ -735,6 +756,7 @@ class VentanaVideo(QMainWindow):
         distancia = (x2 - x1)
         return math.floor(distancia/2)
 
+    #define si se esta proyectando en otro monitor o solo se esta viendo la interfaz principal:
     def proyectar(self):
         global proyectando, cerrarProyeccion
         self.cambio_monitor(display_monitor-1)
@@ -747,7 +769,7 @@ class VentanaVideo(QMainWindow):
             cerrarProyeccion = True
             ventanaProyeccion.close()
         
-
+    #abre la ventana de configuracion de parametros:
     def configurar(self):
         self.controlWindow.show()
 
@@ -765,6 +787,7 @@ class VentanaVideo(QMainWindow):
         self.ventanaPrepro.close()
         event.accept()
 
+    #en base al checkbox determina si hay o no bola en mano para el turno:
     def bola_en_mano(self):
         estado_actual = self.checkBolaEnMano.isChecked()
         if estado_actual == True:
@@ -774,6 +797,7 @@ class VentanaVideo(QMainWindow):
             self.BolaEnMano = False
             print("No hay bola en mano")
 
+    #en base al checkbox determina si hay o no dos tiros para el turno:
     def dos_tiros(self):
         estado_actual = self.check2Tiros.isChecked()
         if estado_actual == True:
@@ -783,6 +807,7 @@ class VentanaVideo(QMainWindow):
             self.Hay2Tiros = False
             print("No hay 2 tiros")
 
+    #en base al checkbox determina si hay o no mesa abierta para el turno:
     def mesa_abierta(self):
         estado_actual = self.checkMesaAbierta.isChecked()
         if estado_actual == True:
@@ -819,6 +844,8 @@ class VentanaVideo(QMainWindow):
         boton.setGeometry(x, y, ancho, alto)
         return boton
 
+    #evento que se ejecuta cuando se hace click en cualquier lugar:
+    #maneja: movimiento de troneras, movimiento del roi, seleccion de bola para el turno
     def mousePressEvent(self, event):
         # Verificar si se hizo clic dentro de los vértices del ROI
         self.verticeSeleccionado = None
@@ -881,6 +908,7 @@ class VentanaVideo(QMainWindow):
         x2, y2 = punto2
         return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
+    #devuelve una linea paralela a la del input pero con una distancia dada:
     def parallel_line(self, punto1, punto2, distancia):
         # Desempaquetar los puntos en coordenadas (x, y)
         x1, y1 = punto1
@@ -902,6 +930,7 @@ class VentanaVideo(QMainWindow):
         # Devolver los dos puntos de la nueva recta paralela desplazada
         return new_punto1, new_punto2
 
+    #calcula cuales troneras tienen camino libre para la bola seleccionada:
     def calcular_posibles_troneras(self):
         global bolaSeleccionada
         self.poligonos = []
@@ -937,6 +966,7 @@ class VentanaVideo(QMainWindow):
                 self.poligonosImposibles.append(puntos)
         return tronerasPosibles        
 
+    #ordena los vertices dados para determinar un trapecio valido 
     def sort_vertices(self,vertices):
         # Calcula el centroide del polígono
         cx = int(sum(x for x, y in vertices) / len(vertices))
@@ -960,7 +990,7 @@ class VentanaVideo(QMainWindow):
         x2, y2 = punto2
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-    
+    #determina si un circulo esta dentro de un trapecio o no:
     def esta_dentro_del_trapecio(self, trapecio, centro_circulo, radio_circulo):
         x, y = centro_circulo
         x1, y1 = trapecio[0]
@@ -1014,7 +1044,7 @@ class VentanaVideo(QMainWindow):
             # El centro del círculo está fuera del trapecio
             return "Outside"
 
-
+    #determina si el trapecio hacia la tronera es o no valido (tiene o no bolas interseptando el camino):
     def revisar_circulos(self,trapecio_vertices, circulos):
         trapecio_valido = True
         for circulo in circulos:
@@ -1044,6 +1074,7 @@ class VentanaVideo(QMainWindow):
             return self.circulo_barely_inside_trapecio(trapecio,centro_circulo,radio_circulo)
         else:
             return True
+        
     def circulo_barely_inside_trapecio(self, trapecio, centro_circulo, radio_circulo):
         x, y = centro_circulo
         x1, y1 = trapecio[0]
@@ -1095,8 +1126,6 @@ class VentanaVideo(QMainWindow):
         else:
             return True
 
-
-
     def punto_dentro_del_trapecio(self,trapecio, punto):
         x, y = punto
         vertices = trapecio + [trapecio[0]]  # Añadir el primer vértice al final para cerrar el trapecio
@@ -1110,6 +1139,7 @@ class VentanaVideo(QMainWindow):
                 return False
         return True
 
+    #determina la distancia minima desde un punto hacia una recta:
     def distancia_punto_a_linea(self,x, y, x1, y1, x2, y2):
         # Calcula la distancia entre el punto (x, y) y la línea definida por los puntos (x1, y1) y (x2, y2)
         return abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1) / math.sqrt((y2 - y1)**2 + (x2 - x1)**2)
@@ -1158,9 +1188,11 @@ class VentanaVideo(QMainWindow):
     def hay_movimiento(self, movimiento):
         self.hayMovimiento = movimiento
     
+    #abre la ventana de configuracion de preprocesamiento de imagen:
     def abrir_preprocesamiento(self):
         self.ventanaPrepro.show()
 
+    #aplica los preprocesamientos que el usuario determine:
     def aplicar_preprocesamientos(self, image):
         global aplicarBlur,aplicarBrillo,aplicarContraste,aplicarHist,mostrarFrameRaws
         if aplicarBlur:
@@ -1176,6 +1208,7 @@ class VentanaVideo(QMainWindow):
             cv2.resizeWindow("Frame", ResolucionX, ResolucionY)
         return image
 
+    #deprecated
     def agregar_o_actualizar_bola(self,x,y,r):
         global bolas
         actualizada = False
@@ -1198,6 +1231,8 @@ class VentanaVideo(QMainWindow):
                  bolas.remove(bola)
             encontrada = False
 
+
+    #deprecated
     def obtener_id_bola(self,x,y):
         global bolas
         encontrada = False
@@ -1208,7 +1243,7 @@ class VentanaVideo(QMainWindow):
                 return bola.id
         if encontrada == False:
             return -1
-        
+    
     def eliminar_circulos_repetidos(self, circulos):
     # Creamos un diccionario para agrupar los círculos por sus coordenadas (x, y).
         circulos_dict = {}
@@ -1231,6 +1266,8 @@ class VentanaVideo(QMainWindow):
         círculos_únicos = list(circulos_dict.values())
         
         return círculos_únicos
+    
+    #bucle principal de ejecucion:
     def actualizar_video(self):
         global bolaSeleccionada, resaltarBola, minRadius, maxRadius
         if not self.seguirActualizando:
@@ -1494,6 +1531,7 @@ class VentanaVideo(QMainWindow):
     async def getCircles(self):
         return self.circlesProyeccion
     
+    #determina si las bolas se movieron durante el calculo de tiro posible:
     def cambiaron_bolas_previo_al_tiro(self, listaEtiquetadas, actuales):
         lista2_set = set(actuales)        
         encontrado = False
@@ -1511,6 +1549,7 @@ class VentanaVideo(QMainWindow):
         #Devolvemos false porque no cambiaron las bolas previo al tiro y todas fueron encontradas                         
         return False
 
+    #determina si el usuario selecciono la bola blanca para embocar:
     def selecciono_la_blanca(self, listaEtiquetadas):
         if (bolaSeleccionada is not None):
             (xs, ys, rs) = bolaSeleccionada
@@ -1554,6 +1593,7 @@ class VentanaVideo(QMainWindow):
 resXProy = 1080
 resYProy = 1920
 
+#levanta archivo de configuracion antes de iniciar todo:
 def levantar_configuracion():
     global computo
     path = script_dir + "\\configuracion.json"
@@ -1562,6 +1602,7 @@ def levantar_configuracion():
     computo = data["computo"]
     print(f"computo: {computo}")
 
+#deprecated:
 class Bola:
     contador = 0  # Variable de clase para el ID autoincremental
     

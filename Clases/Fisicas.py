@@ -36,14 +36,17 @@ class Fisicas():
         self.entroLaNegra = False
         self.pasos = 5
 
-
+    #setea la velocidad en Y y en X de la bola blanca:
     def setear_velocidad_inicial_blanca(self, viX, viY):
         self.velBlancaX = viX
         self.velBlancaY = viY
     
+    #setea el paso del tiempo de la simulacion:
+    #ajustar para conseguir mesa real:
     def setear_pasos_tiempo(self, pasos):
         self.pasos = pasos
 
+    #si requiero simular nuevamente un tiro usar:
     def reiniciar_simulacion(self):
         self.balls = []
         self.blanca = None
@@ -60,7 +63,8 @@ class Fisicas():
         body = pymunk.Body(mass, pymunk.moment_for_circle(mass, 0, radius))
         body.position = x, y
         shape = pymunk.Circle(body, radius)
-        shape.elasticity = 1.0
+        #ajustar para conseguir mesa real:
+        shape.elasticity = 0.9 #determina cuanta energia cinetica se conserva en la colision (1.0 es 100% elastica)
         #con estos filtros seteo que las bolas puedan colisionar con las paredes y con otras bolas:
         shape.filter = pymunk.ShapeFilter(categories=0b0010, mask = 0b0100 | 0b0010)
         shape.userData = etiqueta
@@ -71,12 +75,14 @@ class Fisicas():
         body = pymunk.Body(body_type=pymunk.Body.STATIC)
         body.position = x,y
         shape = pymunk.Circle(body, radius)
-        shape.elasticity = 1.0
+        shape.elasticity = 0.9
         shape.filter = pymunk.ShapeFilter(categories=0b0001)
         shape.userData = "Tronera " + str(nro)
         space.add(body, shape)
         return body
 
+    #aplica la friccion de la bola contra la mesa (tambien se puede no usar este metodo y aplicarl la friccion al crear la bola):
+    #ajustar para conseguir mesa real:
     def apply_friction(self, body, friction_coefficient):
         velocity = body.velocity
         body.apply_impulse_at_local_point((-velocity.x * friction_coefficient, -velocity.y * friction_coefficient))
@@ -84,8 +90,10 @@ class Fisicas():
     def create_segment(self,space, x1,y1, x2,y2):
         segment_body = pymunk.Body(body_type=pymunk.Body.STATIC)
         segment_shape = pymunk.Segment(segment_body, (x1, y1), (x2,y2),5)
-        segment_shape.elasticity = 1.0
-        segment_shape.friction = 0.8
+        #ajustar para conseguir mesa real:
+        segment_shape.elasticity = 0.5
+        #ajustar para conseguir mesa real:
+        segment_shape.friction = 0.1
         segment_shape.filter = pymunk.ShapeFilter(categories=0b0100, mask=0b0010)
         space.add(segment_body,segment_shape)
         return segment_body
@@ -108,6 +116,7 @@ class Fisicas():
     def distancia(self, punto1, punto2):
         return math.sqrt((punto1[0] - punto2[0]) ** 2 + (punto1[1] - punto2[1]) ** 2)
     
+    #metodo que se ejecuta cuando hay colision entre 2 objetos:
     def on_collision_begin(self, arbiter, space, data):
         global bolaBlancaPrimerColision, bolaPrimerColision
         # Obtiene los cuerpos involucrados en la colisión
@@ -142,6 +151,7 @@ class Fisicas():
             screen.fill((255, 255, 255))
 
         space = pymunk.Space()
+        #ajustar para conseguir mesa real:
         space.gravity = (0, 0)
          
         #se crean las bolas:
