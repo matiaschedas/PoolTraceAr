@@ -124,7 +124,10 @@ class Fisicas():
         if(isinstance(ball_shape_1, pymunk.Circle) and isinstance( ball_shape_2, pymunk.Circle)):
             etiqueta_bola_1 = ball_shape_1.userData
             etiqueta_bola_2 = ball_shape_2.userData
-
+            if(ball_shape_1.body.position == self.seleccionada.position):
+                self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
+            if(ball_shape_2.body.position == self.seleccionada.position):
+                self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
             # Verifica si una de las bolas es la bola blanca
             if (etiqueta_bola_1 == "Blanca" or etiqueta_bola_2 == "Blanca") and (bolaBlancaPrimerColision==False):
                 bolaBlancaPrimerColision = True
@@ -136,7 +139,40 @@ class Fisicas():
                self.puntos_trayectoria_blanca.append(ball_shape_1.body.position)
             elif (etiqueta_bola_2 == "Blanca"):                
                self.puntos_trayectoria_blanca.append(ball_shape_2.body.position)
+            
+            if(ball_shape_1.body.position != self.seleccionada.position and ball_shape_1.body.position != self.blanca.position):
+                if(self.balls is not None):
+                    for ball in self.balls:
+                        if(ball.position == ball_shape_1.body.position):
+                            index = self.balls.index(ball)
+                            self.puntos_trayectorias[index].append(ball_shape_1.body.position)
+
+            if(ball_shape_2.body.position != self.seleccionada.position and ball_shape_2.body.position != self.blanca.position):
+                if(self.balls is not None):
+                    for ball in self.balls:
+                            if(ball.position == ball_shape_2.body.position):
+                                index = self.balls.index(ball)
+                                self.puntos_trayectorias[index].append(ball_shape_2.body.position)
+
         if(isinstance(ball_shape_1,pymunk.Segment) and isinstance(ball_shape_2,pymunk.Circle) or isinstance(ball_shape_2,pymunk.Segment) and isinstance(ball_shape_1,pymunk.Circle)):
+            if(isinstance(ball_shape_1,pymunk.Segment)):
+                if(ball_shape_2.body.position == self.seleccionada.position):
+                     self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
+                if(ball_shape_2.body.position != self.seleccionada.position and ball_shape_2.body.position != self.blanca.position):
+                    if(self.balls is not None):
+                        for ball in self.balls:
+                            if(ball.position == ball_shape_2.body.position):
+                                index = self.balls.index(ball)
+                                self.puntos_trayectorias[index].append(ball_shape_2.body.position)
+            if(isinstance(ball_shape_2,pymunk.Segment)):
+                if(ball_shape_1.body.position == self.seleccionada.position):
+                     self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
+                if(ball_shape_1.body.position != self.seleccionada.position and ball_shape_1.body.position != self.blanca.position):
+                    if(self.balls is not None):
+                        for ball in self.balls:
+                            if(ball.position == ball_shape_1.body.position):
+                                index = self.balls.index(ball)
+                                self.puntos_trayectorias[index].append(ball_shape_1.body.position)
             if(isinstance(ball_shape_1,pymunk.Segment)):
                 etiqueta_bola_2 = ball_shape_2.userData
                 etiqueta_bola_1 = ""
@@ -148,6 +184,8 @@ class Fisicas():
                 self.puntos_trayectoria_blanca.append(ball_shape_1.body.position)
             elif (etiqueta_bola_2 == "Blanca"):
                 self.puntos_trayectoria_blanca.append(ball_shape_2.body.position)
+            
+
 
         return True 
     
@@ -157,6 +195,8 @@ class Fisicas():
     
     def simular(self):
         self.puntos_trayectoria_blanca = []
+        self.puntos_trayectoria_seleccionada = []
+        self.puntos_trayectorias =[[] for _ in range(len(self.listaApareada))]
         if self.verSimulacion:
             pygame.init()
             (ancho, alto) = self.ROI
@@ -188,8 +228,13 @@ class Fisicas():
                 shape = list(self.seleccionada.shapes)[0]
                 self.seleccionadaEtiqueta = shape.userData
                 self.balls.append(self.seleccionada)
+                self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
             else:
-                self.balls.append(self.create_ball(space, x, y, r, 1, etiqueta))
+                bola = self.create_ball(space, x, y, r, 1, etiqueta)
+                self.balls.append(bola)
+                index = self.balls.index(bola)
+                self.puntos_trayectorias[index].append(bola.position)
+                
 
         # Nuevas listas para almacenar las trayectorias de todas las bolas
 
@@ -229,6 +274,10 @@ class Fisicas():
                         for ball in self.balls:
                             if(list(ball.shapes)[0].userData == "Blanca"):
                                 self.puntos_trayectoria_blanca.append(ball.position)
+                            if(list(ball.shapes)[0].userData != "Blanca" and ball.position != self.seleccionada.position):
+                                index = self.balls.index(ball)
+                                self.puntos_trayectorias[index].append(ball.position)
+                        self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
                         break
             
             bolas_para_eliminar = []
@@ -296,6 +345,10 @@ class Fisicas():
                 for ball in self.balls:
                             if(list(ball.shapes)[0].userData == "Blanca"):
                                 self.puntos_trayectoria_blanca.append(ball.position)
+                            if(list(ball.shapes)[0].userData != "Blanca" and ball.position != self.seleccionada.position):
+                                index = self.balls.index(ball)
+                                self.puntos_trayectorias[index].append(ball.position)
+                self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
                 all_balls_stopped = True
 
 
@@ -361,5 +414,5 @@ class Fisicas():
             print("Bolas que entraron: ")
             for ball, etiqueta in self.entraron:
                 print(etiqueta)
-        return trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, self.entroLaBlanca, self.entroLaSeleccionada, self.entroLaNegra, self.puntos_trayectoria_blanca
+        return trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, self.entroLaBlanca, self.entroLaSeleccionada, self.entroLaNegra, self.puntos_trayectoria_blanca, self.puntos_trayectoria_seleccionada, self.puntos_trayectorias
          

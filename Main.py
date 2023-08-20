@@ -272,6 +272,8 @@ class VentanaVideo(QMainWindow):
         self.etiquetando = False
 
         self.puntos_trayectoria_bola_blanca = None
+        self.puntos_trayectoria_bola_seleccionada = None
+        self.puntos_trayectorias_bolas = None
 
         self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
@@ -1383,8 +1385,10 @@ class VentanaVideo(QMainWindow):
                                     #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
                                     fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
                                     #fisicas.setear_velocidad_inicial_blanca(15,23)
-                                    trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca = fisicas.simular()                                    
-                                    self.puntos_trayectoria_bola_blanca = puntos_trayectoria_blanca                                    
+                                    trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias = fisicas.simular()                                    
+                                    self.puntos_trayectoria_bola_blanca = puntos_trayectoria_blanca    
+                                    self.puntos_trayectoria_bola_seleccionada = puntos_trayectoria_seleccionada         
+                                    self.puntos_trayectorias_bolas = puntos_trayectorias                       
                                     fisicas.reiniciar_simulacion()
                                     if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
                                         trayectoriasValidasBlanca.append(trayectoriasBlanca)
@@ -1490,7 +1494,7 @@ class VentanaVideo(QMainWindow):
                         resaltarBola = False
 
                                 
-            self.graficar_trayectoria_bola_blanca()         
+            self.graficar_trayectorias()         
             # detectar si hay movimiento de alguna bola:
             if self.frame_count % 7 == 0:
                 #print(f"movimiento: {self.hayMovimiento}")
@@ -1555,10 +1559,16 @@ class VentanaVideo(QMainWindow):
             encontrado = False
         #Devolvemos false porque no cambiaron las bolas previo al tiro y todas fueron encontradas                         
         return False
-    def graficar_trayectoria_bola_blanca(self):
+    
+    def graficar_trayectorias(self):
         if(self.puntos_trayectoria_bola_blanca is not None):
             for i in range(len(self.puntos_trayectoria_bola_blanca)):
                 if(i == len(self.puntos_trayectoria_bola_blanca) - 1):
+                    punto = self.puntos_trayectoria_bola_blanca[i].int_tuple
+                    x,y = punto
+                    x = x + self.XIROI
+                    y = y + self.YIROI
+                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
                     break
                 puntoa = self.puntos_trayectoria_bola_blanca[i].int_tuple
                 puntob = self.puntos_trayectoria_bola_blanca[i+1].int_tuple
@@ -1569,6 +1579,45 @@ class VentanaVideo(QMainWindow):
                 xb = xb + self.XIROI
                 yb = yb + self.YIROI
                 cv2.line(self.frame,(xa,ya) , (xb,yb), (0,255,0), 2)
+        if(self.puntos_trayectoria_bola_seleccionada is not None):
+            for i in range(len(self.puntos_trayectoria_bola_seleccionada)):
+                if(i == len(self.puntos_trayectoria_bola_seleccionada) - 1):
+                    punto = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
+                    x,y = punto
+                    x = x + self.XIROI
+                    y = y + self.YIROI
+                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (255,0,0),thickness=-1)
+                    break
+                puntoa = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
+                puntob = self.puntos_trayectoria_bola_seleccionada[i+1].int_tuple
+                xa,ya = puntoa
+                xb,yb = puntob
+                xa = xa + self.XIROI
+                ya = ya + self.YIROI
+                xb = xb + self.XIROI
+                yb = yb + self.YIROI
+                cv2.line(self.frame, (xa,ya),(xb,yb), (255,0,0), 2)
+        if(self.puntos_trayectorias_bolas is not None):
+            for i in range(len(self.puntos_trayectorias_bolas)):
+                listaBola = self.puntos_trayectorias_bolas[i] 
+                if(len(listaBola)>0):
+                    for x in range(len(listaBola)):
+                        if(x == len(listaBola)-1):
+                            punto = listaBola[x].int_tuple
+                            x,y = punto
+                            x = x + self.XIROI
+                            y = y + self.YIROI
+                            cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
+                            break
+                        puntoa = listaBola[x].int_tuple
+                        puntob = listaBola[x+1].int_tuple
+                        xa,ya = puntoa
+                        xb,yb = puntob
+                        xa = xa + self.XIROI
+                        ya = ya + self.YIROI
+                        xb = xb + self.XIROI
+                        yb = yb + self.YIROI
+                        cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
 
     #determina si el usuario selecciono la bola blanca para embocar:
     def selecciono_la_blanca(self, listaEtiquetadas):

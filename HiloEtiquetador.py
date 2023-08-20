@@ -13,6 +13,7 @@ def Etiquetar(path, ListaApareada, eliminarCapturas, guardarHistorial):
     print("inicia hilo etiquetador") 
     global ListaApareadaConEtiquetas
     clasificador = clasificadorTipoBola()
+
     with variable_compartida_lock:
         for elemento in ListaApareada:
             (((x,y,r),nombreBola)) = elemento
