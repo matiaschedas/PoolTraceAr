@@ -1366,6 +1366,16 @@ class VentanaVideo(QMainWindow):
                             self.deseleccionar_bola()
                             listaEtiquetada.clear()
                             listaEtiquetada = None
+                        elif(self.solo_una_blanca(listaEtiquetada)==False):
+                            print("Error, hay mas de una bola blanca en la mesa")
+                            self.deseleccionar_bola()
+                            listaEtiquetada.clear()
+                            listaEtiquetada = None
+                        elif(self.solo_una_negra(listaEtiquetada)==False):
+                            print("Error, hay mas de una bola 8 en la mesa")
+                            self.deseleccionar_bola()
+                            listaEtiquetada.clear()
+                            listaEtiquetada = None
                         
                         if(listaEtiquetada is not None):
                             if bolaBlanca is not None:
@@ -1649,6 +1659,25 @@ class VentanaVideo(QMainWindow):
             if etiqueta == "Negra":
                 return True
         return False
+
+    def solo_una_blanca(self, listaEtiquetada):
+        if(listaEtiquetada == None):
+            return False
+        blancas = 0
+        for(x,y,r), _, etiqueta in listaEtiquetada:
+            if etiqueta == "Blanca":
+                blancas = blancas + 1
+        return blancas==1
+    
+    def solo_una_negra(self, listaEtiquetada):
+        if(listaEtiquetada == None):
+            return False
+        negras = 0
+        for(x,y,r), _, etiqueta in listaEtiquetada:
+            if etiqueta == "Negra":
+                negras = negras + 1
+        return negras==1
+
     
     def distancia_puntos(self, x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
