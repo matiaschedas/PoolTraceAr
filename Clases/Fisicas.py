@@ -132,6 +132,23 @@ class Fisicas():
                     self.primerColisionEtiqueta = ball_shape_2.userData
                 else:
                     self.primerColisionEtiqueta = ball_shape_1.userData
+            if (etiqueta_bola_1 == "Blanca"):
+               self.puntos_trayectoria_blanca.append(ball_shape_1.body.position)
+            elif (etiqueta_bola_2 == "Blanca"):                
+               self.puntos_trayectoria_blanca.append(ball_shape_2.body.position)
+        if(isinstance(ball_shape_1,pymunk.Segment) and isinstance(ball_shape_2,pymunk.Circle) or isinstance(ball_shape_2,pymunk.Segment) and isinstance(ball_shape_1,pymunk.Circle)):
+            if(isinstance(ball_shape_1,pymunk.Segment)):
+                etiqueta_bola_2 = ball_shape_2.userData
+                etiqueta_bola_1 = ""
+            else:
+                etiqueta_bola_1 = ball_shape_1.userData
+                etiqueta_bola_2 = ""
+            # Verifica si una de las bolas es la bola blanca
+            if (etiqueta_bola_1 == "Blanca"):                
+                self.puntos_trayectoria_blanca.append(ball_shape_1.body.position)
+            elif (etiqueta_bola_2 == "Blanca"):
+                self.puntos_trayectoria_blanca.append(ball_shape_2.body.position)
+
         return True 
     
     def distancia_entre_puntos(self, punto1, punto2):
@@ -139,6 +156,7 @@ class Fisicas():
 
     
     def simular(self):
+        self.puntos_trayectoria_blanca = []
         if self.verSimulacion:
             pygame.init()
             (ancho, alto) = self.ROI
@@ -164,6 +182,7 @@ class Fisicas():
                self.blanca  = self.create_ball(space, x, y, r, 1, etiqueta)
                self.blanca.velocity = (self.velBlancaX,self.velBlancaY)
                self.balls.append(self.blanca)
+               self.puntos_trayectoria_blanca.append(self.blanca.position)
             elif(int(x) == int(xs) and int(y) == int(ys)):
                 self.seleccionada = self.create_ball(space, x, y, r, 1, etiqueta)
                 shape = list(self.seleccionada.shapes)[0]
@@ -175,7 +194,7 @@ class Fisicas():
         # Nuevas listas para almacenar las trayectorias de todas las bolas
 
         #comento las trayectorias de las demas bolas para mejorar performance:
-        #trajectories = [[] for _ in range(len(self.balls))]
+        trajectories = [[] for _ in range(len(self.balls))]
         trayectoriaBlanca = []
         trayectoriaSeleccionada = []
         
@@ -207,6 +226,9 @@ class Fisicas():
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         all_balls_stopped = True
+                        for ball in self.balls:
+                            if(list(ball.shapes)[0].userData == "Blanca"):
+                                self.puntos_trayectoria_blanca.append(ball.position)
                         break
             
             bolas_para_eliminar = []
@@ -229,8 +251,8 @@ class Fisicas():
                 elif(ball == self.blanca):
                     trayectoriaBlanca.append((x,y))
                 #comento trayectorias de las demas bolas para mejorar performance:
-                # else:
-                #     trajectories[ball_index].append((x, y))
+                else:
+                    trajectories[ball_index].append((x, y))
                 for tronera in self.listaTroneras:
                     tronera_x, tronera_y = tronera.position
                     distancia_bola_tronera = self.distancia_entre_puntos((x, y), (tronera_x, tronera_y))
@@ -271,6 +293,9 @@ class Fisicas():
 
             total_velocity = sum(ball.velocity.length for ball in self.balls)
             if total_velocity < 5:
+                for ball in self.balls:
+                            if(list(ball.shapes)[0].userData == "Blanca"):
+                                self.puntos_trayectoria_blanca.append(ball.position)
                 all_balls_stopped = True
 
 
@@ -282,12 +307,12 @@ class Fisicas():
         #esto grafica las rectas de todas las trayectorias, son las misma rectas que vamos a tener que retornar y luego graficar con opencv
         if(self.verGrafico):
             plt.figure()
-            #
-            # for ball_index, trajectory in enumerate(trajectories):
-            #     if len(trajectory) > 0:
-            #         x_values, y_values = zip(*trajectory)
-            #         plt.plot(x_values, y_values, color="blue", label=f'Bola {ball_index + 1}')
-            #         plt.scatter(x_values[-1], y_values[-1], color='blue', s=self.radioBolas*2)
+            
+            for ball_index, trajectory in enumerate(trajectories):
+                if len(trajectory) > 0:
+                    x_values, y_values = zip(*trajectory)
+                    plt.plot(x_values, y_values, color="blue", label=f'Bola {ball_index + 1}')
+                    plt.scatter(x_values[-1], y_values[-1], color='blue', s=self.radioBolas*2)
 
             if len(trayectoriaBlanca) > 0:
                 x_values, y_values = zip(*trayectoriaBlanca)
@@ -336,5 +361,5 @@ class Fisicas():
             print("Bolas que entraron: ")
             for ball, etiqueta in self.entraron:
                 print(etiqueta)
-        return trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, self.entroLaBlanca, self.entroLaSeleccionada, self.entroLaNegra
+        return trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, self.entroLaBlanca, self.entroLaSeleccionada, self.entroLaNegra, self.puntos_trayectoria_blanca
          

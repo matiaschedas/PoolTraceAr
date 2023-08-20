@@ -271,6 +271,8 @@ class VentanaVideo(QMainWindow):
         self.etiquetar = False
         self.etiquetando = False
 
+        self.puntos_trayectoria_bola_blanca = None
+
         self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
@@ -1352,12 +1354,12 @@ class VentanaVideo(QMainWindow):
                             self.deseleccionar_bola()
                             listaEtiquetada.clear()
                             listaEtiquetada = None
-                        if( self.selecciono_la_blanca(listaEtiquetada)):
+                        elif( self.selecciono_la_blanca(listaEtiquetada)):
                             print ("Error, se selecciono la bola blanca para embocar")
                             self.deseleccionar_bola()
                             listaEtiquetada.clear()
                             listaEtiquetada = None
-                        if( self.existe_la_negra(listaEtiquetada)==False):
+                        elif( self.existe_la_negra(listaEtiquetada)==False):
                             print("El jugador anterior emboco la bola negra, fin del partido")
                             self.deseleccionar_bola()
                             listaEtiquetada.clear()
@@ -1376,18 +1378,21 @@ class VentanaVideo(QMainWindow):
                                 trayectoriasValidasSeleccionada = []
                                 fisicas = Fisicas(True, True, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, self.troneras, self.radioTronera, maxRadius)
                                 fisicas.setear_pasos_tiempo(5)
-                                for i in range(2):
+                                for i in range(1):
                                     #print(f"calculando {i+1} de 100...")
                                     #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
                                     fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
                                     #fisicas.setear_velocidad_inicial_blanca(15,23)
-                                    trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra = fisicas.simular()
+                                    trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca = fisicas.simular()                                    
+                                    self.puntos_trayectoria_bola_blanca = puntos_trayectoria_blanca                                    
                                     fisicas.reiniciar_simulacion()
                                     if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
                                         trayectoriasValidasBlanca.append(trayectoriasBlanca)
                                         trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
                                 print("fin calculo de trayectorias")
                                 listaEtiquetada = None
+                                with variable_compartida_lock:
+                                    ListaApareadaConEtiquetas.clear()  # Vaciar la lista
                            
 
                     
@@ -1457,13 +1462,13 @@ class VentanaVideo(QMainWindow):
                                 algunaEstaSeleccionada = True
                             
                             # Dibujo de los trapecios posibles y no posibles:
-                            if(self.poligonos is not None):
-                                for poligono in self.poligonos:                            
-                                    #Dibujamos el trapecio en la imagen
-                                    cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
-                            if(self.poligonosImposibles is not None):
-                                for poligono in self.poligonosImposibles:
-                                    cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
+                            # if(self.poligonos is not None):
+                            #     for poligono in self.poligonos:                            
+                            #         #Dibujamos el trapecio en la imagen
+                            #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
+                            # if(self.poligonosImposibles is not None):
+                            #     for poligono in self.poligonosImposibles:
+                            #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
 
                             # #Dibujo de las troneras posibles: (esto esta bueno pero lagea)
                             # if self.tronerasPosibles is not None:
@@ -1485,7 +1490,7 @@ class VentanaVideo(QMainWindow):
                         resaltarBola = False
 
                                 
-                     
+            self.graficar_trayectoria_bola_blanca()         
             # detectar si hay movimiento de alguna bola:
             if self.frame_count % 7 == 0:
                 #print(f"movimiento: {self.hayMovimiento}")
@@ -1533,6 +1538,8 @@ class VentanaVideo(QMainWindow):
     
     #determina si las bolas se movieron durante el calculo de tiro posible:
     def cambiaron_bolas_previo_al_tiro(self, listaEtiquetadas, actuales):
+        if(listaEtiquetadas == None):
+            return False
         lista2_set = set(actuales)        
         encontrado = False
         if( len(lista2_set) != len(listaEtiquetadas)):
@@ -1548,9 +1555,25 @@ class VentanaVideo(QMainWindow):
             encontrado = False
         #Devolvemos false porque no cambiaron las bolas previo al tiro y todas fueron encontradas                         
         return False
+    def graficar_trayectoria_bola_blanca(self):
+        if(self.puntos_trayectoria_bola_blanca is not None):
+            for i in range(len(self.puntos_trayectoria_bola_blanca)):
+                if(i == len(self.puntos_trayectoria_bola_blanca) - 1):
+                    break
+                puntoa = self.puntos_trayectoria_bola_blanca[i].int_tuple
+                puntob = self.puntos_trayectoria_bola_blanca[i+1].int_tuple
+                xa,ya = puntoa
+                xb,yb = puntob
+                xa = xa + self.XIROI
+                ya = ya + self.YIROI
+                xb = xb + self.XIROI
+                yb = yb + self.YIROI
+                cv2.line(self.frame,(xa,ya) , (xb,yb), (0,255,0), 2)
 
     #determina si el usuario selecciono la bola blanca para embocar:
     def selecciono_la_blanca(self, listaEtiquetadas):
+        if(listaEtiquetadas == None):
+             return False
         if (bolaSeleccionada is not None):
             (xs, ys, rs) = bolaSeleccionada
             for(x1,y1,r1), _, etiqueta in listaEtiquetadas:
@@ -1571,6 +1594,8 @@ class VentanaVideo(QMainWindow):
         return None
 
     def existe_la_negra(self, listaEtiquetada):
+        if(listaEtiquetada == None):
+             return False
         for(x,y,r), _ ,etiqueta in listaEtiquetada:
             if etiqueta == "Negra":
                 return True
