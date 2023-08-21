@@ -17,10 +17,7 @@ class clasificadorTipoBola():
         self.id = 0
 
     def clasificar(self, img:Image, guardarHistorial):
-<<<<<<< HEAD
-=======
         img_original=img.copy()    
->>>>>>> 3335efd057b332e7252d8a09ebc8ee45b52b7cc4
         img=img.resize((self.img_height,self.img_width))
         img_array = tf.keras.utils.img_to_array(img)
         img_array = tf.expand_dims(img_array, 0)
