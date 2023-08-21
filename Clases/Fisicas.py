@@ -9,7 +9,7 @@ bolaPrimerColision = None
 
 class Fisicas():
     #el constructor luego va a recibir tambien todos los checkbox que debera tener en cuenta para cumplir las reglas de pool:
-    def __init__(self, verSimulacion, verGrafico, verResultadosConsola, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI, troneras, radioTronera, radioBolas):
+    def __init__(self, verSimulacion, verGrafico, verResultadosConsola, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI, XDROI, YDROI, troneras, radioTronera, radioBolas, puntosParedes):
         self.verSimulacion = verSimulacion
         self.verGrafico = verGrafico
         self.verResultadosConsola = verResultadosConsola
@@ -20,6 +20,8 @@ class Fisicas():
         self.balls = []
         self.XIROI = XIROI
         self.YIROI = YIROI
+        self.XDROI = XDROI
+        self.YDROI = YDROI
         self.blanca = None
         self.velBlancaX = 0
         self.velBlancaY = 0
@@ -35,6 +37,7 @@ class Fisicas():
         self.entroLaSeleccionada = False
         self.entroLaNegra = False
         self.pasos = 5
+        self.puntosParedes = puntosParedes
 
     #setea la velocidad en Y y en X de la bola blanca:
     def setear_velocidad_inicial_blanca(self, viX, viY):
@@ -101,12 +104,32 @@ class Fisicas():
     def create_walls(self, space, width, height):
         mitad = width/2
         wallsPy = []
-        walls = [[(0+self.radioTronera,0),(mitad-self.radioTronera,0)],
-                 [(mitad+self.radioTronera,0),(width-self.radioTronera,0)],
-                 [(width,0+self.radioTronera),(width,height-self.radioTronera)],
-                 [(width-self.radioTronera,height),(mitad+self.radioTronera,height)],
-                 [(mitad-self.radioTronera,height),(0+self.radioTronera,height)],
-                 [(0,height-self.radioTronera),(0,0+self.radioTronera)]]
+        walls = []
+        puntos = self.puntosParedes.copy()
+        for i, punto in enumerate(puntos):
+            xp, yp = punto
+            if i>=0 and i<=3:
+                puntos[i]=(xp-self.XIROI,self.YIROI-self.YIROI)
+            if i==4 or i == 5:
+                puntos[i]=(self.XDROI-self.XIROI,yp-self.YIROI)
+            if i>=6 and i<=9:
+                puntos[i]=(xp-self.XIROI,self.YDROI-self.YIROI)
+            if i==10 or i == 11:
+                puntos[i]=(self.XIROI-self.XIROI,yp-self.YIROI)
+
+        walls = [[(puntos[0]),(puntos[1])],
+                 [(puntos[2]),(puntos[3])],
+                 [(puntos[4]),(puntos[5])],
+                 [(puntos[6]),(puntos[7])],
+                 [(puntos[8]),(puntos[9])],
+                 [(puntos[10]),(puntos[11])]]
+            
+        # walls = [[(0+self.radioTronera,0),(mitad-self.radioTronera,0)],
+        #          [(mitad+self.radioTronera,0),(width-self.radioTronera,0)],
+        #          [(width,0+self.radioTronera),(width,height-self.radioTronera)],
+        #          [(width-self.radioTronera,height),(mitad+self.radioTronera,height)],
+        #          [(mitad-self.radioTronera,height),(0+self.radioTronera,height)],
+        #          [(0,height-self.radioTronera),(0,0+self.radioTronera)]]
  
         for wall in walls:
             (x1, y1),(x2,y2) = wall 

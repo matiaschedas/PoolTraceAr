@@ -321,8 +321,11 @@ class VentanaVideo(QMainWindow):
         # region coordenadas de huecos(troneras):
         self.troneras =[(0, 0),(0, 0),(0, 0),(0, 0),(0, 0),(0, 0)]
         self.troneras_labels = ["T1", "T2", "T3", "T4", "T5", "T6"]
+        self.puntos_paredes = [(0,0),(5,0),(10,0),(15,0),(0,5),(20,5),(0,10),(20,10),(0,15),(5,15),(10,15),(15,15)]
+        self.puntos_paredes_labels =["1","2","3","4","5","6","7","8","9","10","11","12"]
         self.radioTronera = int(radioMax)+3
         self.selected_tronera = None
+        self.selected_punto = None
         # endregion
 
         # region Parametros de reglas de juego
@@ -501,6 +504,18 @@ class VentanaVideo(QMainWindow):
                 "minRadius": minRadius,
                 "maxRadius": maxRadius,
                 "maxCircles": maxCircles,
+                "coordPunto1": self.puntos_paredes[0],
+                "coordPunto2": self.puntos_paredes[1],
+                "coordPunto3": self.puntos_paredes[2],
+                "coordPunto4": self.puntos_paredes[3],
+                "coordPunto5": self.puntos_paredes[4],
+                "coordPunto6": self.puntos_paredes[5],
+                "coordPunto7": self.puntos_paredes[6],
+                "coordPunto8": self.puntos_paredes[7],
+                "coordPunto9": self.puntos_paredes[8],
+                "coordPunto10": self.puntos_paredes[9],
+                "coordPunto11": self.puntos_paredes[10],
+                "coordPunto12": self.puntos_paredes[11]
             }
             with open(path, "w") as archivo:
                 json.dump(datos, archivo)
@@ -508,7 +523,9 @@ class VentanaVideo(QMainWindow):
     #cargar presets de configuraciones:
     def cargar_preset(self):
         global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
-        campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles']
+        campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles', 
+                  'coordPunto1', 'coordPunto2','coordPunto3','coordPunto4','coordPunto5','coordPunto6',
+                  'coordPunto7','coordPunto8','coordPunto9','coordPunto10','coordPunto11','coordPunto12']
         valido = False
         file_dialog = QFileDialog()
 
@@ -540,6 +557,19 @@ class VentanaVideo(QMainWindow):
             minRadius =data["minRadius"]
             maxRadius =data["maxRadius"]
             maxCircles = data["maxCircles"]
+            self.puntos_paredes[0] = data["coordPunto1"]
+            self.puntos_paredes[1] = data["coordPunto2"]
+            self.puntos_paredes[2] = data["coordPunto3"]
+            self.puntos_paredes[3] = data["coordPunto4"]
+            self.puntos_paredes[4] = data["coordPunto5"]
+            self.puntos_paredes[5] = data["coordPunto6"]
+            self.puntos_paredes[6] = data["coordPunto7"]
+            self.puntos_paredes[7] = data["coordPunto8"]
+            self.puntos_paredes[8] = data["coordPunto9"]
+            self.puntos_paredes[9] = data["coordPunto10"]
+            self.puntos_paredes[10] = data["coordPunto11"]
+            self.puntos_paredes[11] = data["coordPunto12"]
+
             self.controlWindow.actualizarParametros(
             dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
 
@@ -869,6 +899,7 @@ class VentanaVideo(QMainWindow):
         else:
             return False
         
+
     #evento que se ejecuta cuando se hace click en cualquier lugar:
     #maneja: movimiento de troneras, movimiento del roi, seleccion de bola para el turno
     def mousePressEvent(self, event):
@@ -893,6 +924,15 @@ class VentanaVideo(QMainWindow):
                 distance = np.sqrt((x - tronera_x) ** 2 + (y - tronera_y) ** 2)
                 if distance < self.radioTronera:  # Radio del círculo
                     self.selected_tronera = i
+                    break
+
+            #Verificar si el click está dentro de alguna de los puntos de paredes
+            x,y = event.x(), event.y()
+            for i, punto in enumerate(self.puntos_paredes):
+                px, py = punto
+                distance = np.sqrt((x - px) ** 2 + (y - py) ** 2)
+                if distance <= 10:
+                    self.selected_punto = i
                     break
 
         if self.moverVertices == False and self.etiquetando==False:
@@ -1186,9 +1226,15 @@ class VentanaVideo(QMainWindow):
             x, y = event.x(), event.y()
             self.troneras[self.selected_tronera] = (x, y)
             self.update()
+        if self.selected_punto is not None: 
+            x,y = event.x(), event.y()
+            self.puntos_paredes[self.selected_punto] = (x,y)
+            self.update()
+            
 
     def mouseReleaseEvent(self, event):
         self.selected_tronera = None
+        self.selected_punto = None
 
     def actualizar_roi(self):
         mitadMesa = self.distancia_media_entre_puntos(self.XIROI, self.XDROI)
@@ -1410,7 +1456,7 @@ class VentanaVideo(QMainWindow):
                                 tamROI = self.obtener_tam_ROI()
                                 trayectoriasValidasBlanca = []
                                 trayectoriasValidasSeleccionada = []
-                                fisicas = Fisicas(True, True, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI, self.troneras, self.radioTronera, maxRadius)
+                                fisicas = Fisicas(True, True, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes)
                                 fisicas.setear_pasos_tiempo(5)
                                 for i in range(1):
                                     #print(f"calculando {i+1} de 100...")
@@ -1437,12 +1483,23 @@ class VentanaVideo(QMainWindow):
             if self.verROI:
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
                               (self.XDROI, self.YDROI), (0, 255, 0), 2)
-                # grafica los huecos (troneras):
+                #grafica los huecos (troneras):
                 for tronera, label in zip(self.troneras, self.troneras_labels):
                     x, y = tronera
                     cv2.circle(self.frame, (x, y), self.radioTronera, (255, 255, 0), 2)
                     cv2.putText(self.frame, label, (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
-                
+
+                #grafica los puntos de paredes:
+                for punto, label in zip(self.puntos_paredes, self.puntos_paredes_labels):
+                    x,y = punto
+                    cv2.circle(self.frame, (x,y), 10 , (0,255,0),1)
+                    cv2.putText(self.frame, label, (x+5,y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
+                    x1 = x - 10
+                    y1 = y - 10
+                    x2 = x + 10
+                    y2 = y + 10
+                    cv2.line(self.frame, (x1, y1), (x2, y2), (0,255,0), thickness=1)
+                    cv2.line(self.frame, (x1, y2), (x2, y1), (0,255,0), thickness=1)
 
             if self.verVerticesROI:
                 cv2.circle(self.frame, (self.XIROI, self.YIROI),int(radioMin/2), (0, 255, 0), 2)
