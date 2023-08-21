@@ -184,9 +184,6 @@ class Fisicas():
                 self.puntos_trayectoria_blanca.append(ball_shape_1.body.position)
             elif (etiqueta_bola_2 == "Blanca"):
                 self.puntos_trayectoria_blanca.append(ball_shape_2.body.position)
-            
-
-
         return True 
     
     def distancia_entre_puntos(self, punto1, punto2):
@@ -396,8 +393,6 @@ class Fisicas():
             plt.show()
 
                 
-        
-
         if(self.verResultadosConsola):
             print(f"La bola blanca choco?: {bolaBlancaPrimerColision}")
         tiroValido = False
