@@ -862,7 +862,13 @@ class VentanaVideo(QMainWindow):
         boton = QPushButton(texto, self)
         boton.setGeometry(x, y, ancho, alto)
         return boton
-
+    
+    def point_inside_roi(self, x, y, roi_x_min, roi_y_min, roi_x_max, roi_y_max):
+        if roi_x_min <= x <= roi_x_max and roi_y_min <= y <= roi_y_max:
+            return True
+        else:
+            return False
+        
     #evento que se ejecuta cuando se hace click en cualquier lugar:
     #maneja: movimiento de troneras, movimiento del roi, seleccion de bola para el turno
     def mousePressEvent(self, event):
@@ -907,7 +913,8 @@ class VentanaVideo(QMainWindow):
             print("Espere por favor, se esta calculando el tiro")
 
         if clickEnBola == False and self.moverVertices == False and self.etiquetando==False:
-            self.deseleccionar_bola()
+            if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
+                self.deseleccionar_bola()
 
     def resaltar_bola_seleccionada(self):
         global resaltarBola
