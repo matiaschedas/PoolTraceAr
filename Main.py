@@ -328,6 +328,7 @@ class VentanaVideo(QMainWindow):
         # region Parametros de reglas de juego
         self.BolaEnMano = False
         self.Hay2Tiros = False
+        self.VerTodasTrayectorias = False
         self.hayMesaAbierta = False
         self.hayMovimiento = False
         # endregion
@@ -378,10 +379,13 @@ class VentanaVideo(QMainWindow):
         self.labelBolaEnMano = self.crear_label("Bola en mano: ", 5, 820, 100, 25)
         self.label2Tiros = self.crear_label("2 Tiros: ", 5,820,100,25)
         self.labelMesaAbierta = self.crear_label("Mesa abierta: ", 5, 820, 100, 25)
+        self.labelTrayectorias = self.crear_label("Ver Todas las Trayectorias: ",5,820,100,5)
         self.checkBolaEnMano = self.crear_checkbox(80, 820, 50, 30)
         self.checkBolaEnMano.stateChanged.connect(self.bola_en_mano)
         self.check2Tiros = self.crear_checkbox(80,820,50,30)
         self.check2Tiros.stateChanged.connect(self.dos_tiros)
+        self.checkTrayectorias=self.crear_checkbox(80,820,50,30)
+        self.checkTrayectorias.stateChanged.connect(self.ver_todas_trayectorias)
         self.checkMesaAbierta = self.crear_checkbox(80,820,50,30)
         self.checkMesaAbierta.stateChanged.connect(self.mesa_abierta)
         self.botonSetearIDS.clicked.connect(self.SetearIDS)
@@ -422,9 +426,11 @@ class VentanaVideo(QMainWindow):
         self.layout2.addWidget(self.labelBolaEnMano, 2, 0)
         self.layout2.addWidget(self.label2Tiros,2,1)
         self.layout2.addWidget(self.labelMesaAbierta, 2 ,2)
+        self.layout2.addWidget(self.labelTrayectorias, 2,3)
         self.layout2.addWidget(self.checkBolaEnMano, 3, 0)
         self.layout2.addWidget(self.check2Tiros,3,1)
         self.layout2.addWidget(self.checkMesaAbierta, 3, 2)
+        self.layout2.addWidget(self.checkTrayectorias,3,3)
 
         # Agregar el contador de FPS con alineación a la esquina inferior derecha
         self.layout2.addWidget(self.labelFps, 3, 10)
@@ -810,6 +816,15 @@ class VentanaVideo(QMainWindow):
         else:
             self.Hay2Tiros = False
             print("No hay 2 tiros")
+
+    def ver_todas_trayectorias(self):
+        estado_actual = self.checkTrayectorias.isChecked()
+        if estado_actual == True:
+            self.VerTodasTrayectorias = True
+            print("Se visualizan todas las trayectorias")
+        else:
+            self.VerTodasTrayectorias = False
+            print("No se visualizan todas las trayectorias")
 
     #en base al checkbox determina si hay o no mesa abierta para el turno:
     def mesa_abierta(self):
@@ -1501,6 +1516,9 @@ class VentanaVideo(QMainWindow):
                         i+=1
                     if(algunaEstaSeleccionada == False):
                         bolaSeleccionada = None
+                        self.puntos_trayectoria_bola_blanca = None
+                        self.puntos_trayectoria_bola_seleccionada = None
+                        self.puntos_trayectorias_bolas = None
                         resaltarBola = False
 
                                 
@@ -1607,27 +1625,28 @@ class VentanaVideo(QMainWindow):
                 xb = xb + self.XIROI
                 yb = yb + self.YIROI
                 cv2.line(self.frame, (xa,ya),(xb,yb), (255,0,0), 2)
-        if(self.puntos_trayectorias_bolas is not None):
-            for i in range(len(self.puntos_trayectorias_bolas)):
-                listaBola = self.puntos_trayectorias_bolas[i] 
-                if(len(listaBola)>0):
-                    for x in range(len(listaBola)):
-                        if(x == len(listaBola)-1):
-                            punto = listaBola[x].int_tuple
-                            x,y = punto
-                            x = x + self.XIROI
-                            y = y + self.YIROI
-                            cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
-                            break
-                        puntoa = listaBola[x].int_tuple
-                        puntob = listaBola[x+1].int_tuple
-                        xa,ya = puntoa
-                        xb,yb = puntob
-                        xa = xa + self.XIROI
-                        ya = ya + self.YIROI
-                        xb = xb + self.XIROI
-                        yb = yb + self.YIROI
-                        cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
+        if(self.VerTodasTrayectorias):
+            if(self.puntos_trayectorias_bolas is not None):
+                for i in range(len(self.puntos_trayectorias_bolas)):
+                    listaBola = self.puntos_trayectorias_bolas[i] 
+                    if(len(listaBola)>0):
+                        for x in range(len(listaBola)):
+                            if(x == len(listaBola)-1):
+                                punto = listaBola[x].int_tuple
+                                x,y = punto
+                                x = x + self.XIROI
+                                y = y + self.YIROI
+                                cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
+                                break
+                            puntoa = listaBola[x].int_tuple
+                            puntob = listaBola[x+1].int_tuple
+                            xa,ya = puntoa
+                            xb,yb = puntob
+                            xa = xa + self.XIROI
+                            ya = ya + self.YIROI
+                            xb = xb + self.XIROI
+                            yb = yb + self.YIROI
+                            cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
 
     #determina si el usuario selecciono la bola blanca para embocar:
     def selecciono_la_blanca(self, listaEtiquetadas):
