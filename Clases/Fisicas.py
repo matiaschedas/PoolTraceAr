@@ -329,6 +329,14 @@ class Fisicas():
                         # Eliminar la bola que entra en la tronera
                         self.entraron.append((ball, etiqueta_bola))
                         bolas_para_eliminar.append(ball)
+                        for ball2 in self.balls:
+                            if(list(ball2.shapes)[0].userData == "Blanca"):
+                                self.puntos_trayectoria_blanca.append(ball.position)
+                            if(list(ball2.shapes)[0].userData != "Blanca" and ball2.position != self.seleccionada.position):
+                                index = self.balls.index(ball)
+                                self.puntos_trayectorias[index].append(ball2.position)
+                            if(ball2.position == self.seleccionada.position):
+                                self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
                         break
 
             for ball in bolas_para_eliminar:
@@ -361,7 +369,7 @@ class Fisicas():
                 clock.tick(60)
 
             total_velocity = sum(ball.velocity.length for ball in self.balls)
-            if total_velocity < 5:
+            if total_velocity < 2:
                 for ball in self.balls:
                             if(list(ball.shapes)[0].userData == "Blanca"):
                                 self.puntos_trayectoria_blanca.append(ball.position)

@@ -1456,7 +1456,7 @@ class VentanaVideo(QMainWindow):
                                 tamROI = self.obtener_tam_ROI()
                                 trayectoriasValidasBlanca = []
                                 trayectoriasValidasSeleccionada = []
-                                fisicas = Fisicas(True, True, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes)
+                                fisicas = Fisicas(True, False, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes)
                                 fisicas.setear_pasos_tiempo(5)
                                 for i in range(1):
                                     #print(f"calculando {i+1} de 100...")
