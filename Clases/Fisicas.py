@@ -9,7 +9,7 @@ bolaPrimerColision = None
 
 class Fisicas():
     #el constructor luego va a recibir tambien todos los checkbox que debera tener en cuenta para cumplir las reglas de pool:
-    def __init__(self, verSimulacion, verGrafico, verResultadosConsola, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI, XDROI, YDROI, troneras, radioTronera, radioBolas, puntosParedes):
+    def __init__(self, verSimulacion, verGrafico, verResultadosConsola, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI, XDROI, YDROI, troneras, radioTronera, radioBolas, puntosParedes, bolaEnMano, dosTiros, mesaAbierta):
         self.verSimulacion = verSimulacion
         self.verGrafico = verGrafico
         self.verResultadosConsola = verResultadosConsola
@@ -220,8 +220,9 @@ class Fisicas():
         if self.verSimulacion:
             pygame.init()
             (ancho, alto) = self.ROI
-            plt.xlim(0, ancho)
-            plt.ylim(0, alto)
+            if(self.verGrafico):
+                plt.xlim(0, ancho)
+                plt.ylim(0, alto)
             screen_width, screen_height = ancho+50, alto+50
             screen = pygame.display.set_mode((screen_width, screen_height))
             pygame.display.set_caption("Billiards Simulation")

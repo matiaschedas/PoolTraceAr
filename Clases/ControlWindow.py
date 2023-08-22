@@ -191,7 +191,7 @@ class ControlWindow(QMainWindow):
 
         radio_tronera_label = QLabel("Radio Tronera")
         self.radio_tronera_slider = QSlider(Qt.Horizontal)
-        self.radio_tronera_slider.setRange(1, 30)
+        self.radio_tronera_slider.setRange(1, 60)
         self.radio_tronera_slider.setValue(self.radio_tronera)
         self.radio_tronera_slider.valueChanged.connect(self.onRadioTroneraSliderChange)
         self.radio_tronera_text = QLineEdit()
@@ -397,7 +397,9 @@ class ControlWindow(QMainWindow):
             # Actualizar el slider correspondiente
             self.maxCircles_slider.setValue(self.maxCircles)
 
-    def actualizarParametros(self, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles):
+    def actualizarParametros(self, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles,angulo, radioTronera):
+        self.angulo = angulo
+        self.radio_tronera = radioTronera
         self.dp = dp
         self.minDist = minDist
         self.cannyThreshold = cannyThreshold

@@ -392,6 +392,9 @@ class VentanaVideo(QMainWindow):
         self.checkMesaAbierta = self.crear_checkbox(80,820,50,30)
         self.checkMesaAbierta.stateChanged.connect(self.mesa_abierta)
         self.botonSetearIDS.clicked.connect(self.SetearIDS)
+        self.botonVerSimulacion = self.crear_boton("Ver Simulacion", 1290, 125, 100, 30)
+        self.botonVerSimulacion.setEnabled = False
+        self.botonVerSimulacion.clicked.connect(self.ver_simulacion)
 
         self.botonGuardarPreset.clicked.connect(self.guardar_preset)
         self.botonCargarPreset.clicked.connect(self.cargar_preset)
@@ -434,6 +437,7 @@ class VentanaVideo(QMainWindow):
         self.layout2.addWidget(self.check2Tiros,3,1)
         self.layout2.addWidget(self.checkMesaAbierta, 3, 2)
         self.layout2.addWidget(self.checkTrayectorias,3,3)
+        self.layout2.addWidget(self.botonVerSimulacion,3,4)
 
         # Agregar el contador de FPS con alineación a la esquina inferior derecha
         self.layout2.addWidget(self.labelFps, 3, 10)
@@ -463,6 +467,13 @@ class VentanaVideo(QMainWindow):
         self.roiRAW = None
         self.frame = None
         self.current_camera_index = 0
+        self.fisicas = None
+        self.algunaEstaSeleccionada = False
+        self.velXBlanca = -1
+        self.velYBlanca = -1
+        self.listaEtiquetada = None
+        self.ultimaListaEtiquetada = None
+        self.repetirSimulacion = False
         inicioHilos()
         self.initCameras()
 
@@ -486,7 +497,7 @@ class VentanaVideo(QMainWindow):
     
     #guardar presets de configuraciones:
     def guardar_preset(self):
-        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar
         nombreArchivo = self.controlWindow.textNombrePreset.text()
         valido = self.es_nombre_archivo_valido(nombreArchivo)
         if valido:
@@ -515,17 +526,31 @@ class VentanaVideo(QMainWindow):
                 "coordPunto9": self.puntos_paredes[8],
                 "coordPunto10": self.puntos_paredes[9],
                 "coordPunto11": self.puntos_paredes[10],
-                "coordPunto12": self.puntos_paredes[11]
+                "coordPunto12": self.puntos_paredes[11],
+                "XIROI":self.XIROI,
+                "YIROI":self.YIROI,
+                "XDROI":self.XDROI,
+                "YDROI":self.YDROI,
+                "tronera1":self.troneras[0],
+                "tronera2":self.troneras[1],
+                "tronera3":self.troneras[2],
+                "tronera4":self.troneras[3],
+                "tronera5":self.troneras[4],
+                "tronera6":self.troneras[5],
+                "angulo": anguloRotar,
+                "radioTroneras": self.radioTronera
             }
             with open(path, "w") as archivo:
                 json.dump(datos, archivo)
 
     #cargar presets de configuraciones:
     def cargar_preset(self):
-        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar
         campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles', 
                   'coordPunto1', 'coordPunto2','coordPunto3','coordPunto4','coordPunto5','coordPunto6',
-                  'coordPunto7','coordPunto8','coordPunto9','coordPunto10','coordPunto11','coordPunto12']
+                  'coordPunto7','coordPunto8','coordPunto9','coordPunto10','coordPunto11','coordPunto12',
+                  'XIROI','YIROI','XDROI','YDROI','tronera1','tronera2','tronera3','tronera4','tronera5','tronera6',
+                  'angulo','radioTroneras']
         valido = False
         file_dialog = QFileDialog()
 
@@ -569,9 +594,21 @@ class VentanaVideo(QMainWindow):
             self.puntos_paredes[9] = data["coordPunto10"]
             self.puntos_paredes[10] = data["coordPunto11"]
             self.puntos_paredes[11] = data["coordPunto12"]
+            self.XIROI = data["XIROI"]
+            self.YIROI = data["YIROI"]
+            self.XDROI = data["XDROI"]
+            self.YDROI = data["YDROI"]
+            self.troneras[0]=data["tronera1"]
+            self.troneras[1]=data["tronera2"]
+            self.troneras[2]=data["tronera3"]
+            self.troneras[3]=data["tronera4"]
+            self.troneras[4]=data["tronera5"]
+            self.troneras[5]=data["tronera6"]
+            anguloRotar = data["angulo"]
+            self.radioTronera = data["radioTroneras"]
 
             self.controlWindow.actualizarParametros(
-            dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
+            dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar,self.radioTronera)
 
     # region cambios para preprocesamiento de imagen:     
     def onAlphaChanged(self, value):
@@ -610,9 +647,9 @@ class VentanaVideo(QMainWindow):
 
     #actualiza los parametros con los cuales se detectan las bolas en opencv con cuda:
     def actualizarHough(self):
-        global hough, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, computo
+        global hough, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, computo, anguloRotar
         self.controlWindow.actualizarParametros(
-            dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles)
+            dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar,self.radioTronera)
         print(f"dp: {dp}, minDist: {minDist}, cannyThreshold: {cannyThreshold}, votesThreshold: {votesThreshold}, minRadius: {minRadius}, maxRadius: {maxRadius}, maxCircles: {maxCircles}")
         try:
             if (computo == "GPU"):
@@ -836,6 +873,10 @@ class VentanaVideo(QMainWindow):
         else:
             self.BolaEnMano = False
             print("No hay bola en mano")
+        
+    def ver_simulacion(self):
+        if(self.algunaEstaSeleccionada == True and self.velXBlanca != -1 and self.velYBlanca != -1 and self.botonVerSimulacion.isEnabled):
+           self.repetirSimulacion = True
 
     #en base al checkbox determina si hay o no dos tiros para el turno:
     def dos_tiros(self):
@@ -1414,38 +1455,38 @@ class VentanaVideo(QMainWindow):
                     self.etiquetar = False
                     self.etiquetando = False
                     with variable_compartida_lock:
-                        listaEtiquetada = ListaApareadaConEtiquetas
-                        bolaBlanca = self.obtenerBolaBlanca(listaEtiquetada)
+                        self.listaEtiquetada = ListaApareadaConEtiquetas
+                        bolaBlanca = self.obtenerBolaBlanca(self.listaEtiquetada)
                     
-                    if( listaEtiquetada is not None ):
+                    if( self.listaEtiquetada is not None ):
                         #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
-                        if( self.cambiaron_bolas_previo_al_tiro( listaEtiquetada , self.circles ) ):
+                        if( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
                             print("Error, las bolas cambiaron de posicion.")
                             self.deseleccionar_bola()
-                            listaEtiquetada.clear()
-                            listaEtiquetada = None
-                        elif( self.selecciono_la_blanca(listaEtiquetada)):
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                        elif( self.selecciono_la_blanca(self.listaEtiquetada)):
                             print ("Error, se selecciono la bola blanca para embocar")
                             self.deseleccionar_bola()
-                            listaEtiquetada.clear()
-                            listaEtiquetada = None
-                        elif( self.existe_la_negra(listaEtiquetada)==False):
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                        elif( self.existe_la_negra(self.listaEtiquetada)==False):
                             print("El jugador anterior emboco la bola negra, fin del partido")
                             self.deseleccionar_bola()
-                            listaEtiquetada.clear()
-                            listaEtiquetada = None
-                        elif(self.solo_una_blanca(listaEtiquetada)==False):
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                        elif(self.solo_una_blanca(self.listaEtiquetada)==False):
                             print("Error, hay mas de una bola blanca en la mesa")
                             self.deseleccionar_bola()
-                            listaEtiquetada.clear()
-                            listaEtiquetada = None
-                        elif(self.solo_una_negra(listaEtiquetada)==False):
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                        elif(self.solo_una_negra(self.listaEtiquetada)==False):
                             print("Error, hay mas de una bola 8 en la mesa")
                             self.deseleccionar_bola()
-                            listaEtiquetada.clear()
-                            listaEtiquetada = None
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
                         
-                        if(listaEtiquetada is not None):
+                        if(self.listaEtiquetada is not None):
                             if bolaBlanca is not None:
                                 (xb, yb, rb) = bolaBlanca
                                 xb= xb + self.XIROI
@@ -1456,27 +1497,39 @@ class VentanaVideo(QMainWindow):
                                 tamROI = self.obtener_tam_ROI()
                                 trayectoriasValidasBlanca = []
                                 trayectoriasValidasSeleccionada = []
-                                fisicas = Fisicas(True, False, False, listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes)
-                                fisicas.setear_pasos_tiempo(5)
+                                self.fisicas = Fisicas(False, False, False, self.listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                                self.fisicas.setear_pasos_tiempo(5)
                                 for i in range(1):
                                     #print(f"calculando {i+1} de 100...")
                                     #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
-                                    fisicas.setear_velocidad_inicial_blanca(random.randint(10,100),random.randint(10,100))
-                                    #fisicas.setear_velocidad_inicial_blanca(15,23)
-                                    trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias = fisicas.simular()                                    
+                                    self.velXBlanca = random.randint(10,100)
+                                    self.velYBlanca = random.randint(10,100)
+                                    self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
+                                   
+                                    trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias = self.fisicas.simular()                                    
                                     self.puntos_trayectoria_bola_blanca = puntos_trayectoria_blanca    
                                     self.puntos_trayectoria_bola_seleccionada = puntos_trayectoria_seleccionada         
                                     self.puntos_trayectorias_bolas = puntos_trayectorias                       
-                                    fisicas.reiniciar_simulacion()
+                                    self.fisicas.reiniciar_simulacion()
                                     if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
                                         trayectoriasValidasBlanca.append(trayectoriasBlanca)
                                         trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
                                 print("fin calculo de trayectorias")
-                                listaEtiquetada = None
+                                self.ultimaListaEtiquetada = self.listaEtiquetada.copy()
+                                self.listaEtiquetada = None
                                 with variable_compartida_lock:
                                     ListaApareadaConEtiquetas.clear()  # Vaciar la lista
-                           
 
+            if(self.repetirSimulacion == True and self.ultimaListaEtiquetada is not None):
+                self.repetirSimulacion = False      
+                tamROI = self.obtener_tam_ROI()
+                bolaBlanca = self.obtenerBolaBlanca(self.ultimaListaEtiquetada)
+                self.fisicas = None
+                self.fisicas = Fisicas(True, False, False, self.ultimaListaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                self.fisicas.setear_pasos_tiempo(5)
+                self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
+                self.fisicas.simular()                                       
+                self.fisicas.reiniciar_simulacion()
                     
                             
 
@@ -1528,7 +1581,7 @@ class VentanaVideo(QMainWindow):
 
                     
                     radioProm = int((minRadius+maxRadius)/2)
-                    algunaEstaSeleccionada = False
+                    self.algunaEstaSeleccionada = False
 
                     i=0
                    
@@ -1552,7 +1605,8 @@ class VentanaVideo(QMainWindow):
                             if dist <=10:
                                 cv2.circle(self.frame, (xCircle, yCircle),
                                     radioProm+6, (0, 0, 255), 3)
-                                algunaEstaSeleccionada = True
+                                self.algunaEstaSeleccionada = True
+                                self.botonVerSimulacion.setEnabled = True
                             
                             # Dibujo de los trapecios posibles y no posibles:
                             # if(self.poligonos is not None):
@@ -1578,12 +1632,13 @@ class VentanaVideo(QMainWindow):
                             #     cv2.addWeighted(temp_frame, alpha, self.frame, 1 - alpha, 0, self.frame)                   
                                 
                         i+=1
-                    if(algunaEstaSeleccionada == False):
+                    if(self.algunaEstaSeleccionada == False):
                         bolaSeleccionada = None
                         self.puntos_trayectoria_bola_blanca = None
                         self.puntos_trayectoria_bola_seleccionada = None
                         self.puntos_trayectorias_bolas = None
                         resaltarBola = False
+                        self.botonVerSimulacion.setEnabled = False
 
                                 
             self.graficar_trayectorias()         
