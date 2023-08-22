@@ -2,10 +2,11 @@ import pymunk
 import matplotlib.pyplot as plt
 import math
 import pygame
-
+import os
 
 bolaBlancaPrimerColision = False
 bolaPrimerColision = None
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 class Fisicas():
     #el constructor luego va a recibir tambien todos los checkbox que debera tener en cuenta para cumplir las reglas de pool:
@@ -223,11 +224,13 @@ class Fisicas():
             if(self.verGrafico):
                 plt.xlim(0, ancho)
                 plt.ylim(0, alto)
-            screen_width, screen_height = ancho+50, alto+50
+            screen_width, screen_height = ancho+100, alto+100
             screen = pygame.display.set_mode((screen_width, screen_height))
             pygame.display.set_caption("Billiards Simulation")
             clock = pygame.time.Clock()
-            screen.fill((255, 255, 255))
+            table_image = pygame.image.load(script_dir + "\\mesa.png").convert_alpha()
+            table_image = pygame.transform.scale(table_image, (screen_width+40, screen_height+50))
+            screen.fill((50, 50, 50))
 
         space = pymunk.Space()
         #ajustar para conseguir mesa real:
@@ -287,7 +290,6 @@ class Fisicas():
         handler.begin = self.on_collision_begin
 
         while not all_balls_stopped:
-        
             if(self.verSimulacion):
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -306,8 +308,8 @@ class Fisicas():
             for _ in range(self.pasos):
                 space.step(dt)
 
-            if self.verSimulacion:
-                screen.fill((255, 255, 255))
+            # if self.verSimulacion:
+            #     screen.fill((50, 50, 50))
 
             # Guardar la posición actual de todas las bolas en sus trayectorias
             for ball_index, ball in enumerate(self.balls):
@@ -355,16 +357,24 @@ class Fisicas():
             if(self.verSimulacion):
                 for ball in self.balls:
                     x, y = ball.position
-                    pygame.draw.circle(screen, (0, 0, 255), (int(x), int(y)), self.radioBolas)
-                for tronera in self.listaTroneras:
-                    x,y = tronera.position
-                    pygame.draw.circle(screen, (0, 255, 0), (int(x), int(y)), self.radioTronera)
+                    pygame.draw.circle(screen, (0, 0, 255), (int(x)+50, int(y)+50), self.radioBolas)
+                # for tronera in self.listaTroneras:
+                #     x,y = tronera.position
+                #     pygame.draw.circle(screen, (0, 255, 0), (int(x)+50, int(y)+50), self.radioTronera)
 
                 for segment in space.shapes:
                     if isinstance(segment, pymunk.Segment):
                         body = segment.body
                         p1 = body.local_to_world(segment.a)
                         p2 = body.local_to_world(segment.b)
+                        xp1,yp1 = p1
+                        xp2,yp2 = p2
+                        xp1 = xp1 + 50
+                        yp1 = yp1 + 50
+                        xp2 = xp2 + 50
+                        yp2 = yp2 + 50
+                        p1 = xp1,yp1
+                        p2 = xp2,yp2
                         pygame.draw.line(screen, (0, 255, 0), p1, p2)
                 pygame.display.flip()
                 clock.tick(60)
@@ -379,7 +389,8 @@ class Fisicas():
                                 self.puntos_trayectorias[index].append(ball.position)
                 self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
                 all_balls_stopped = True
-
+            if(self.verSimulacion):
+                screen.blit(table_image, (-15,-20))
 
 
         if(self.verSimulacion):   

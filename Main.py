@@ -1465,26 +1465,36 @@ class VentanaVideo(QMainWindow):
                             self.deseleccionar_bola()
                             self.listaEtiquetada.clear()
                             self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
                         elif( self.selecciono_la_blanca(self.listaEtiquetada)):
                             print ("Error, se selecciono la bola blanca para embocar")
                             self.deseleccionar_bola()
                             self.listaEtiquetada.clear()
                             self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
                         elif( self.existe_la_negra(self.listaEtiquetada)==False):
                             print("El jugador anterior emboco la bola negra, fin del partido")
                             self.deseleccionar_bola()
                             self.listaEtiquetada.clear()
                             self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
                         elif(self.solo_una_blanca(self.listaEtiquetada)==False):
                             print("Error, hay mas de una bola blanca en la mesa")
                             self.deseleccionar_bola()
                             self.listaEtiquetada.clear()
                             self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
                         elif(self.solo_una_negra(self.listaEtiquetada)==False):
                             print("Error, hay mas de una bola 8 en la mesa")
                             self.deseleccionar_bola()
                             self.listaEtiquetada.clear()
                             self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
                         
                         if(self.listaEtiquetada is not None):
                             if bolaBlanca is not None:
@@ -1519,6 +1529,12 @@ class VentanaVideo(QMainWindow):
                                 self.listaEtiquetada = None
                                 with variable_compartida_lock:
                                     ListaApareadaConEtiquetas.clear()  # Vaciar la lista
+                            else:
+                                self.ultimaListaEtiquetada = None
+                                self.repetirSimulacion = False
+                        else: 
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
 
             if(self.repetirSimulacion == True and self.ultimaListaEtiquetada is not None):
                 self.repetirSimulacion = False      
