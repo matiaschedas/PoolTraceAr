@@ -62,6 +62,7 @@ class Fisicas():
         self.entroLaBlanca = False
         self.entroLaSeleccionada = False
         self.entroLaNegra = False
+       
 
     def create_ball(self, space, x, y, radius, mass, etiqueta):
         body = pymunk.Body(mass, pymunk.moment_for_circle(mass, 0, radius))
@@ -170,6 +171,7 @@ class Fisicas():
                         if(ball.position == ball_shape_1.body.position):
                             index = self.balls.index(ball)
                             self.puntos_trayectorias[index].append(ball_shape_1.body.position)
+                            break
 
             if(ball_shape_2.body.position != self.seleccionada.position and ball_shape_2.body.position != self.blanca.position):
                 if(self.balls is not None):
@@ -177,6 +179,7 @@ class Fisicas():
                             if(ball.position == ball_shape_2.body.position):
                                 index = self.balls.index(ball)
                                 self.puntos_trayectorias[index].append(ball_shape_2.body.position)
+                                break
 
         if(isinstance(ball_shape_1,pymunk.Segment) and isinstance(ball_shape_2,pymunk.Circle) or isinstance(ball_shape_2,pymunk.Segment) and isinstance(ball_shape_1,pymunk.Circle)):
             if(isinstance(ball_shape_1,pymunk.Segment)):
@@ -188,6 +191,7 @@ class Fisicas():
                             if(ball.position == ball_shape_2.body.position):
                                 index = self.balls.index(ball)
                                 self.puntos_trayectorias[index].append(ball_shape_2.body.position)
+                                break
             if(isinstance(ball_shape_2,pymunk.Segment)):
                 if(ball_shape_1.body.position == self.seleccionada.position):
                      self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
@@ -197,6 +201,7 @@ class Fisicas():
                             if(ball.position == ball_shape_1.body.position):
                                 index = self.balls.index(ball)
                                 self.puntos_trayectorias[index].append(ball_shape_1.body.position)
+                                break
             if(isinstance(ball_shape_1,pymunk.Segment)):
                 etiqueta_bola_2 = ball_shape_2.userData
                 etiqueta_bola_1 = ""
@@ -288,6 +293,7 @@ class Fisicas():
         #se crea el manejador de eventos de colisiones:
         handler = space.add_collision_handler(0, 0)
         handler.begin = self.on_collision_begin
+        bolas_eliminadas =[]
 
         while not all_balls_stopped:
             if(self.verSimulacion):
@@ -304,6 +310,7 @@ class Fisicas():
                         break
             
             bolas_para_eliminar = []
+            
             #pasos de tiempo para la simulacion fisica:
             for _ in range(self.pasos):
                 space.step(dt)
@@ -313,51 +320,58 @@ class Fisicas():
 
             # Guardar la posición actual de todas las bolas en sus trayectorias
             for ball_index, ball in enumerate(self.balls):
-                self.apply_friction(ball, 0.01)
-                x, y = ball.position
-                ball_shape = list(ball.shapes)[0]
-                etiqueta_bola = ball_shape.userData
-            
-                if (ball == self.seleccionada):
-                    trayectoriaSeleccionada.append((x,y))
-                elif(ball == self.blanca):
-                    trayectoriaBlanca.append((x,y))
-                #comento trayectorias de las demas bolas para mejorar performance:
-                else:
-                    trajectories[ball_index].append((x, y))
-                for tronera in self.listaTroneras:
-                    tronera_x, tronera_y = tronera.position
-                    distancia_bola_tronera = self.distancia_entre_puntos((x, y), (tronera_x, tronera_y))
-                    if ball_shape.radius+ (0.2*ball_shape.radius) >= distancia_bola_tronera:
-                        # Eliminar la bola que entra en la tronera
-                        self.entraron.append((ball, etiqueta_bola))
-                        bolas_para_eliminar.append(ball)
-                        for ball2 in self.balls:
-                            if(list(ball2.shapes)[0].userData == "Blanca"):
-                                self.puntos_trayectoria_blanca.append(ball.position)
-                            if(list(ball2.shapes)[0].userData != "Blanca" and ball2.position != self.seleccionada.position):
-                                index = self.balls.index(ball)
-                                self.puntos_trayectorias[index].append(ball2.position)
-                            if(ball2.position == self.seleccionada.position):
-                                self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
-                        break
+                if ball not in bolas_eliminadas:  
+                    self.apply_friction(ball, 0.01)
+                    x, y = ball.position
+                    ball_shape = list(ball.shapes)[0]
+                    etiqueta_bola = ball_shape.userData
+                
+                    if (ball == self.seleccionada):
+                        trayectoriaSeleccionada.append((x,y))
+                    elif(ball == self.blanca):
+                        trayectoriaBlanca.append((x,y))
+                    #comento trayectorias de las demas bolas para mejorar performance:
+                    else:
+                        trajectories[ball_index].append((x, y))
+                    for tronera in self.listaTroneras:
+                        tronera_x, tronera_y = tronera.position
+                        distancia_bola_tronera = self.distancia_entre_puntos((x, y), (tronera_x, tronera_y))
+                        if ball_shape.radius+ (0.2*ball_shape.radius) >= distancia_bola_tronera:
+                            # Eliminar la bola que entra en la tronera
+                            self.entraron.append((ball, etiqueta_bola))
+                            bolas_para_eliminar.append(ball)
+                            for ball2 in self.balls:
+                                if (ball2 == ball):
+                                    if(list(ball2.shapes)[0].userData == "Blanca"):
+                                        self.puntos_trayectoria_blanca.append(ball.position)
+                                    elif(list(ball2.shapes)[0].userData != "Blanca" and ball2.position != self.seleccionada.position):
+                                        index = self.balls.index(ball)
+                                        self.puntos_trayectorias[index].append(ball2.position)
+                                    elif(ball2.position == self.seleccionada.position):
+                                        self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
+                                    break
+                            break
 
             for ball in bolas_para_eliminar:
-                ball_shape = list(ball.shapes)[0]
-                etiqueta = ball_shape.userData
-                if (etiqueta == "Blanca"):
-                    self.entroLaBlanca = True
-                if(self.seleccionada == ball):
-                    self.entroLaSeleccionada = True
-                if(etiqueta == "Negra"):
-                    self.entroLaNegra = True
-                space.remove(ball_shape.body, ball_shape)
-                self.balls.remove(ball)
+                if ball not in bolas_eliminadas:
+                        
+                    ball_shape = list(ball.shapes)[0]
+                    etiqueta = ball_shape.userData
+                    if (etiqueta == "Blanca"):
+                        self.entroLaBlanca = True
+                    if(self.seleccionada == ball):
+                        self.entroLaSeleccionada = True
+                    if(etiqueta == "Negra"):
+                        self.entroLaNegra = True
+                    space.remove(ball_shape.body, ball_shape)
+                    bolas_eliminadas.append(ball)
+                
 
             if(self.verSimulacion):
                 for ball in self.balls:
                     x, y = ball.position
-                    pygame.draw.circle(screen, (0, 0, 255), (int(x)+50, int(y)+50), self.radioBolas)
+                    if ball not in bolas_eliminadas:
+                        pygame.draw.circle(screen, (0, 0, 255), (int(x)+50, int(y)+50), self.radioBolas)
                 # for tronera in self.listaTroneras:
                 #     x,y = tronera.position
                 #     pygame.draw.circle(screen, (0, 255, 0), (int(x)+50, int(y)+50), self.radioTronera)
@@ -379,15 +393,18 @@ class Fisicas():
                 pygame.display.flip()
                 clock.tick(60)
 
-            total_velocity = sum(ball.velocity.length for ball in self.balls)
-            if total_velocity < 2:
-                for ball in self.balls:
+            bolas = [fila for fila in self.balls if fila not in bolas_eliminadas]
+            total_velocity = sum(ball.velocity.length for ball in bolas)
+            if total_velocity < 2 or len(bolas)==0:
+                for ball in bolas:
                             if(list(ball.shapes)[0].userData == "Blanca"):
                                 self.puntos_trayectoria_blanca.append(ball.position)
                             if(list(ball.shapes)[0].userData != "Blanca" and ball.position != self.seleccionada.position):
                                 index = self.balls.index(ball)
                                 self.puntos_trayectorias[index].append(ball.position)
                 self.puntos_trayectoria_seleccionada.append(self.seleccionada.position)
+                # for ball in bolas_para_eliminar:
+                #     self.balls.remove(ball)
                 all_balls_stopped = True
             if(self.verSimulacion):
                 screen.blit(table_image, (-15,-20))
