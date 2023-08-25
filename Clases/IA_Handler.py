@@ -10,9 +10,9 @@ class IA_Handler ():
     def invocarIA(self, listaApareada, bolaSeleccionada, tamROI, embocarNegra):
         etiquetaSeleccionada = self.obtenerEtiquetaSeleccionada(listaApareada,bolaSeleccionada)
         ancho, alto = tamROI
-        self.poolEnv.setearInfo(listaApareada, etiquetaSeleccionada, alto, ancho, embocarNegra)
+        self.poolEnv.setearInfo(listaApareada, etiquetaSeleccionada, alto, ancho, embocarNegra)        
         self.poolEnv.reset()
-        self.genetic.iniciar(self.poolEnv)
+        self.genetic.iniciar(self.poolEnv,listaApareada, etiquetaSeleccionada, alto, ancho, embocarNegra)
         self.poolEnv.close()
         self.poolEnv = None
         self.genetic = None

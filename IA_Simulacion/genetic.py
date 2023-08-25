@@ -4,7 +4,11 @@ import itertools
 import numpy as np
 import multiprocessing
 
-
+listaApareada = [] 
+etiquetaSeleccionada = None
+alto = None
+ancho = None
+embocarNegra = None
 class Player:
     def __init__(self, env: PoolEnv) -> None:
         self.env = env
@@ -37,9 +41,14 @@ class Player:
 
 
 class GeneticAlgorithm:
-    def __init__(self, attrs, iterations, training_type="mlp",defa=True):
+    def __init__(self, attrs,listaApareada, etiquetaSeleccionada, alto, ancho, embocarNegra, iterations, training_type="mlp",defa=True):
         self.i = 0
         self.attrs = attrs
+        self.listaApareada = listaApareada
+        self.etiquetaSeleccionada = etiquetaSeleccionada
+        self.alto = alto
+        self.ancho = ancho
+        self.embocarNegra = embocarNegra        
         self.iterations = iterations
         self.max_iterations = iterations * 5
         self.training_type = training_type
@@ -49,7 +58,8 @@ class GeneticAlgorithm:
             self.player_rewards = np.array([(self.best_player.reward + 1.001) ** 3])
 
     def create_env(self, defa):
-        env = PoolEnv(training=True, draw_screen=False, default=defa)
+        env = PoolEnv(training=True, draw_screen=False, default=defa)        
+        env.setearInfo(self.listaApareada, self.etiquetaSeleccionada, self.alto, self.ancho, self.embocarNegra)
         env.apply_attrs(self.attrs)
         return env
 
@@ -96,6 +106,12 @@ class Trainer:
         self.iterations = iterations
         self.batch = batch
         self.defa = True
+    def update_env_variable(self,listaApareadaParam, etiquetaSeleccionadaParam, altoParam, anchoParam, embocarNegraParam):                
+        self.listaApareada = listaApareadaParam
+        self.etiquetaSeleccionada = etiquetaSeleccionadaParam
+        self.alto = altoParam
+        self.ancho = anchoParam 
+        self.embocarNegra = embocarNegraParam
 
     def train(self, attrs):
         agent = GeneticAlgorithm(attrs, self.iterations, training_type="single")
@@ -132,15 +148,16 @@ class Trainer:
 
     def mlp_get_player(self, x):
         attrs, iterations = x
-        agent = GeneticAlgorithm(attrs, iterations=iterations, training_type="mlp",defa=self.defa)
+        agent = GeneticAlgorithm(attrs,self.listaApareada, self.etiquetaSeleccionada, self.alto, self.ancho, self.embocarNegra, iterations=iterations, training_type="mlp",defa=self.defa)
         player, attrs = agent.train(self.best_v)
         return list(player.v), player.reward, agent.i, attrs
 
 class Genetic():
-    def iniciar(self, poolEnv):
+    def iniciar(self, poolEnv,listaApareada, etiquetaSeleccionada, alto, ancho, embocarNegra):
         #poolEnv.reset()
         iterations = 150
         trainer = Trainer(iterations)
+        trainer.update_env_variable(listaApareada, etiquetaSeleccionada, alto, ancho, embocarNegra)
         trainer.defa = False
         attrs = poolEnv.get_attrs()
         best_player, attrs = trainer.mlp_train(attrs, defa=False)
