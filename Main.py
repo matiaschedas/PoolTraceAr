@@ -29,6 +29,7 @@ import random
 import copy
 
 from Clases.Fisicas import Fisicas
+from Clases.IA_Handler import IA_Handler
 
 screen_width, screen_height = pyautogui.size()
 
@@ -469,11 +470,12 @@ class VentanaVideo(QMainWindow):
         self.current_camera_index = 0
         self.fisicas = None
         self.algunaEstaSeleccionada = False
-        self.velXBlanca = -1
-        self.velYBlanca = -1
+        self.velXBlanca = None
+        self.velYBlanca = None
         self.listaEtiquetada = None
         self.ultimaListaEtiquetada = None
         self.repetirSimulacion = False
+        self.embocarNegra = False
         inicioHilos()
         self.initCameras()
 
@@ -875,7 +877,7 @@ class VentanaVideo(QMainWindow):
             print("No hay bola en mano")
         
     def ver_simulacion(self):
-        if(self.algunaEstaSeleccionada == True and self.velXBlanca != -1 and self.velYBlanca != -1 and self.botonVerSimulacion.isEnabled):
+        if(self.algunaEstaSeleccionada == True and self.velXBlanca != None and self.velYBlanca != None and self.botonVerSimulacion.isEnabled):
            self.repetirSimulacion = True
 
     #en base al checkbox determina si hay o no dos tiros para el turno:
@@ -1507,24 +1509,30 @@ class VentanaVideo(QMainWindow):
                                 tamROI = self.obtener_tam_ROI()
                                 trayectoriasValidasBlanca = []
                                 trayectoriasValidasSeleccionada = []
-                                self.fisicas = Fisicas(False, False, False, self.listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
-                                self.fisicas.setear_pasos_tiempo(5)
+                                #self.fisicas = Fisicas(False, False, False, self.listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                                #self.fisicas.setear_pasos_tiempo(5)
+                                self.IA = IA_Handler()
+                                self.embocarNegra = False
+                                (xs,ys,rs) = bolaSeleccionada
+                                xs = xs - self.XIROI
+                                ys = ys - self.YIROI
+                                self.IA.invocarIA(self.listaEtiquetada, (xs,ys,rs), tamROI,self.embocarNegra)
                                 for i in range(1):
                                     #print(f"calculando {i+1} de 100...")
                                     #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
-                                    self.velXBlanca = random.randint(10,100)
-                                    self.velYBlanca = random.randint(10,100)
-                                    self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
-                                   
-                                    trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias = self.fisicas.simular()                                    
-                                    self.puntos_trayectoria_bola_blanca = puntos_trayectoria_blanca    
-                                    self.puntos_trayectoria_bola_seleccionada = puntos_trayectoria_seleccionada         
-                                    self.puntos_trayectorias_bolas = puntos_trayectorias                       
-                                    self.fisicas.reiniciar_simulacion()
-                                    if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
-                                        trayectoriasValidasBlanca.append(trayectoriasBlanca)
-                                        trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
-                                print("fin calculo de trayectorias")
+                                    #self.velXBlanca = random.randint(10,100)
+                                    #self.velYBlanca = random.randint(10,100)
+                                    #self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
+                                    
+                                    #trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias = self.fisicas.simular()                                    
+                                    #self.puntos_trayectoria_bola_blanca = puntos_trayectoria_blanca    
+                                    #self.puntos_trayectoria_bola_seleccionada = puntos_trayectoria_seleccionada         
+                                    #self.puntos_trayectorias_bolas = puntos_trayectorias                       
+                                    #self.fisicas.reiniciar_simulacion()
+                                    #if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
+                                        #trayectoriasValidasBlanca.append(trayectoriasBlanca)
+                                        #trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
+                                    print("fin calculo de trayectorias")
                                 self.ultimaListaEtiquetada = self.listaEtiquetada.copy()
                                 self.listaEtiquetada = None
                                 with variable_compartida_lock:
