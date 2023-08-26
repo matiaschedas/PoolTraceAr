@@ -3,7 +3,7 @@
 # Commercial use is prohibited
 
 
-from IA_Simulacion.utils import *
+from utils import *
 
 import os
 import gym
@@ -209,9 +209,29 @@ class PoolEnv:
             elif (etiqueta == "Rayada"):
                 contadorRayadas = contadorRayadas + 1
             x, y = self.transformar_coordenadas((x,y),self.ancho, self.alto)
-            position = self.create_ball(etiqueta,(x,y),self.etiquetaDeSeleccionada,self.embocarNegra,contadorLisas,contadorRayadas)
+            position = self.create_ball(etiqueta,(x,y),self.etiquetaDeSeleccionada,self.embocarNegra,contadorLisas,contadorRayadas,True)
             positions.append(position)
-        return positions
+        
+        faltanLisas = 7 - contadorLisas 
+        faltanRayadas = 7 - contadorRayadas
+        if(faltanLisas>0):
+            for i in range(faltanLisas):
+                nro = contadorLisas + 1 
+                x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
+                position = self.create_ball("Lisa", (x,y), self.etiquetaDeSeleccionada, self.embocarNegra, nro, -1, False)
+                self.pocket_tracking["potted_balls"].append(nro)
+                self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
+
+        if(faltanRayadas>0):
+            for i in range(faltanRayadas):
+                nro = contadorRayadas + 1
+                x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
+                position = self.create_ball("Rayada", (x,y), self.etiquetaDeSeleccionada, self.embocarNegra, -1, nro, False)
+                self.pocket_tracking["potted_balls"].append(nro)
+                self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
+
+
+        return positions, contadorLisas, contadorRayadas
             
     def transformar_coordenadas(self, punto, ancho, alto):
         self.ancho_ratio = (WIDTH-(RAIL_DISTANCE*2))/ancho
@@ -233,7 +253,7 @@ class PoolEnv:
 
         
     #al crear las bolas tener en cuenta que la IA siempre mete las lisas
-    def create_ball(self, etiqueta, coordenada, etiquetaDeSeleccionada, embocarNegra, contadorSolidas, contadorRayadas):
+    def create_ball(self, etiqueta, coordenada, etiquetaDeSeleccionada, embocarNegra, contadorSolidas, contadorRayadas, agregarSpace):
         intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
         ball_body = pm.Body(BALL_MASS, intertia)
         ball_body.position = coordenada
@@ -297,7 +317,8 @@ class PoolEnv:
                 ball.number = contadorRayadas
 
         self.balls.append(ball)
-        self.space.add(ball, ball_body)
+        if(agregarSpace):
+            self.space.add(ball, ball_body)
         return ball_body.position
 
 
@@ -305,8 +326,8 @@ class PoolEnv:
         # 0 -> cue-ball, 1-7 --> solids, 8 --> 8-ball, 9-15 -- strips
         self.balls = []
         if self.addBalls == False:
-            positions = self.setear_bolas()
-            return
+            positions, cantLisas, cantRayadas = self.setear_bolas()
+            return cantLisas, cantRayadas
         positions = []
         for i in range(self.num_balls):
             intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
@@ -705,7 +726,12 @@ class PoolEnv:
                 pass
 
         self.add_table()
-        self.add_balls()
+        if (self.addBalls == False):
+           cantLisas, cantRayadas = self.add_balls()
+           faltanLisas = 7 - cantLisas
+           faltanRayadas = 7 - cantRayadas
+        else:
+            self.add_balls()
 
         self.reward = self.total_foul_times * 5
         self.episode_reward = []
