@@ -31,6 +31,7 @@ import copy
 from Clases.Fisicas import Fisicas
 from Clases.IA_Handler import IA_Handler
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
+from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
 
 screen_width, screen_height = pyautogui.size()
 
@@ -1567,9 +1568,13 @@ class VentanaVideo(QMainWindow):
                                 (xs,ys,rs) = bolaSeleccionada
                                 xs = xs - self.XIROI
                                 ys = ys - self.YIROI
-                                singleton = SingletonCompartida(self.listaEtiquetada, (xs,ys,rs), tamROI,self.embocarNegra)
+                                singletonCompartida = SingletonCompartida(self.listaEtiquetada, (xs,ys,rs), tamROI,self.embocarNegra)
                                 self.IA.invocarIA()
                                 SingletonCompartida.delete_instance()
+                                singletonRespuesta = SingletonRespuesta()
+                                #hacer lo que corresponda con la respuesta antes de borrar la instancia
+                                SingletonRespuesta.delete_instance()
+                                
                                 for i in range(1):
                                     #print(f"calculando {i+1} de 100...")
                                     #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:

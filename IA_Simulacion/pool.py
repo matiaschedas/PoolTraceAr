@@ -1,6 +1,6 @@
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.utils import *
-
+from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
 
 import os
 import gym
@@ -904,6 +904,10 @@ class PoolEnv:
         pg.quit()
         del self.space  # Liberar el espacio pymunk
 
+    def setear_respuesta(self):
+        global primerContacto
+        singletonRespuesta = SingletonRespuesta(primerContacto)
+        
 
 
 
