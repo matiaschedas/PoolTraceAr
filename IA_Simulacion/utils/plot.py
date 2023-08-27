@@ -1,7 +1,3 @@
-# Create by Packetsss
-# Personal use is allowed
-# Commercial use is prohibited
-
 r""" 
 USAGE:
 python .\utils\plot.py --log-dir "path/to/log

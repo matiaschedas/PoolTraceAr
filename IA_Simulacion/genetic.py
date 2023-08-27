@@ -1,3 +1,4 @@
+from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.pool import PoolEnv
 
 import itertools
@@ -141,7 +142,6 @@ class Trainer:
 
 class Genetic():
     def iniciar(self):
-        #poolEnv.reset()
         iterations = 150
         pool = PoolEnv(training=False)
         trainer = Trainer(iterations)

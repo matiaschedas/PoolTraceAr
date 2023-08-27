@@ -1,6 +1,5 @@
-from IA_Simulacion.utils import *
-
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
+from IA_Simulacion.utils import *
 
 
 import os
@@ -20,6 +19,8 @@ from gym import spaces
 from gym.utils import seeding
 from copy import copy
 import pymunk.pygame_util as pygame_util
+
+primerContacto = None
 
 class PoolEnv:
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 500}
@@ -63,6 +64,7 @@ class PoolEnv:
         self.singleton = SingletonCompartida()
         if(self.singleton.listaApareada is not None):
             self.default = False    
+       
 
         # gym environment
         self.spec = None
@@ -384,11 +386,20 @@ class PoolEnv:
             positions.append(ball_body.position)
             self.balls.append(ball)
             self.space.add(ball, ball_body)
+    
 
     @staticmethod
     def ball_contacted(arbiter, space, data):
         # count bank/carrom shot collisions
+        global primerContacto
         ball_shape_1, ball_shape_2 = arbiter.shapes
+
+        if(ball_shape_1.userData=="Blanca" and primerContacto == None):
+            primerContacto = ball_shape_2
+        elif (ball_shape_2.userData == "Blanca" and primerContacto == None):
+            primerContacto = ball_shape_1 
+
+
         if (
             data["pocket_tracking"]["first_contacted_ball"] in arbiter.shapes
             and not data["pocket_tracking"]["potted_balls"]
@@ -828,45 +839,30 @@ class PoolEnv:
                 if self.singleton.embocarNegra==False:
                     if etiqueta == "Blanca":
                         self.cue_ball = ball
-                        ball.observation_number = 4
-                        ball.color = pg.Color(WHITE)
-                    
+
                     if etiqueta == "Negra":
-                        ball.color = pg.Color(BLACK)
-                        ball.observation_number = 3
                         ball.filter = pm.ShapeFilter(categories=0b10000)
 
                     if etiqueta=="Lisa" and self.singleton.etiquetaDeSeleccionada=="Lisa":
-                        ball.color = pg.Color(SOLIDS_COLOR)
-                        ball.observation_number = 1
                         ball.filter = pm.ShapeFilter(categories=0b01000)
 
                     if etiqueta=="Rayada" and self.singleton.etiquetaDeSeleccionada=="Lisa":
-                        ball.color = pg.Color(STRIPS_COLOR)
-                        ball.observation_number = 2
+                        ball.filter = pm.ShapeFilter(categories=0b00100)
                     
                     if etiqueta=="Lisa" and self.singleton.etiquetaDeSeleccionada=="Rayada":
-                        ball.color = pg.Color(STRIPS_COLOR)
-                        ball.observation_number = 2
+                       ball.filter = pm.ShapeFilter(categories=0b00100)
                     
                     if etiqueta=="Rayada" and self.singleton.etiquetaDeSeleccionada=="Rayada":
-                        ball.color = pg.Color(SOLIDS_COLOR)
-                        ball.observation_number = 1
                         ball.filter = pm.ShapeFilter(categories=0b01000)
                 else:
                     if etiqueta == "Blanca":
                         self.cue_ball = ball
-                        ball.observation_number = 4
-                        ball.color = pg.Color(WHITE)
-
+                       
                     if etiqueta == "Negra":
-                        ball.color = pg.Color(BLACK)
-                        ball.observation_number = 3
                         ball.filter = pm.ShapeFilter(categories=0b10000)
 
                     if etiqueta=="Rayada" or etiqueta=="Lisa":
-                        ball.color = pg.Color(STRIPS_COLOR)
-                        ball.observation_number = 2
+                        ball.filter = pm.ShapeFilter(categories=0b00100)
 
             self.space.add(ball_body, ball)
             balls.append(ball)

@@ -1534,7 +1534,21 @@ class VentanaVideo(QMainWindow):
                             self.listaEtiquetada = None
                             self.ultimaListaEtiquetada = None
                             self.repetirSimulacion = False
-                        
+                        elif(self.maximo_rayadas_superado(self.listaEtiquetada)==True):
+                            print("Error, hay mas de 7 bolas rayadas en la mesa")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                        elif(self.maximo_lisas_superado(self.listaEtiquetada)==True):
+                            print("Error, hay mas de 7 bolas rayadas en la mesa")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+
                         if(self.listaEtiquetada is not None):
                             if bolaBlanca is not None:
                                 (xb, yb, rb) = bolaBlanca
@@ -1879,6 +1893,24 @@ class VentanaVideo(QMainWindow):
                 negras = negras + 1
         return negras==1
 
+    def maximo_rayadas_superado(self, listaEtiquetada):
+        if(listaEtiquetada == None):
+            return False
+        rayadas = 0
+        for (x,y,r), _, etiqueta in listaEtiquetada:
+            if etiqueta == "Rayada":
+                rayadas = rayadas + 1
+        return rayadas > 7
+
+    
+    def maximo_lisas_superado(self, listaEtiquetada):
+        if(listaEtiquetada == None):
+            return False
+        lisas = 0
+        for (x,y,r), _, etiqueta in listaEtiquetada:
+            if etiqueta == "Lisa":
+                lisas = lisas + 1
+        return lisas > 7
     
     def distancia_puntos(self, x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
