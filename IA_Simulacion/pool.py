@@ -1,9 +1,7 @@
-# Create by Packetsss
-# Personal use is allowed
-# Commercial use is prohibited
+from IA_Simulacion.utils import *
 
+from IA_Simulacion.SingletonCompartida import SingletonCompartida
 
-from utils import *
 
 import os
 import gym
@@ -34,7 +32,6 @@ class PoolEnv:
         reward_by_steps=REWARD_BY_STEPS,
         total_foul_times=TOTAL_FOUL_TIMES,
         observation_type=OBSERVATION_TYPE,
-        default=True,
     ):
         # initialize some constants
         self.episodes = 0
@@ -59,19 +56,13 @@ class PoolEnv:
         self.space.sleep_time_threshold = 1e-8
 
 
-        self.blanca = None
-        self.negra = None
-        self.seleccionada = None
-        self.addBalls = True
+        self.default = True
         self.balls = []
         self.ancho_ratio = 0
         self.alto_ratio = 0
-
-        self.listaApareada = None
-        self.etiquetaDeSeleccionada = None
-        self.alto = None
-        self.ancho = None
-        self.embocarNegra = None
+        self.singleton = SingletonCompartida()
+        if(self.singleton.listaApareada is not None):
+            self.default = False    
 
         # gym environment
         self.spec = None
@@ -121,8 +112,7 @@ class PoolEnv:
         self.pocket_collision_handler.begin = self.ball_pocketed
         self.rail_collision_handler = self.space.add_collision_handler(1, 3)
         self.rail_collision_handler.begin = self.rail_contacted
-        if(default):
-            self.reset()
+        self.reset()
 
     def get_action_meanings(self):
         return ["NOOP", "FIRE", "RIGHT", "LEFT", "RIGHTFIRE", "LEFTFIRE"]
@@ -179,56 +169,61 @@ class PoolEnv:
         for ball in self.balls:
             self.space.remove(ball)
 
-    def setearInfo(self, listaApareada, etiquetaDeSeleccionada, alto, ancho, embocarNegra):
-        self.listaApareada = listaApareada
-        self.etiquetaDeSeleccionada = etiquetaDeSeleccionada
-        self.alto = alto
-        self.ancho = ancho
-        self.embocarNegra = embocarNegra
-        self.addBalls = False
+    # def setearInfo(self, listaApareada, etiquetaDeSeleccionada, alto, ancho, embocarNegra):
+    #     self.listaApareada = listaApareada
+    #     self.etiquetaDeSeleccionada = etiquetaDeSeleccionada
+    #     self.alto = alto
+    #     self.ancho = ancho
+    #     self.embocarNegra = embocarNegra
+    #     self.addBalls = False
 
     def setear_bolas(self):
-        #self.remove_all_balls()
-        #self.addBalls = False
         self.balls = []
-        self.num_balls = len(self.listaApareada)
+        self.num_balls = len(self.singleton.listaApareada)
         positions = []
         # handler = self.space.add_collision_handler(0, 0)
         # handler.begin = self.on_collision_begin
 
-        if(self.etiquetaDeSeleccionada == "Negra"):
-            embocarNegra = True
-            self.embocarNegra = embocarNegra
+        if(self.singleton.etiquetaDeSeleccionada == "Negra"):
+            self.singleton.embocarNegra = True
         
         contadorLisas = 0
         contadorRayadas = 8
-        for i, bola in enumerate(self.listaApareada):
+        for i, bola in enumerate(self.singleton.listaApareada):
             (x,y,r), _, etiqueta = bola
-            if(etiqueta == "Lisa"):
+            if(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada=="Lisa" ):
                 contadorLisas = contadorLisas + 1
-            elif (etiqueta == "Rayada"):
+            elif (etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Lisa"):
                 contadorRayadas = contadorRayadas + 1
-            x, y = self.transformar_coordenadas((x,y),self.ancho, self.alto)
-            position = self.create_ball(etiqueta,(x,y),self.etiquetaDeSeleccionada,self.embocarNegra,contadorLisas,contadorRayadas,True)
+            elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
+                contadorRayadas = contadorRayadas + 1
+            elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
+                contadorLisas = contadorLisas +1
+            elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Negra"):
+                contadorRayadas = contadorRayadas +1
+            elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Negra"):
+                contadorRayadas = contadorRayadas +1
+            x, y = self.transformar_coordenadas((x,y),self.singleton.ancho, self.singleton.alto)
+            position = self.create_ball(etiqueta,(x,y),self.singleton.etiquetaDeSeleccionada,self.singleton.embocarNegra,contadorLisas,contadorRayadas,True)
             positions.append(position)
         
-        faltanLisas = 7 - contadorLisas 
-        faltanRayadas = 7 - contadorRayadas
-        if(faltanLisas>0):
-            for i in range(faltanLisas):
-                nro = contadorLisas + 1 
-                x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
-                position = self.create_ball("Lisa", (x,y), self.etiquetaDeSeleccionada, self.embocarNegra, nro, -1, False)
-                self.pocket_tracking["potted_balls"].append(nro)
-                self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
+        # faltanLisas = 7 - contadorLisas 
+        # faltanRayadas = 7 - contadorRayadas
+        # if(faltanLisas>0):
+        #     for i in range(faltanLisas):
+        #         nro = contadorLisas + 1 
+        #         x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
+        #         position = self.create_ball("Lisa", (x,y), self.singleton.etiquetaDeSeleccionada, self.singleton.embocarNegra, nro, -1, False)
+        #         # self.pocket_tracking["potted_balls"].append(nro)
+        #         # self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
 
-        if(faltanRayadas>0):
-            for i in range(faltanRayadas):
-                nro = contadorRayadas + 1
-                x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
-                position = self.create_ball("Rayada", (x,y), self.etiquetaDeSeleccionada, self.embocarNegra, -1, nro, False)
-                self.pocket_tracking["potted_balls"].append(nro)
-                self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
+        # if(faltanRayadas>0):
+        #     for i in range(faltanRayadas):
+        #         nro = contadorRayadas + 1
+        #         x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
+        #         position = self.create_ball("Rayada", (x,y), self.singleton.etiquetaDeSeleccionada, self.singleton.embocarNegra, -1, nro, False)
+        #         # self.pocket_tracking["potted_balls"].append(nro)
+        #         # self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
 
 
         return positions, contadorLisas, contadorRayadas
@@ -325,9 +320,9 @@ class PoolEnv:
     def add_balls(self):
         # 0 -> cue-ball, 1-7 --> solids, 8 --> 8-ball, 9-15 -- strips
         self.balls = []
-        if self.addBalls == False:
+        if self.default == False:
             positions, cantLisas, cantRayadas = self.setear_bolas()
-            return cantLisas, cantRayadas
+            return
         positions = []
         for i in range(self.num_balls):
             intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
@@ -706,8 +701,11 @@ class PoolEnv:
 
         # adding cue ball back to table if potted
         if self.pocket_tracking["cue_ball_pocketed"]:
-            self.space.add(self.cue_ball.body, self.cue_ball)
-            self.balls.append(self.cue_ball)
+            cuerpo_existe = any(shape.body == self.cue_ball.body for shape in self.space.shapes)
+            if(cuerpo_existe == False):
+                self.space.add(self.cue_ball.body, self.cue_ball)
+            if(self.cue_ball not in self.balls):
+                self.balls.append(self.cue_ball)
 
             pm.Body.update_velocity(self.cue_ball.body, (0, 0), damping=0, dt=1)
             self.cue_ball.body.position = random.randint(
@@ -726,12 +724,7 @@ class PoolEnv:
                 pass
 
         self.add_table()
-        if (self.addBalls == False):
-           cantLisas, cantRayadas = self.add_balls()
-           faltanLisas = 7 - cantLisas
-           faltanRayadas = 7 - cantRayadas
-        else:
-            self.add_balls()
+        self.add_balls()
 
         self.reward = self.total_foul_times * 5
         self.episode_reward = []
@@ -805,7 +798,9 @@ class PoolEnv:
         balls = []
         for i in range(len(balls_attrs)):
             if i < len(self.balls):
-                self.space.remove(self.balls[i].body, self.balls[i])
+                cuerpo_existe = any(shape.body == self.balls[i].body for shape in self.space.shapes)
+                if(cuerpo_existe):
+                    self.space.remove(self.balls[i].body, self.balls[i])
             intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
             ball_body = pm.Body(BALL_MASS, intertia)
             ball_body.position = balls_attrs[i]["position"]
@@ -820,7 +815,7 @@ class PoolEnv:
             ball.userData = etiqueta
             # ball.filter = balls_attrs[i]["filter"]
             ball.filter = pm.ShapeFilter(categories=0b00100)
-            if(self.addBalls == True):
+            if(self.default == True):
                 if ball.number == 0:
                     self.cue_ball = ball
                 elif ball.number < 8:
@@ -830,7 +825,7 @@ class PoolEnv:
                 else:
                     ball.filter = pm.ShapeFilter(categories=0b00100)
             else:
-                if self.embocarNegra==False:
+                if self.singleton.embocarNegra==False:
                     if etiqueta == "Blanca":
                         self.cue_ball = ball
                         ball.observation_number = 4
@@ -841,20 +836,20 @@ class PoolEnv:
                         ball.observation_number = 3
                         ball.filter = pm.ShapeFilter(categories=0b10000)
 
-                    if etiqueta=="Lisa" and self.etiquetaDeSeleccionada=="Lisa":
+                    if etiqueta=="Lisa" and self.singleton.etiquetaDeSeleccionada=="Lisa":
                         ball.color = pg.Color(SOLIDS_COLOR)
                         ball.observation_number = 1
                         ball.filter = pm.ShapeFilter(categories=0b01000)
 
-                    if etiqueta=="Rayada" and self.etiquetaDeSeleccionada=="Lisa":
+                    if etiqueta=="Rayada" and self.singleton.etiquetaDeSeleccionada=="Lisa":
                         ball.color = pg.Color(STRIPS_COLOR)
                         ball.observation_number = 2
                     
-                    if etiqueta=="Lisa" and self.etiquetaDeSeleccionada=="Rayada":
+                    if etiqueta=="Lisa" and self.singleton.etiquetaDeSeleccionada=="Rayada":
                         ball.color = pg.Color(STRIPS_COLOR)
                         ball.observation_number = 2
                     
-                    if etiqueta=="Rayada" and self.etiquetaDeSeleccionada=="Rayada":
+                    if etiqueta=="Rayada" and self.singleton.etiquetaDeSeleccionada=="Rayada":
                         ball.color = pg.Color(SOLIDS_COLOR)
                         ball.observation_number = 1
                         ball.filter = pm.ShapeFilter(categories=0b01000)

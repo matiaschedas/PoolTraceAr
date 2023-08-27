@@ -30,6 +30,7 @@ import copy
 
 from Clases.Fisicas import Fisicas
 from Clases.IA_Handler import IA_Handler
+from IA_Simulacion.SingletonCompartida import SingletonCompartida
 
 screen_width, screen_height = pyautogui.size()
 
@@ -158,9 +159,10 @@ class VentanaProyeccion(QMainWindow):
         self.setWindowTitle("Proyeccion")
         self.label = QLabel(self)
         global resXProy, resYProy
-
+        self.png_image = cv2.imread(script_dir+"\\images\\PoolTraceAr.png", cv2.IMREAD_UNCHANGED)
         
         self.nroMonitor = display_monitor
+        self.frame_copy = None
 
         monitor = QDesktopWidget().screenGeometry(self.nroMonitor)
         self.move(monitor.left(), monitor.top())
@@ -201,15 +203,46 @@ class VentanaProyeccion(QMainWindow):
         self.frame = self.frame.copy()
         self.frame = cv2.resize(
             self.frame, (w, h), interpolation=cv2.INTER_LINEAR)
+        
+    def agregarImagen(self):
+        # Crea un marco transparente para trabajar con él
+        self.frame_copy = np.zeros((resXProy, resYProy, 4), dtype=np.uint8)
+
+        # Achicar la imagen a las dimensiones deseadas
+        desired_width = 800
+        desired_height = 800
+        resized_image = cv2.resize(self.png_image, (desired_width, desired_height), interpolation=cv2.INTER_LINEAR)
+
+        # Calcula las coordenadas para centrar la imagen en el frame transparente
+        img_height, img_width, _ = resized_image.shape
+        x_start = (resYProy - img_width) // 2
+        y_start = (resXProy - img_height) // 2
+
+        # Copia la imagen achicada y transparente en frame_copy respetando la transparencia
+        self.frame_copy[y_start:y_start+img_height, x_start:x_start+img_width, :] = resized_image
+
+        # Convierte frame_copy en un QPixmap y muestra en self.label
+        frame_rgb = cv2.cvtColor(self.frame_copy, cv2.COLOR_BGRA2RGBA)
+        imagen = QImage(frame_rgb.data, resYProy, resXProy, QImage.Format_RGBA8888)
+        imagen = QPixmap.fromImage(imagen)
+        self.label.setPixmap(imagen)
+        
 
     def dibujar(self):
         self.frame = cv2.resize(
             self.frame, (resYProy, resXProy), interpolation=cv2.INTER_LINEAR)
+
+        #self.agregarImagen()
+
         frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
         imagen = QImage(frame_rgb.data, resYProy,
                         resXProy, QImage.Format_RGB888)
         imagen = QPixmap.fromImage(imagen)
         self.label.setPixmap(imagen)
+
+       
+
+
 
     #limpia el frame para que no queden rastros de los circulos:
     def limpiar_circulos(self):
@@ -817,6 +850,10 @@ class VentanaVideo(QMainWindow):
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, ResolucionY)
             self.fps = self.cap.get(cv2.CAP_PROP_FPS)
             ret, self.frame = self.cap.read()
+            s_img = cv2.imread(script_dir + '\\images\\PoolTraceAr.png', cv2.IMREAD_UNCHANGED)
+           
+            
+
         except Exception as ex:
             self.frame = None
             self.cap = None
@@ -1516,7 +1553,9 @@ class VentanaVideo(QMainWindow):
                                 (xs,ys,rs) = bolaSeleccionada
                                 xs = xs - self.XIROI
                                 ys = ys - self.YIROI
-                                self.IA.invocarIA(self.listaEtiquetada, (xs,ys,rs), tamROI,self.embocarNegra)
+                                singleton = SingletonCompartida(self.listaEtiquetada, (xs,ys,rs), tamROI,self.embocarNegra)
+                                self.IA.invocarIA()
+                                SingletonCompartida.delete_instance()
                                 for i in range(1):
                                     #print(f"calculando {i+1} de 100...")
                                     #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:

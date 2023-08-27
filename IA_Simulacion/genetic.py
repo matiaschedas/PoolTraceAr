@@ -1,4 +1,4 @@
-from pool import PoolEnv
+from IA_Simulacion.pool import PoolEnv
 
 import itertools
 import numpy as np
@@ -37,20 +37,20 @@ class Player:
 
 
 class GeneticAlgorithm:
-    def __init__(self, attrs, iterations, training_type="mlp",defa=True):
+    def __init__(self, attrs, iterations, training_type="mlp"):
         self.i = 0
         self.attrs = attrs
         self.iterations = iterations
         self.max_iterations = iterations * 5
         self.training_type = training_type
-        self.best_player = Player(self.create_env(defa))
+        self.best_player = Player(self.create_env())
         if self.training_type == "single":
             self.players = np.array([self.best_player])
             self.player_rewards = np.array([(self.best_player.reward + 1.001) ** 3])
     
 
-    def create_env(self, defa):
-        env = PoolEnv(training=True, draw_screen=False, default=defa)
+    def create_env(self):
+        env = PoolEnv(training=True, draw_screen=False)
         env.apply_attrs(self.attrs)
         return env
 
@@ -96,7 +96,7 @@ class Trainer:
     def __init__(self, iterations, batch=10):
         self.iterations = iterations
         self.batch = batch
-        self.defa = True
+        
        
 
     def train(self, attrs):
@@ -135,20 +135,24 @@ class Trainer:
 
     def mlp_get_player(self, x):
         attrs, iterations = x
-        agent = GeneticAlgorithm(attrs,  iterations=iterations, training_type="mlp",defa=self.defa)
+        agent = GeneticAlgorithm(attrs,  iterations=iterations, training_type="mlp")
         player, attrs = agent.train(self.best_v)
         return list(player.v), player.reward, agent.i, attrs
 
 class Genetic():
-    def iniciar(self, poolEnv):
+    def iniciar(self):
         #poolEnv.reset()
         iterations = 150
+        pool = PoolEnv(training=False)
         trainer = Trainer(iterations)
+
         trainer.defa = False
-        attrs = poolEnv.get_attrs()
+        attrs = pool.get_attrs()
         best_player, attrs = trainer.mlp_train(attrs)
-        poolEnv.apply_attrs(attrs)
-        done = poolEnv.step(best_player)[2]
+        pool.apply_attrs(attrs)
+        done = pool.step(best_player)[2]
+        pool.close()
+        pool = None
         trainer = None
 
 if __name__ == "__main__":
