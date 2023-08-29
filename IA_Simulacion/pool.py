@@ -21,6 +21,16 @@ from copy import copy
 import pymunk.pygame_util as pygame_util
 
 primerContacto = None
+primerContactoCorrecto = False
+bolasEmbocadas = []
+bolasCorrectasEmbocadas = 0
+bolasIncorrectasEmbocadas = 0
+embocoLaNegraIncorrectamente = False
+cantidadRebotesBlanca = 0
+velocidadXBlanca = 0
+velocidadYBlanca = 0
+
+
 
 class PoolEnv:
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 500}
@@ -56,7 +66,7 @@ class PoolEnv:
         self.space.idle_speed_threshold = 5
         self.space.sleep_time_threshold = 1e-8
 
-
+        
         self.default = True
         self.balls = []
         self.ancho_ratio = 0
@@ -64,7 +74,7 @@ class PoolEnv:
         self.singleton = SingletonCompartida()
         if(self.singleton.listaApareada is not None):
             self.default = False    
-       
+        self.reiniciar_globales()
 
         # gym environment
         self.spec = None
@@ -115,6 +125,18 @@ class PoolEnv:
         self.rail_collision_handler = self.space.add_collision_handler(1, 3)
         self.rail_collision_handler.begin = self.rail_contacted
         self.reset()
+    
+    def reiniciar_globales(self):
+        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca
+        primerContacto = None
+        primerContactoCorrecto = False
+        bolasEmbocadas = []
+        bolasCorrectasEmbocadas = 0
+        bolasIncorrectasEmbocadas = 0
+        embocoLaNegraIncorrectamente = False
+        cantidadRebotesBlanca = 0
+        velocidadXBlanca = 0
+        velocidadYBlanca = 0
 
     def get_action_meanings(self):
         return ["NOOP", "FIRE", "RIGHT", "LEFT", "RIGHTFIRE", "LEFTFIRE"]
@@ -162,29 +184,16 @@ class PoolEnv:
 
         self.space.add(*self.rails, *self.pockets)
 
-    def on_collision_begin(self, arbiter, space, data):
-        # Obtiene los cuerpos involucrados en la colisión
-        shape_1, shape_2 = arbiter.shapes
-        print("hola colision")
     
     def remove_all_balls(self):
         for ball in self.balls:
             self.space.remove(ball)
 
-    # def setearInfo(self, listaApareada, etiquetaDeSeleccionada, alto, ancho, embocarNegra):
-    #     self.listaApareada = listaApareada
-    #     self.etiquetaDeSeleccionada = etiquetaDeSeleccionada
-    #     self.alto = alto
-    #     self.ancho = ancho
-    #     self.embocarNegra = embocarNegra
-    #     self.addBalls = False
 
     def setear_bolas(self):
         self.balls = []
         self.num_balls = len(self.singleton.listaApareada)
         positions = []
-        # handler = self.space.add_collision_handler(0, 0)
-        # handler.begin = self.on_collision_begin
 
         if(self.singleton.etiquetaDeSeleccionada == "Negra"):
             self.singleton.embocarNegra = True
@@ -226,8 +235,6 @@ class PoolEnv:
         #         position = self.create_ball("Rayada", (x,y), self.singleton.etiquetaDeSeleccionada, self.singleton.embocarNegra, -1, nro, False)
         #         # self.pocket_tracking["potted_balls"].append(nro)
         #         # self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
-
-
         return positions, contadorLisas, contadorRayadas
             
     def transformar_coordenadas(self, punto, ancho, alto):
@@ -386,16 +393,19 @@ class PoolEnv:
             positions.append(ball_body.position)
             self.balls.append(ball)
             self.space.add(ball, ball_body)
-    
+            
 
     @staticmethod
     def ball_contacted(arbiter, space, data):
         # count bank/carrom shot collisions
-        global primerContacto
+        global primerContacto, cantidadRebotesBlanca
         ball_shape_1, ball_shape_2 = arbiter.shapes
+        if(ball_shape_1.userData == "Blanca" or ball_shape_2.userData == "Blanca"):
+            cantidadRebotesBlanca = cantidadRebotesBlanca + 1
 
         if(ball_shape_1.userData=="Blanca" and primerContacto == None):
             primerContacto = ball_shape_2
+    
         elif (ball_shape_2.userData == "Blanca" and primerContacto == None):
             primerContacto = ball_shape_1 
 
@@ -415,9 +425,11 @@ class PoolEnv:
 
     @staticmethod
     def ball_pocketed(arbiter, space, data):
+        global bolasEmbocadas
         # arbiter: [ball, pocket]
         ball, pocket = arbiter.shapes
         data["pocket_tracking"]["potted_balls"].append(ball.number)
+        bolasEmbocadas.append(ball)
 
         if ball.number == 0:
             data["pocket_tracking"]["cue_ball_pocketed"] = True
@@ -443,8 +455,12 @@ class PoolEnv:
 
     @staticmethod
     def rail_contacted(arbiter, space, data):
+        global cantidadRebotesBlanca
         ball, rail = arbiter.shapes
         # count bank/carrom shot collisions
+        if(ball.userData == "Blanca"):
+            cantidadRebotesBlanca = cantidadRebotesBlanca + 1
+
         if (
             data["pocket_tracking"]["first_contacted_ball"] == ball
             and not data["pocket_tracking"]["potted_balls"]
@@ -538,9 +554,40 @@ class PoolEnv:
         else:
             return np.clip((reward / 500) * 2 - 1, -1, 1)
 
+    def setear_respuesta(self):
+        global bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, primerContactoCorrecto
+        tiroValido = True
+        for bola in bolasEmbocadas:
+            if bola.userData == self.singleton.etiquetaDeSeleccionada:
+                bolasCorrectasEmbocadas = bolasCorrectasEmbocadas + 1 
+            else:
+                bolasIncorrectasEmbocadas = bolasIncorrectasEmbocadas + 1
+                self.tiroValido = False
+
+            if self.singleton.embocarNegra == False and bola.userData == "Negra":
+                embocoLaNegraIncorrectamente = True
+                tiroValido = False
+            if bola.userData == "Blanca":
+                tiroValido = False
+
+        if primerContacto is not None:
+            if primerContacto.userData == self.singleton.etiquetaDeSeleccionada:
+                primerContactoCorrecto = True
+            else:
+                primerContactoCorrecto = False
+                tiroValido = False
+        else:
+            primerContactoCorrecto = False
+            tiroValido = False
+        singletonRespuesta = SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido)
+
+
     def step(self, action, *args, **kwargs):
+        global velocidadXBlanca, velocidadYBlanca
         # waiting for all balls to stop
         action = self.process_action(action)
+        velocidadXBlanca = action[0]
+        velocidadYBlanca = action[1]
         self.cue_ball.body.activate()
         pm.Body.update_velocity(self.cue_ball.body, action, damping=0, dt=1)
 
@@ -724,6 +771,7 @@ class PoolEnv:
             ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
             self.cue_ball.body.activate()
 
+        self.setear_respuesta()
         return self.process_observation(), self.process_reward(), done, info
 
     def reset(self, *args, **kwargs):
@@ -826,44 +874,16 @@ class PoolEnv:
             ball.userData = etiqueta
             # ball.filter = balls_attrs[i]["filter"]
             ball.filter = pm.ShapeFilter(categories=0b00100)
-            if(self.default == True):
-                if ball.number == 0:
-                    self.cue_ball = ball
-                elif ball.number < 8:
-                    ball.filter = pm.ShapeFilter(categories=0b01000)
-                elif ball.number == 8:
-                    ball.filter = pm.ShapeFilter(categories=0b10000)
-                else:
-                    ball.filter = pm.ShapeFilter(categories=0b00100)
+            
+            if ball.number == 0:
+                self.cue_ball = ball
+            elif ball.number < 8:
+                ball.filter = pm.ShapeFilter(categories=0b01000)
+            elif ball.number == 8:
+                ball.filter = pm.ShapeFilter(categories=0b10000)
             else:
-                if self.singleton.embocarNegra==False:
-                    if etiqueta == "Blanca":
-                        self.cue_ball = ball
-
-                    if etiqueta == "Negra":
-                        ball.filter = pm.ShapeFilter(categories=0b10000)
-
-                    if etiqueta=="Lisa" and self.singleton.etiquetaDeSeleccionada=="Lisa":
-                        ball.filter = pm.ShapeFilter(categories=0b01000)
-
-                    if etiqueta=="Rayada" and self.singleton.etiquetaDeSeleccionada=="Lisa":
-                        ball.filter = pm.ShapeFilter(categories=0b00100)
-                    
-                    if etiqueta=="Lisa" and self.singleton.etiquetaDeSeleccionada=="Rayada":
-                       ball.filter = pm.ShapeFilter(categories=0b00100)
-                    
-                    if etiqueta=="Rayada" and self.singleton.etiquetaDeSeleccionada=="Rayada":
-                        ball.filter = pm.ShapeFilter(categories=0b01000)
-                else:
-                    if etiqueta == "Blanca":
-                        self.cue_ball = ball
-                       
-                    if etiqueta == "Negra":
-                        ball.filter = pm.ShapeFilter(categories=0b10000)
-
-                    if etiqueta=="Rayada" or etiqueta=="Lisa":
-                        ball.filter = pm.ShapeFilter(categories=0b00100)
-
+                ball.filter = pm.ShapeFilter(categories=0b00100)
+            
             self.space.add(ball_body, ball)
             balls.append(ball)
         self.balls = balls
@@ -903,11 +923,6 @@ class PoolEnv:
     def close(self):
         pg.quit()
         del self.space  # Liberar el espacio pymunk
-
-    def setear_respuesta(self):
-        global primerContacto
-        singletonRespuesta = SingletonRespuesta(primerContacto)
-        
 
 
 
