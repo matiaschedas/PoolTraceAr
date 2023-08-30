@@ -31,7 +31,7 @@ velocidadXBlanca = 0
 velocidadYBlanca = 0
 trayectoriaBlanca = []
 trayectorias = None
-balls_copy = []
+
 
 
 
@@ -72,6 +72,7 @@ class PoolEnv:
         
         self.default = True
         self.balls = []
+        self.balls_copy = []
         self.ancho_ratio = 0
         self.alto_ratio = 0
         self.singleton = SingletonCompartida()
@@ -130,7 +131,7 @@ class PoolEnv:
         self.reset()
     
     def reiniciar_globales(self):
-        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca, balls_copy
+        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca
         primerContacto = None
         primerContactoCorrecto = False
         bolasEmbocadas = []
@@ -142,7 +143,6 @@ class PoolEnv:
         velocidadYBlanca = 0
         trayectorias = None
         trayectoriaBlanca = []
-        balls_copy = []
 
     def get_action_meanings(self):
         return ["NOOP", "FIRE", "RIGHT", "LEFT", "RIGHTFIRE", "LEFTFIRE"]
@@ -197,10 +197,10 @@ class PoolEnv:
 
 
     def setear_bolas(self):
-        global trayectorias, balls_copy
+        global trayectorias
         trayectorias = [[] for _ in range(len(self.singleton.listaApareada))]
         self.balls = []
-        balls_copy = []
+        self.balls_copy = []
         self.num_balls = len(self.singleton.listaApareada)
         positions = []
 
@@ -254,7 +254,9 @@ class PoolEnv:
     
     def destransformar_coordenadas(self, punto):
         x,y = punto
-        return (x/self.ancho_ratio)-CORNER_POCKET_DIST, (y/self.alto_ratio)-CORNER_POCKET_DIST
+        if(self.ancho_ratio != 0 and self.alto_ratio != 0):
+            return ((x-CORNER_POCKET_DIST)/self.ancho_ratio, (y-CORNER_POCKET_DIST)/self.alto_ratio)
+        return (0,0)
     
     def obtenerEtiquetaSeleccionada(self, listaApareada, bolaSeleccionada):
         (xs,ys,rs) = bolaSeleccionada
@@ -267,7 +269,7 @@ class PoolEnv:
         
     #al crear las bolas tener en cuenta que la IA siempre mete las lisas
     def create_ball(self, etiqueta, coordenada, etiquetaDeSeleccionada, embocarNegra, contadorSolidas, contadorRayadas, agregarSpace):
-        global trayectoriaBlanca,trayectorias, balls_copy
+        global trayectoriaBlanca,trayectorias
         intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
         ball_body = pm.Body(BALL_MASS, intertia)
         ball_body.position = coordenada
@@ -284,7 +286,7 @@ class PoolEnv:
                 ball.observation_number = 4
                 ball.color = pg.Color(WHITE)
                 ball.number = 0
-                trayectoriaBlanca.append(ball_body.position)
+                trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
             
             if etiqueta == "Negra":
                 ball.color = pg.Color(BLACK)
@@ -320,7 +322,7 @@ class PoolEnv:
                 ball.observation_number = 4
                 ball.color = pg.Color(WHITE)
                 ball.number = 0
-                trayectoriaBlanca.append(ball_body.position)
+                trayectoriaBlanca.append(self.destransformar_coordenadas(ball_body.position))
 
             if etiqueta == "Negra":
                 ball.color = pg.Color(BLACK)
@@ -334,9 +336,9 @@ class PoolEnv:
                 ball.number = contadorRayadas
         #Respetar el orden del codigo
         if etiqueta != 'Blanca':
-            trayectorias[len(self.balls)].append(ball_body.position)
+            trayectorias[len(self.balls)].append(self.destransformar_coordenadas(ball.body.position))
         self.balls.append(ball)
-        balls_copy.append(ball)
+        self.balls_copy.append(ball.copy())
         if(agregarSpace):
             self.space.add(ball, ball_body)
         return ball_body.position
@@ -345,6 +347,7 @@ class PoolEnv:
     def add_balls(self):
         # 0 -> cue-ball, 1-7 --> solids, 8 --> 8-ball, 9-15 -- strips
         self.balls = []
+        self.balls_copy = []
         if self.default == False:
             positions, cantLisas, cantRayadas = self.setear_bolas()
             return
@@ -413,7 +416,7 @@ class PoolEnv:
 
     
     def ball_contacted(self, arbiter, space, data):
-        global trayectoriaBlanca, trayectorias,balls_copy
+        global trayectoriaBlanca, trayectorias
         # count bank/carrom shot collisions
         global primerContacto, cantidadRebotesBlanca
         ball_shape_1, ball_shape_2 = arbiter.shapes
@@ -429,18 +432,18 @@ class PoolEnv:
         
         if( trayectorias is not None ):
             if(ball_shape_1.userData == 'Blanca' ):
-                trayectoriaBlanca.append(ball_shape_1.body.position)
-                indexBall2 = self.balls.index(ball_shape_2)
-                trayectorias[indexBall2].append(ball_shape_2.body.position)
+                trayectoriaBlanca.append(self.destransformar_coordenadas(ball_shape_1.body.position))
+                indexBall2 = self.balls_copy.index(ball_shape_2)
+                trayectorias[indexBall2].append(self.destransformar_coordenadas(ball_shape_2.body.position))
             elif(ball_shape_2.userData == 'Blanca'):
-                trayectoriaBlanca.append(ball_shape_2.body.position)
-                indexBall1 = self.balls.index(ball_shape_1)
-                trayectorias[indexBall1].append(ball_shape_1.body.position)
+                trayectoriaBlanca.append(self.destransformar_coordenadas(ball_shape_2.body.position))
+                indexBall1 = self.balls_copy.index(ball_shape_1)
+                trayectorias[indexBall1].append(self.destransformar_coordenadas(ball_shape_1.body.position))
             else:
-                indexBall1 = self.balls.index(ball_shape_1)
-                indexBall2 = self.balls.index(ball_shape_2)
-                trayectorias[indexBall1].append(ball_shape_1.body.position)
-                trayectorias[indexBall2].append(ball_shape_2.body.position)        
+                indexBall1 = self.balls_copy.index(ball_shape_1)
+                indexBall2 = self.balls_copy.index(ball_shape_2)
+                trayectorias[indexBall1].append(self.destransformar_coordenadas(ball_shape_1.body.position))
+                trayectorias[indexBall2].append(self.destransformar_coordenadas(ball_shape_2.body.position))        
 
         if (
             data["pocket_tracking"]["first_contacted_ball"] in arbiter.shapes
@@ -457,17 +460,17 @@ class PoolEnv:
 
     
     def ball_pocketed(self, arbiter, space, data):
-        global bolasEmbocadas, balls_copy, trayectorias, trayectoriaBlanca
+        global bolasEmbocadas, trayectorias, trayectoriaBlanca
         # arbiter: [ball, pocket]
         ball, pocket = arbiter.shapes
         data["pocket_tracking"]["potted_balls"].append(ball.number)
-        bolasEmbocadas.append(ball)
+        bolasEmbocadas.append(ball.copy())
 
         if (ball.userData == 'Blanca'):
-            trayectoriaBlanca.append(ball.body.position)
+            trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
         elif ( trayectorias is not None ):
-            index = self.balls.index(ball)
-            trayectorias[index].append(ball.body.position)
+            index = self.balls_copy.index(ball)
+            trayectorias[index].append(self.destransformar_coordenadas(ball.body.position))
     
         if ball.number == 0:
             data["pocket_tracking"]["cue_ball_pocketed"] = True
@@ -493,15 +496,15 @@ class PoolEnv:
 
     
     def rail_contacted(self, arbiter, space, data):
-        global cantidadRebotesBlanca, balls_copy, trayectorias, trayectoriaBlanca
+        global cantidadRebotesBlanca, trayectorias, trayectoriaBlanca
         ball, rail = arbiter.shapes
         # count bank/carrom shot collisions
         if(ball.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
-            trayectoriaBlanca.append(ball.body.position)
+            trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
         elif( trayectorias is not None ):
-            index = self.balls.index(ball)
-            trayectorias[index].append(ball.body.position)
+            index = self.balls_copy.index(ball)
+            trayectorias[index].append(self.destransformar_coordenadas(ball.body.position))
         if (
             data["pocket_tracking"]["first_contacted_ball"] == ball
             and not data["pocket_tracking"]["potted_balls"]
@@ -700,8 +703,16 @@ class PoolEnv:
                 for _ in range(self.dt):
                     self.space.step(self.step_size / self.dt)
 
+        
+        if (trayectorias is not None):
+            for bola in self.balls_copy:
+                if bola.userData == "Blanca" and bola not in bolasEmbocadas:
+                        trayectoriaBlanca.append(self.destransformar_coordenadas(bola.body.position))
+                else:
+                    if(bola not in bolasEmbocadas):
+                        indexBall2 = self.balls_copy.index(bola)
+                        trayectorias[indexBall2].append(self.destransformar_coordenadas(bola.body.position))
         # rewarding
-
         # if cue ball touch the rail first, subtract the reward
         self.reward -= 2 * self.pocket_tracking["rail_collision_count"]
 
@@ -948,6 +959,7 @@ class PoolEnv:
             self.space.add(ball_body, ball)
             balls.append(ball)
         self.balls = balls
+        self.balls_copy = balls.copy()
 
         self.ball_collision_handler.data["cue_ball"] = self.cue_ball
         self.ball_collision_handler.data["pocket_tracking"] = self.pocket_tracking

@@ -1572,7 +1572,8 @@ class VentanaVideo(QMainWindow):
                                 self.IA.invocarIA()
                                 SingletonCompartida.delete_instance()
                                 singletonRespuesta = SingletonRespuesta()
-                                #hacer lo que corresponda con la respuesta antes de borrar la instancia                                
+                                self.puntos_trayectoria_bola_blanca = singletonRespuesta.trayectoriaBlanca  
+                                self.puntos_trayectorias_bolas = singletonRespuesta.trayectorias   
                                 SingletonRespuesta.delete_instance()
                                 
                                 for i in range(1):
@@ -1793,14 +1794,23 @@ class VentanaVideo(QMainWindow):
         if(self.puntos_trayectoria_bola_blanca is not None):
             for i in range(len(self.puntos_trayectoria_bola_blanca)):
                 if(i == len(self.puntos_trayectoria_bola_blanca) - 1):
-                    punto = self.puntos_trayectoria_bola_blanca[i].int_tuple
+                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
+                        punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                    else:
+                        punto = self.puntos_trayectoria_bola_blanca[i].int_tuple
                     x,y = punto
                     x = x + self.XIROI
                     y = y + self.YIROI
                     cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
                     break
-                puntoa = self.puntos_trayectoria_bola_blanca[i].int_tuple
-                puntob = self.puntos_trayectoria_bola_blanca[i+1].int_tuple
+                if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
+                    puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                else:    
+                    puntoa = self.puntos_trayectoria_bola_blanca[i].int_tuple
+                if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple):
+                    puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
+                else:
+                    puntob = self.puntos_trayectoria_bola_blanca[i+1].int_tuple
                 xa,ya = puntoa
                 xb,yb = puntob
                 xa = xa + self.XIROI
@@ -1811,14 +1821,23 @@ class VentanaVideo(QMainWindow):
         if(self.puntos_trayectoria_bola_seleccionada is not None):
             for i in range(len(self.puntos_trayectoria_bola_seleccionada)):
                 if(i == len(self.puntos_trayectoria_bola_seleccionada) - 1):
-                    punto = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
+                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
+                        punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                    else:
+                        punto = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
                     x,y = punto
                     x = x + self.XIROI
                     y = y + self.YIROI
                     cv2.circle(self.frame, (x,y), int(minRadius/2) , (255,0,0),thickness=-1)
                     break
-                puntoa = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
-                puntob = self.puntos_trayectoria_bola_seleccionada[i+1].int_tuple
+                if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
+                    puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                else:
+                    puntoa = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
+                if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple): 
+                    puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
+                else:
+                    puntob = self.puntos_trayectoria_bola_seleccionada[i+1].int_tuple
                 xa,ya = puntoa
                 xb,yb = puntob
                 xa = xa + self.XIROI
@@ -1833,14 +1852,23 @@ class VentanaVideo(QMainWindow):
                     if(len(listaBola)>0):
                         for x in range(len(listaBola)):
                             if(x == len(listaBola)-1):
-                                punto = listaBola[x].int_tuple
+                                if isinstance(listaBola[x], tuple):
+                                    punto = int(listaBola[x][0]), int(listaBola[x][1])
+                                else:
+                                    punto = listaBola[x].int_tuple
                                 x,y = punto
                                 x = x + self.XIROI
                                 y = y + self.YIROI
                                 cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
                                 break
-                            puntoa = listaBola[x].int_tuple
-                            puntob = listaBola[x+1].int_tuple
+                            if isinstance(listaBola[x], tuple):
+                                puntoa = int(listaBola[x][0]), int(listaBola[x][1])
+                            else:
+                                puntoa = listaBola[x].int_tuple
+                            if isinstance(listaBola[x+1], tuple):
+                                puntob = int(listaBola[x+1][0]), int(listaBola[x+1][1])
+                            else:
+                                puntob = listaBola[x+1].int_tuple
                             xa,ya = puntoa
                             xb,yb = puntob
                             xa = xa + self.XIROI
