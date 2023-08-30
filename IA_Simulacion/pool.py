@@ -411,8 +411,8 @@ class PoolEnv:
             self.space.add(ball, ball_body)
             
 
-    @staticmethod
-    def ball_contacted(arbiter, space, data):
+    
+    def ball_contacted(self, arbiter, space, data):
         global trayectoriaBlanca, trayectorias,balls_copy
         # count bank/carrom shot collisions
         global primerContacto, cantidadRebotesBlanca
@@ -426,20 +426,19 @@ class PoolEnv:
     
         elif (ball_shape_2.userData == "Blanca" and primerContacto == None):
             primerContacto = ball_shape_1 
-        indexBall1 = 0
-        indexBall2 = 0
+        
         if( trayectorias is not None ):
             if(ball_shape_1.userData == 'Blanca' ):
                 trayectoriaBlanca.append(ball_shape_1.body.position)
-                indexBall2 = balls_copy.index(ball_shape_2)
+                indexBall2 = self.balls.index(ball_shape_2)
                 trayectorias[indexBall2].append(ball_shape_2.body.position)
             elif(ball_shape_2.userData == 'Blanca'):
                 trayectoriaBlanca.append(ball_shape_2.body.position)
-                indexBall1 = balls_copy.index(ball_shape_1)
+                indexBall1 = self.balls.index(ball_shape_1)
                 trayectorias[indexBall1].append(ball_shape_1.body.position)
             else:
-                indexBall1 = balls_copy.index(ball_shape_1)
-                indexBall2 = balls_copy.index(ball_shape_2)
+                indexBall1 = self.balls.index(ball_shape_1)
+                indexBall2 = self.balls.index(ball_shape_2)
                 trayectorias[indexBall1].append(ball_shape_1.body.position)
                 trayectorias[indexBall2].append(ball_shape_2.body.position)        
 
@@ -456,8 +455,8 @@ class PoolEnv:
                 data["pocket_tracking"]["first_contacted_ball"] = other_ball
         return True
 
-    @staticmethod
-    def ball_pocketed(arbiter, space, data):
+    
+    def ball_pocketed(self, arbiter, space, data):
         global bolasEmbocadas, balls_copy, trayectorias, trayectoriaBlanca
         # arbiter: [ball, pocket]
         ball, pocket = arbiter.shapes
@@ -467,7 +466,7 @@ class PoolEnv:
         if (ball.userData == 'Blanca'):
             trayectoriaBlanca.append(ball.body.position)
         elif ( trayectorias is not None ):
-            index = balls_copy.index(ball)
+            index = self.balls.index(ball)
             trayectorias[index].append(ball.body.position)
     
         if ball.number == 0:
@@ -492,8 +491,8 @@ class PoolEnv:
         space.remove(ball, ball.body)
         return False
 
-    @staticmethod
-    def rail_contacted(arbiter, space, data):
+    
+    def rail_contacted(self, arbiter, space, data):
         global cantidadRebotesBlanca, balls_copy, trayectorias, trayectoriaBlanca
         ball, rail = arbiter.shapes
         # count bank/carrom shot collisions
@@ -501,7 +500,7 @@ class PoolEnv:
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
             trayectoriaBlanca.append(ball.body.position)
         elif( trayectorias is not None ):
-            index = balls_copy.index(ball)
+            index = self.balls.index(ball)
             trayectorias[index].append(ball.body.position)
         if (
             data["pocket_tracking"]["first_contacted_ball"] == ball
