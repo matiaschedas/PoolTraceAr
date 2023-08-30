@@ -29,6 +29,9 @@ embocoLaNegraIncorrectamente = False
 cantidadRebotesBlanca = 0
 velocidadXBlanca = 0
 velocidadYBlanca = 0
+trayectoriaBlanca = []
+trayectorias = None
+balls_copy = []
 
 
 
@@ -127,7 +130,7 @@ class PoolEnv:
         self.reset()
     
     def reiniciar_globales(self):
-        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca
+        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca, balls_copy
         primerContacto = None
         primerContactoCorrecto = False
         bolasEmbocadas = []
@@ -137,6 +140,9 @@ class PoolEnv:
         cantidadRebotesBlanca = 0
         velocidadXBlanca = 0
         velocidadYBlanca = 0
+        trayectorias = None
+        trayectoriaBlanca = []
+        balls_copy = []
 
     def get_action_meanings(self):
         return ["NOOP", "FIRE", "RIGHT", "LEFT", "RIGHTFIRE", "LEFTFIRE"]
@@ -191,7 +197,10 @@ class PoolEnv:
 
 
     def setear_bolas(self):
+        global trayectorias, balls_copy
+        trayectorias = [[] for _ in range(len(self.singleton.listaApareada))]
         self.balls = []
+        balls_copy = []
         self.num_balls = len(self.singleton.listaApareada)
         positions = []
 
@@ -258,6 +267,7 @@ class PoolEnv:
         
     #al crear las bolas tener en cuenta que la IA siempre mete las lisas
     def create_ball(self, etiqueta, coordenada, etiquetaDeSeleccionada, embocarNegra, contadorSolidas, contadorRayadas, agregarSpace):
+        global trayectoriaBlanca,trayectorias, balls_copy
         intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
         ball_body = pm.Body(BALL_MASS, intertia)
         ball_body.position = coordenada
@@ -274,12 +284,14 @@ class PoolEnv:
                 ball.observation_number = 4
                 ball.color = pg.Color(WHITE)
                 ball.number = 0
+                trayectoriaBlanca.append(ball_body.position)
             
             if etiqueta == "Negra":
                 ball.color = pg.Color(BLACK)
                 ball.observation_number = 3
                 ball.filter = pm.ShapeFilter(categories=0b10000)
                 ball.number = 8
+                
 
             if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Lisa":
                 ball.color = pg.Color(SOLIDS_COLOR)
@@ -308,6 +320,7 @@ class PoolEnv:
                 ball.observation_number = 4
                 ball.color = pg.Color(WHITE)
                 ball.number = 0
+                trayectoriaBlanca.append(ball_body.position)
 
             if etiqueta == "Negra":
                 ball.color = pg.Color(BLACK)
@@ -319,8 +332,11 @@ class PoolEnv:
                 ball.color = pg.Color(STRIPS_COLOR)
                 ball.observation_number = 2
                 ball.number = contadorRayadas
-
+        #Respetar el orden del codigo
+        if etiqueta != 'Blanca':
+            trayectorias[len(self.balls)].append(ball_body.position)
         self.balls.append(ball)
+        balls_copy.append(ball)
         if(agregarSpace):
             self.space.add(ball, ball_body)
         return ball_body.position
@@ -397,18 +413,34 @@ class PoolEnv:
 
     @staticmethod
     def ball_contacted(arbiter, space, data):
+        global trayectoriaBlanca, trayectorias,balls_copy
         # count bank/carrom shot collisions
         global primerContacto, cantidadRebotesBlanca
         ball_shape_1, ball_shape_2 = arbiter.shapes
         if(ball_shape_1.userData == "Blanca" or ball_shape_2.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
+        
 
         if(ball_shape_1.userData=="Blanca" and primerContacto == None):
             primerContacto = ball_shape_2
     
         elif (ball_shape_2.userData == "Blanca" and primerContacto == None):
             primerContacto = ball_shape_1 
-
+        indexBall1 = 0
+        indexBall2 = 0
+        if(ball_shape_1.userData == 'Blanca'):
+            trayectoriaBlanca.append(ball_shape_1.body.position)
+            indexBall2 = balls_copy.index(ball_shape_2)
+            trayectorias[indexBall2].append(ball_shape_2.body.position)
+        elif(ball_shape_2.userData == 'Blanca'):
+            trayectoriaBlanca.append(ball_shape_2.body.position)
+            indexBall1 = balls_copy.index(ball_shape_1)
+            trayectorias[indexBall1].append(ball_shape_1.body.position)
+        else:
+            indexBall1 = balls_copy.index(ball_shape_1)
+            indexBall2 = balls_copy.index(ball_shape_2)
+            trayectorias[indexBall1].append(ball_shape_1.body.position)
+            trayectorias[indexBall2].append(ball_shape_2.body.position)        
 
         if (
             data["pocket_tracking"]["first_contacted_ball"] in arbiter.shapes
@@ -425,12 +457,18 @@ class PoolEnv:
 
     @staticmethod
     def ball_pocketed(arbiter, space, data):
-        global bolasEmbocadas
+        global bolasEmbocadas, balls_copy, trayectorias, trayectoriaBlanca
         # arbiter: [ball, pocket]
         ball, pocket = arbiter.shapes
         data["pocket_tracking"]["potted_balls"].append(ball.number)
         bolasEmbocadas.append(ball)
 
+        if (ball.userData == 'Blanca'):
+            trayectoriaBlanca.append(ball.body.position)
+        else:
+            index = balls_copy.index(ball)
+            trayectorias[index].append(ball.body.position)
+    
         if ball.number == 0:
             data["pocket_tracking"]["cue_ball_pocketed"] = True
         elif ball.number == 8:
@@ -455,12 +493,15 @@ class PoolEnv:
 
     @staticmethod
     def rail_contacted(arbiter, space, data):
-        global cantidadRebotesBlanca
+        global cantidadRebotesBlanca, balls_copy, trayectorias, trayectoriaBlanca
         ball, rail = arbiter.shapes
         # count bank/carrom shot collisions
         if(ball.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
-
+            trayectoriaBlanca.append(ball.body.position)
+        else:
+            index = balls_copy.index(ball)
+            trayectorias[index].append(ball.body.position)
         if (
             data["pocket_tracking"]["first_contacted_ball"] == ball
             and not data["pocket_tracking"]["potted_balls"]
@@ -555,7 +596,7 @@ class PoolEnv:
             return np.clip((reward / 500) * 2 - 1, -1, 1)
 
     def setear_respuesta(self):
-        global bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, primerContactoCorrecto
+        global bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, primerContactoCorrecto, trayectoriaBlanca, trayectorias
         tiroValido = True
         for bola in bolasEmbocadas:
             if bola.userData == self.singleton.etiquetaDeSeleccionada:
@@ -579,7 +620,8 @@ class PoolEnv:
         else:
             primerContactoCorrecto = False
             tiroValido = False
-        singletonRespuesta = SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido)
+        singletonRespuesta = SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca)
+
 
 
     def step(self, action, *args, **kwargs):

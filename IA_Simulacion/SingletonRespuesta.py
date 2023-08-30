@@ -9,7 +9,7 @@ class SingletonRespuesta:
             cls._instance.init_singletonCompartida(*args, **kwargs)
         return cls._instance
     
-    def init_singletonCompartida(self, primerContactoCorrecto=None, cantCorrectas=None, cantIncorrectas=None, embocoNegraError=None, vxBlanca=None, vyBlanca=None, cantRebotesBlanca=None, tiroValido=None):
+    def init_singletonCompartida(self, primerContactoCorrecto=None, cantCorrectas=None, cantIncorrectas=None, embocoNegraError=None, vxBlanca=None, vyBlanca=None, cantRebotesBlanca=None, tiroValido=None, trayectorias = None, trayectoriaBlanca = None):
         self.primerContactoCorrecto = primerContactoCorrecto
         self.cantCorrectas = cantCorrectas
         self.canIncorrectas = cantIncorrectas
@@ -20,6 +20,9 @@ class SingletonRespuesta:
             self.velocidad = self.obtener_velocidad(self.vxBlanca, self.vyBlanca)
         self.cantRebotesBlanca = cantRebotesBlanca
         self.tiroValido = tiroValido
+        self.trayectorias = trayectorias
+        self.trayectoriaBlanca = trayectoriaBlanca
+
        
     def obtener_velocidad(self, velX, velY):
         return math.sqrt(velX**2 + velY**2)

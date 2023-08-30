@@ -1572,7 +1572,7 @@ class VentanaVideo(QMainWindow):
                                 self.IA.invocarIA()
                                 SingletonCompartida.delete_instance()
                                 singletonRespuesta = SingletonRespuesta()
-                                #hacer lo que corresponda con la respuesta antes de borrar la instancia
+                                #hacer lo que corresponda con la respuesta antes de borrar la instancia                                
                                 SingletonRespuesta.delete_instance()
                                 
                                 for i in range(1):
