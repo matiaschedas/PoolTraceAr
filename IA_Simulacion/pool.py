@@ -428,19 +428,20 @@ class PoolEnv:
             primerContacto = ball_shape_1 
         indexBall1 = 0
         indexBall2 = 0
-        if(ball_shape_1.userData == 'Blanca'):
-            trayectoriaBlanca.append(ball_shape_1.body.position)
-            indexBall2 = balls_copy.index(ball_shape_2)
-            trayectorias[indexBall2].append(ball_shape_2.body.position)
-        elif(ball_shape_2.userData == 'Blanca'):
-            trayectoriaBlanca.append(ball_shape_2.body.position)
-            indexBall1 = balls_copy.index(ball_shape_1)
-            trayectorias[indexBall1].append(ball_shape_1.body.position)
-        else:
-            indexBall1 = balls_copy.index(ball_shape_1)
-            indexBall2 = balls_copy.index(ball_shape_2)
-            trayectorias[indexBall1].append(ball_shape_1.body.position)
-            trayectorias[indexBall2].append(ball_shape_2.body.position)        
+        if( trayectorias is not None ):
+            if(ball_shape_1.userData == 'Blanca' ):
+                trayectoriaBlanca.append(ball_shape_1.body.position)
+                indexBall2 = balls_copy.index(ball_shape_2)
+                trayectorias[indexBall2].append(ball_shape_2.body.position)
+            elif(ball_shape_2.userData == 'Blanca'):
+                trayectoriaBlanca.append(ball_shape_2.body.position)
+                indexBall1 = balls_copy.index(ball_shape_1)
+                trayectorias[indexBall1].append(ball_shape_1.body.position)
+            else:
+                indexBall1 = balls_copy.index(ball_shape_1)
+                indexBall2 = balls_copy.index(ball_shape_2)
+                trayectorias[indexBall1].append(ball_shape_1.body.position)
+                trayectorias[indexBall2].append(ball_shape_2.body.position)        
 
         if (
             data["pocket_tracking"]["first_contacted_ball"] in arbiter.shapes
@@ -465,7 +466,7 @@ class PoolEnv:
 
         if (ball.userData == 'Blanca'):
             trayectoriaBlanca.append(ball.body.position)
-        else:
+        elif ( trayectorias is not None ):
             index = balls_copy.index(ball)
             trayectorias[index].append(ball.body.position)
     
@@ -499,7 +500,7 @@ class PoolEnv:
         if(ball.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
             trayectoriaBlanca.append(ball.body.position)
-        else:
+        elif( trayectorias is not None ):
             index = balls_copy.index(ball)
             trayectorias[index].append(ball.body.position)
         if (
