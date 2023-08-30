@@ -145,8 +145,6 @@ class Genetic():
         iterations = 150
         pool = PoolEnv(training=False)
         trainer = Trainer(iterations)
-
-        trainer.defa = False
         attrs = pool.get_attrs()
         best_player, attrs = trainer.mlp_train(attrs)
         pool.apply_attrs(attrs)

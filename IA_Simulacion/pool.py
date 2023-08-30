@@ -789,23 +789,42 @@ class PoolEnv:
         self.episode_reward = []
         self.episode_steps = 0
         self.starting_time = time.time()
-        self.score_tracking = {
-            "foul_count": 0,
-            "touch_count": 0,
-            "pot_count": 0,
-            "total_foul": 0,
-        }
-        self.pocket_tracking = {
-            "cue_ball_pocketed": False,
-            "black_ball_pocketed": False,
-            "is_won": None,
-            "cue_ball_first_contact": None,  # 1 --> ball, 2 --> pocket, 3 --> rail
-            "first_contacted_ball": None,
-            "total_potted_balls": 0,
-            "fcb_collision_count": 0,
-            "rail_collision_count": 0,
-            "potted_balls": [],
-        }
+        if( self.singleton.embocarNegra):
+            self.score_tracking = {
+                "foul_count": 0,
+                "touch_count": 7,
+                "pot_count": 7,
+                "total_foul": 0,
+            }
+            self.pocket_tracking = {
+                "cue_ball_pocketed": False,
+                "black_ball_pocketed": False,
+                "is_won": None,
+                "cue_ball_first_contact": None,  # 1 --> ball, 2 --> pocket, 3 --> rail
+                "first_contacted_ball": self.balls[0],
+                "total_potted_balls": 14,
+                "fcb_collision_count": 0,
+                "rail_collision_count": 0,
+                "potted_balls": [],
+            }
+        else:
+            self.score_tracking = {
+                "foul_count": 0,
+                "touch_count": 0,
+                "pot_count": 0,
+                "total_foul": 0,
+            }
+            self.pocket_tracking = {
+                "cue_ball_pocketed": False,
+                "black_ball_pocketed": False,
+                "is_won": None,
+                "cue_ball_first_contact": None,  # 1 --> ball, 2 --> pocket, 3 --> rail
+                "first_contacted_ball": None,
+                "total_potted_balls": 0,
+                "fcb_collision_count": 0,
+                "rail_collision_count": 0,
+                "potted_balls": [],
+            }
 
         self.ball_collision_handler.data["cue_ball"] = self.cue_ball
         self.ball_collision_handler.data["pocket_tracking"] = self.pocket_tracking
