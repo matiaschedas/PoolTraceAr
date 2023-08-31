@@ -827,6 +827,13 @@ class PoolEnv:
         self.setear_respuesta()
         return self.process_observation(), self.process_reward(), done, info
 
+    def cantidad_para_embocar(self):
+        cant = 0
+        for ball in self.balls:
+            if ball.observation_number == 1:
+                cant = cant + 1   
+        return cant
+    
     def reset(self, *args, **kwargs):
         for x in self.space.shapes:
             try:
@@ -837,6 +844,9 @@ class PoolEnv:
 
         self.add_table()
         self.add_balls()
+
+        cant = self.cantidad_para_embocar()
+        resto = 7 - cant
 
         self.reward = self.total_foul_times * 5
         self.episode_reward = []
@@ -873,7 +883,7 @@ class PoolEnv:
                 "is_won": None,
                 "cue_ball_first_contact": None,  # 1 --> ball, 2 --> pocket, 3 --> rail
                 "first_contacted_ball": None,
-                "total_potted_balls": 0,
+                "total_potted_balls": resto*2,
                 "fcb_collision_count": 0,
                 "rail_collision_count": 0,
                 "potted_balls": [],

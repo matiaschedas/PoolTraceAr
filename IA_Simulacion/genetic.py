@@ -142,7 +142,7 @@ class Trainer:
 
 class Genetic():
     def iniciar(self):
-        iterations = 150
+        iterations = 300
         pool = PoolEnv(training=False)
         trainer = Trainer(iterations)
         attrs = pool.get_attrs()
