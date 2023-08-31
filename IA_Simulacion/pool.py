@@ -244,7 +244,11 @@ class PoolEnv:
         #         position = self.create_ball("Rayada", (x,y), self.singleton.etiquetaDeSeleccionada, self.singleton.embocarNegra, -1, nro, False)
         #         # self.pocket_tracking["potted_balls"].append(nro)
         #         # self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
+        #self.balls = sorted(self.balls, key=self.get_number_key)
         return positions, contadorLisas, contadorRayadas
+    
+    def get_number_key(self, bola):
+        return bola.number
             
     def transformar_coordenadas(self, punto, ancho, alto):
         self.ancho_ratio = (WIDTH-(RAIL_DISTANCE*2))/ancho
@@ -883,7 +887,7 @@ class PoolEnv:
                 "is_won": None,
                 "cue_ball_first_contact": None,  # 1 --> ball, 2 --> pocket, 3 --> rail
                 "first_contacted_ball": None,
-                "total_potted_balls": resto*2,
+                "total_potted_balls": 0,
                 "fcb_collision_count": 0,
                 "rail_collision_count": 0,
                 "potted_balls": [],
