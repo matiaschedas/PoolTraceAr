@@ -356,66 +356,67 @@ class PoolEnv:
             positions, cantLisas, cantRayadas = self.setear_bolas()
             return
         positions = []
+
         for i in range(self.num_balls):
-            intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
-            ball_body = pm.Body(BALL_MASS, intertia)
+                intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+                ball_body = pm.Body(BALL_MASS, intertia)
 
-            # initialize ball at random position
-            if self.num_balls < 2:
-                ball_body.position = random.choice(HANGING_BALL_LOCATION).tolist()
-            else:
-                ball_body.position = random.randint(
-                    RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2
-                ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
-
-            # if overlap with another ball, choose a different location
-            while 1:
-                for pos in positions:
-                    if (
-                        distance_between_two_points(ball_body.position, pos)
-                        < BALL_RADIUS * 2
-                    ):
-                        break
-                else:
-                    break
+                # initialize ball at random position
                 if self.num_balls < 2:
                     ball_body.position = random.choice(HANGING_BALL_LOCATION).tolist()
                 else:
                     ball_body.position = random.randint(
                         RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2
-                    ), random.randint(
-                        RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2
-                    )
+                    ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
 
-            ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
-            ball.elasticity = BALL_ELASTICITY
-            ball.friction = BALL_FRICTION
-            ball.collision_type = 1
-            ball.number = i
-            ball.filter = pm.ShapeFilter(categories=0b00100)
-            ball.userData="default"
+                # if overlap with another ball, choose a different location
+                while 1:
+                    for pos in positions:
+                        if (
+                            distance_between_two_points(ball_body.position, pos)
+                            < BALL_RADIUS * 2
+                        ):
+                            break
+                    else:
+                        break
+                    if self.num_balls < 2:
+                        ball_body.position = random.choice(HANGING_BALL_LOCATION).tolist()
+                    else:
+                        ball_body.position = random.randint(
+                            RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2
+                        ), random.randint(
+                            RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2
+                        )
 
-            # separate ball types
-            # observation_number: pocketed 0, solid 1, strips 2, 8-ball 3, cue-ball 4
-            if i == 0:
-                ball.color = pg.Color(WHITE)
-                ball.observation_number = 4
-                self.cue_ball = ball
-            elif i < 8:
-                ball.color = pg.Color(SOLIDS_COLOR)
-                ball.observation_number = 1
-                ball.filter = pm.ShapeFilter(categories=0b01000)
-            elif i == 8:
-                ball.color = pg.Color(BLACK)
-                ball.observation_number = 3
-                ball.filter = pm.ShapeFilter(categories=0b10000)
-            else:
-                ball.color = pg.Color(STRIPS_COLOR)
-                ball.observation_number = 2
+                ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+                ball.elasticity = BALL_ELASTICITY
+                ball.friction = BALL_FRICTION
+                ball.collision_type = 1
+                ball.number = i
+                ball.filter = pm.ShapeFilter(categories=0b00100)
+                ball.userData="default"
 
-            positions.append(ball_body.position)
-            self.balls.append(ball)
-            self.space.add(ball, ball_body)
+                # separate ball types
+                # observation_number: pocketed 0, solid 1, strips 2, 8-ball 3, cue-ball 4
+                if i == 0:
+                    ball.color = pg.Color(WHITE)
+                    ball.observation_number = 4
+                    self.cue_ball = ball
+                elif i < 8:
+                    ball.color = pg.Color(SOLIDS_COLOR)
+                    ball.observation_number = 1
+                    ball.filter = pm.ShapeFilter(categories=0b01000)
+                elif i == 8:
+                    ball.color = pg.Color(BLACK)
+                    ball.observation_number = 3
+                    ball.filter = pm.ShapeFilter(categories=0b10000)
+                else:
+                    ball.color = pg.Color(STRIPS_COLOR)
+                    ball.observation_number = 2
+
+                positions.append(ball_body.position)
+                self.balls.append(ball)
+                self.space.add(ball, ball_body)
             
 
     

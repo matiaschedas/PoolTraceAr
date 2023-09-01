@@ -12,4 +12,5 @@ def IniciarCalculoTiro():
         #aca tenemos que llamar 2 veces a la IA y 1 vez a la simulacion fisica luego ponderamos los 3 tiros:
         ia = IA_Handler()
         ia.invocarIA()
-        
+
+               

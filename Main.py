@@ -1511,57 +1511,58 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = ListaApareadaConEtiquetas
                         self.bolaBlanca = self.obtenerBolaBlanca(self.listaEtiquetada)
                     
-            if( self.listaEtiquetada is not None and self.etiquetando==False ):
+            if( self.listaEtiquetada is not None and self.etiquetando==False):
                 #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
-                if( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
-                    print("Error, las bolas cambiaron de posicion.")
-                    self.deseleccionar_bola()
-                    self.listaEtiquetada.clear()
-                    self.listaEtiquetada = None
-                    self.ultimaListaEtiquetada = None
-                    self.repetirSimulacion = False
-                elif( self.selecciono_la_blanca(self.listaEtiquetada)):
-                    print ("Error, se selecciono la bola blanca para embocar")
-                    self.deseleccionar_bola()
-                    self.listaEtiquetada.clear()
-                    self.listaEtiquetada = None
-                    self.ultimaListaEtiquetada = None
-                    self.repetirSimulacion = False
-                elif( self.existe_la_negra(self.listaEtiquetada)==False):
-                    print("El jugador anterior emboco la bola negra, fin del partido")
-                    self.deseleccionar_bola()
-                    self.listaEtiquetada.clear()
-                    self.listaEtiquetada = None
-                    self.ultimaListaEtiquetada = None
-                    self.repetirSimulacion = False
-                elif(self.solo_una_blanca(self.listaEtiquetada)==False):
-                    print("Error, hay mas de una bola blanca en la mesa")
-                    self.deseleccionar_bola()
-                    self.listaEtiquetada.clear()
-                    self.listaEtiquetada = None
-                    self.ultimaListaEtiquetada = None
-                    self.repetirSimulacion = False
-                elif(self.solo_una_negra(self.listaEtiquetada)==False):
-                    print("Error, hay mas de una bola 8 en la mesa")
-                    self.deseleccionar_bola()
-                    self.listaEtiquetada.clear()
-                    self.listaEtiquetada = None
-                    self.ultimaListaEtiquetada = None
-                    self.repetirSimulacion = False
-                elif(self.maximo_rayadas_superado(self.listaEtiquetada)==True):
-                    print("Error, hay mas de 7 bolas rayadas en la mesa")
-                    self.deseleccionar_bola()
-                    self.listaEtiquetada.clear()
-                    self.listaEtiquetada = None
-                    self.ultimaListaEtiquetada = None
-                    self.repetirSimulacion = False
-                elif(self.maximo_lisas_superado(self.listaEtiquetada)==True):
-                    print("Error, hay mas de 7 bolas lisas en la mesa")
-                    self.deseleccionar_bola()
-                    self.listaEtiquetada.clear()
-                    self.listaEtiquetada = None
-                    self.ultimaListaEtiquetada = None
-                    self.repetirSimulacion = False
+                if(self.calculandoTiro == False):
+                    if( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
+                        print("Error, las bolas cambiaron de posicion.")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif( self.selecciono_la_blanca(self.listaEtiquetada)):
+                        print ("Error, se selecciono la bola blanca para embocar")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif( self.existe_la_negra(self.listaEtiquetada)==False):
+                        print("El jugador anterior emboco la bola negra, fin del partido")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif(self.solo_una_blanca(self.listaEtiquetada)==False):
+                        print("Error, hay mas de una bola blanca en la mesa")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif(self.solo_una_negra(self.listaEtiquetada)==False):
+                        print("Error, hay mas de una bola 8 en la mesa")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif(self.maximo_rayadas_superado(self.listaEtiquetada)==True):
+                        print("Error, hay mas de 7 bolas rayadas en la mesa")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif(self.maximo_lisas_superado(self.listaEtiquetada)==True):
+                        print("Error, hay mas de 7 bolas lisas en la mesa")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
 
                 if(self.listaEtiquetada is not None):
                     if self.bolaBlanca is not None:
