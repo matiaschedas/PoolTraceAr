@@ -356,8 +356,9 @@ class PoolEnv:
             positions, cantLisas, cantRayadas = self.setear_bolas()
             return
         positions = []
-
+        #self.num_balls = 15
         for i in range(self.num_balls):
+            #if(i%2==0):
                 intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
                 ball_body = pm.Body(BALL_MASS, intertia)
 
@@ -927,6 +928,7 @@ class PoolEnv:
             "starting_time": copy(self.starting_time),
             "score_tracking": copy(self.score_tracking),
             "pocket_tracking": copy(self.pocket_tracking),
+            "cantidad_bolas": len(self.balls)
         }
 
     def apply_attrs(self, attrs):

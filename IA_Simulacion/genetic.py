@@ -51,7 +51,7 @@ class GeneticAlgorithm:
     
 
     def create_env(self):
-        env = PoolEnv(training=True, draw_screen=False)
+        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"])
         env.apply_attrs(self.attrs)
         return env
 
@@ -143,17 +143,17 @@ class Trainer:
 class Genetic():
     def iniciar(self):
         #original: 150, testear con otros valores y ver rendimiento
-        iterations = 50
+        iterations = 150
         pool = PoolEnv(training=False)
         trainer = Trainer(iterations)
         i =0
-        while i == 0:
-            attrs = pool.get_attrs()
-            best_player, attrs = trainer.mlp_train(attrs)
+        #while i == 0:
+        attrs = pool.get_attrs()
+        best_player, attrs = trainer.mlp_train(attrs)
 
-            pool.apply_attrs(attrs)
-            done = pool.step(best_player)[2]
-            i =  i + 1
+        pool.apply_attrs(attrs)
+        done = pool.step(best_player)[2]
+        #i =  i + 1
         pool.close()
         pool = None
         trainer = None
