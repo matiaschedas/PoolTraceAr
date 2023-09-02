@@ -1563,6 +1563,20 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                    elif(self.selecciono_negra(self.listaEtiquetada,bolaSeleccionada)==True and self.hayMesaAbierta == True):
+                        print("Error, no se puede seleccionar la negra cuando hay mesa abierta")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif(self.seleccion_de_negra_incorrecto(self.listaEtiquetada, bolaSeleccionada)==True):
+                        print("Error, se selecciono la negra pero no es la ultima bola")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
 
                 if(self.listaEtiquetada is not None):
                     if self.bolaBlanca is not None:
@@ -1975,6 +1989,38 @@ class VentanaVideo(QMainWindow):
             if etiqueta == "Lisa":
                 lisas = lisas + 1
         return lisas > 7
+    
+    def selecciono_negra(self, listaEtiquetada, bolaSeleccionada):
+        x,y,_ = bolaSeleccionada
+        etiquetaSeleccionada = ""
+        for (x1,y1,r1), _, etiqueta in listaEtiquetada:
+            if (x1 == x and y1 == y):
+               etiquetaSeleccionada = etiqueta
+               break
+        if etiquetaSeleccionada == "Negra":
+            return True
+        return False
+
+        
+    def seleccion_de_negra_incorrecto(self, listaEtiquetada, bolaSeleccionada):
+       x,y,_ = bolaSeleccionada
+       etiquetaSeleccionada = ""
+       lisas = 0
+       rayadas = 0 
+       for (x1,y1,r1), _, etiqueta in listaEtiquetada:
+           if etiqueta == "Lisa":
+               lisas = lisas +1
+           elif etiqueta == "Rayada":
+               rayadas = rayadas +1 
+           if (x1 == x and y1 == y):
+               etiquetaSeleccionada = etiqueta
+       if etiquetaSeleccionada != "Negra":
+           return False
+       if rayadas != 0 and lisas != 0:
+            return True
+           
+           
+
     
     def distancia_puntos(self, x1, y1, x2, y2):
         return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)

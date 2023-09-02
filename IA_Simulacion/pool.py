@@ -216,40 +216,27 @@ class PoolEnv:
         contadorRayadas = 8
         for i, bola in enumerate(self.singleton.listaApareada):
             (x,y,r), _, etiqueta = bola
-            if(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada=="Lisa" ):
+            if (self.singleton.mesaAbierta == True):
                 contadorLisas = contadorLisas + 1
-            elif (etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Lisa"):
-                contadorRayadas = contadorRayadas + 1
-            elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
-                contadorRayadas = contadorRayadas + 1
-            elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
-                contadorLisas = contadorLisas +1
-            elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Negra"):
-                contadorRayadas = contadorRayadas +1
-            elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Negra"):
-                contadorRayadas = contadorRayadas +1
+                #No se puede elegir embocar la negra si tengo Mesa abierta
+                self.singleton.embocarNegra = False
+            else:
+                if(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada=="Lisa" ):
+                    contadorLisas = contadorLisas + 1
+                elif (etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Lisa"):
+                    contadorRayadas = contadorRayadas + 1
+                elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
+                    contadorRayadas = contadorRayadas + 1
+                elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
+                    contadorLisas = contadorLisas +1
+                elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Negra"):
+                    contadorRayadas = contadorRayadas +1
+                elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Negra"):
+                    contadorRayadas = contadorRayadas +1
             x, y = self.transformar_coordenadas((x,y),self.singleton.ancho, self.singleton.alto)
             position = self.create_ball(etiqueta,(x,y),self.singleton.etiquetaDeSeleccionada,self.singleton.embocarNegra,contadorLisas,contadorRayadas,True)
             positions.append(position)
         
-        # faltanLisas = 7 - contadorLisas 
-        # faltanRayadas = 7 - contadorRayadas
-        # if(faltanLisas>0):
-        #     for i in range(faltanLisas):
-        #         nro = contadorLisas + 1 
-        #         x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
-        #         position = self.create_ball("Lisa", (x,y), self.singleton.etiquetaDeSeleccionada, self.singleton.embocarNegra, nro, -1, False)
-        #         # self.pocket_tracking["potted_balls"].append(nro)
-        #         # self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
-
-        # if(faltanRayadas>0):
-        #     for i in range(faltanRayadas):
-        #         nro = contadorRayadas + 1
-        #         x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
-        #         position = self.create_ball("Rayada", (x,y), self.singleton.etiquetaDeSeleccionada, self.singleton.embocarNegra, -1, nro, False)
-        #         # self.pocket_tracking["potted_balls"].append(nro)
-        #         # self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
-        #self.balls = sorted(self.balls, key=self.get_number_key)
         return positions, contadorLisas, contadorRayadas
     
     def get_number_key(self, bola):
@@ -288,61 +275,81 @@ class PoolEnv:
         ball.collision_type = 1
         ball.filter = pm.ShapeFilter(categories=0b00100)
         ball.userData = etiqueta
-
-        if embocarNegra==False:
+        
+        if self.singleton.mesaAbierta == True:
             if etiqueta == "Blanca":
-                self.cue_ball = ball
-                ball.observation_number = 4
-                ball.color = pg.Color(WHITE)
-                ball.number = 0
-                trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
-            
+                    self.cue_ball = ball
+                    ball.observation_number = 4
+                    ball.color = pg.Color(WHITE)
+                    ball.number = 0
+                    trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
+
             if etiqueta == "Negra":
                 ball.color = pg.Color(BLACK)
                 ball.observation_number = 3
                 ball.filter = pm.ShapeFilter(categories=0b10000)
                 ball.number = 8
-                
 
-            if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Lisa":
+            if etiqueta == "Rayada" or etiqueta == "Lisa":
                 ball.color = pg.Color(SOLIDS_COLOR)
                 ball.observation_number = 1
                 ball.filter = pm.ShapeFilter(categories=0b01000)
                 ball.number = contadorSolidas
 
-            if etiqueta=="Rayada" and etiquetaDeSeleccionada=="Lisa":
-                ball.color = pg.Color(STRIPS_COLOR)
-                ball.observation_number = 2
-                ball.number = contadorRayadas
-            
-            if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Rayada":
-                ball.color = pg.Color(STRIPS_COLOR)
-                ball.observation_number = 2
-                ball.number = contadorRayadas
-            
-            if etiqueta=="Rayada" and etiquetaDeSeleccionada=="Rayada":
-                ball.color = pg.Color(SOLIDS_COLOR)
-                ball.observation_number = 1
-                ball.filter = pm.ShapeFilter(categories=0b01000)
-                ball.number = contadorSolidas
         else:
-            if etiqueta == "Blanca":
-                self.cue_ball = ball
-                ball.observation_number = 4
-                ball.color = pg.Color(WHITE)
-                ball.number = 0
-                trayectoriaBlanca.append(self.destransformar_coordenadas(ball_body.position))
+            if embocarNegra==False:
+                if etiqueta == "Blanca":
+                    self.cue_ball = ball
+                    ball.observation_number = 4
+                    ball.color = pg.Color(WHITE)
+                    ball.number = 0
+                    trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
+                
+                if etiqueta == "Negra":
+                    ball.color = pg.Color(BLACK)
+                    ball.observation_number = 3
+                    ball.filter = pm.ShapeFilter(categories=0b10000)
+                    ball.number = 8
 
-            if etiqueta == "Negra":
-                ball.color = pg.Color(BLACK)
-                ball.observation_number = 3
-                ball.filter = pm.ShapeFilter(categories=0b10000)
-                ball.number = 8
+                if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Lisa":
+                    ball.color = pg.Color(SOLIDS_COLOR)
+                    ball.observation_number = 1
+                    ball.filter = pm.ShapeFilter(categories=0b01000)
+                    ball.number = contadorSolidas
 
-            if etiqueta=="Rayada" or etiqueta=="Lisa":
-                ball.color = pg.Color(STRIPS_COLOR)
-                ball.observation_number = 2
-                ball.number = contadorRayadas
+                if etiqueta=="Rayada" and etiquetaDeSeleccionada=="Lisa":
+                    ball.color = pg.Color(STRIPS_COLOR)
+                    ball.observation_number = 2
+                    ball.number = contadorRayadas
+                
+                if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Rayada":
+                    ball.color = pg.Color(STRIPS_COLOR)
+                    ball.observation_number = 2
+                    ball.number = contadorRayadas
+                
+                if etiqueta=="Rayada" and etiquetaDeSeleccionada=="Rayada":
+                    ball.color = pg.Color(SOLIDS_COLOR)
+                    ball.observation_number = 1
+                    ball.filter = pm.ShapeFilter(categories=0b01000)
+                    ball.number = contadorSolidas
+            else:
+                if etiqueta == "Blanca":
+                    self.cue_ball = ball
+                    ball.observation_number = 4
+                    ball.color = pg.Color(WHITE)
+                    ball.number = 0
+                    trayectoriaBlanca.append(self.destransformar_coordenadas(ball_body.position))
+
+                if etiqueta == "Negra":
+                    ball.color = pg.Color(BLACK)
+                    ball.observation_number = 3
+                    ball.filter = pm.ShapeFilter(categories=0b10000)
+                    ball.number = 8
+
+                if etiqueta=="Rayada" or etiqueta=="Lisa":
+                    ball.color = pg.Color(STRIPS_COLOR)
+                    ball.observation_number = 2
+                    ball.number = contadorRayadas
         #Respetar el orden del codigo
         if etiqueta != 'Blanca':
             trayectorias[len(self.balls)].append(self.destransformar_coordenadas(ball.body.position))
