@@ -4,25 +4,30 @@ from IA_Simulacion.pool import PoolEnv
 import itertools
 import numpy as np
 import multiprocessing
-
+import math
 
 class Player:
-    def __init__(self, env: PoolEnv) -> None:
+    def __init__(self, env: PoolEnv, bola_en_mano=False) -> None:
         self.env = env
         self.reward = -1
         self.low = self.env.action_space.low[0]
         self.high = self.env.action_space.high[0]
+        self.bola_en_mano = bola_en_mano
         self.v = np.random.uniform(low=self.low, high=self.high, size=2)
+                   
 
-    def clone(self):
-        player = Player(self.env)
+        
+        
+
+    def clone(self, bola_en_mano=False):
+        player = Player(self.env, bola_en_mano=bola_en_mano)
         player.v = np.copy(self.v)
         return player
 
     def step(self):
         self.reward = self.env.step(self.v)[1]
 
-    def mutate(self, mu=1):
+    def mutate(self, mu=1, bola_en_mano=False):
         rand = np.random.uniform(0, 1)
         if rand < mu / 5:
             self.v = np.random.uniform(self.low, self.high, 2)
@@ -44,7 +49,7 @@ class GeneticAlgorithm:
         self.iterations = iterations
         self.max_iterations = iterations * 5
         self.training_type = training_type
-        self.best_player = Player(self.create_env())
+        self.best_player = Player(self.create_env(), bola_en_mano=self.attrs["bola_en_mano"])
         if self.training_type == "single":
             self.players = np.array([self.best_player])
             self.player_rewards = np.array([(self.best_player.reward + 1.001) ** 3])
@@ -55,22 +60,22 @@ class GeneticAlgorithm:
         env.apply_attrs(self.attrs)
         return env
 
-    def train(self, v=None, score_threshold=0.65):
+    def train(self, v=None, score_threshold=0.65,bola_en_mano=False):
         if v is not None:
             self.best_player.v = v
         for _ in range(self.iterations):
             if self.training_type == "single":
                 if self.best_player.env.score_tracking["pot_count"] > 6:
-                    player = self.best_player.clone()
+                    player = self.best_player.clone(bola_en_mano=bola_en_mano)
                 else:
                     player = np.random.choice(
                         a=self.players,
                         p=self.player_rewards / self.player_rewards.sum(),
                     ).clone()
             elif self.training_type == "mlp":
-                player = self.best_player.clone()
+                player = self.best_player.clone(bola_en_mano=bola_en_mano)
 
-            player.mutate()
+            player.mutate(bola_en_mano=bola_en_mano)
             attrs = player.env.get_attrs()
             player.step()
             player.env.apply_attrs(attrs)
@@ -137,7 +142,7 @@ class Trainer:
     def mlp_get_player(self, x):
         attrs, iterations = x
         agent = GeneticAlgorithm(attrs,  iterations=iterations, training_type="mlp")
-        player, attrs = agent.train(self.best_v)
+        player, attrs = agent.train(self.best_v, bola_en_mano=attrs["bola_en_mano"])
         return list(player.v), player.reward, agent.i, attrs
 
 class Genetic():
@@ -150,6 +155,12 @@ class Genetic():
         #while i == 0:
         attrs = pool.get_attrs()
         best_player, attrs = trainer.mlp_train(attrs)
+
+        direccion_radianes = math.atan2(best_player[1],best_player[0])
+        direccion_grados = math.degrees(direccion_radianes)
+        if direccion_grados < 0:
+            direccion_grados += 360
+        print(f"Angulo de tiro en grados: {direccion_grados}")
 
         pool.apply_attrs(attrs)
         done = pool.step(best_player)[2]

@@ -8,7 +8,7 @@ class SingletonCompartida:
             cls._instance.init_singletonCompartida(*args, **kwargs)
         return cls._instance
     
-    def init_singletonCompartida(self, listaApareada=None, bolaSeleccionada=None, tamROI=None, embocarNegra=None):
+    def init_singletonCompartida(self, listaApareada=None, bolaSeleccionada=None, tamROI=None, embocarNegra=None, bolaEnMano=None, dosTiros=None, mesaAbierta=None):
         self.listaApareada = listaApareada
         self.bolaSeleccionada = bolaSeleccionada
         self.tamROI = tamROI
@@ -19,6 +19,9 @@ class SingletonCompartida:
             self.etiquetaDeSeleccionada = self.obtenerEtiquetaSeleccionada(listaApareada,bolaSeleccionada)
         else:
             self.etiquetaDeSeleccionada = None
+        self.bolaEnMano = bolaEnMano
+        self.dosTiros = dosTiros
+        self.mesaAbierta = mesaAbierta
 
     
     def obtenerEtiquetaSeleccionada(self, listaApareada, bolaSeleccionada):

@@ -1582,7 +1582,7 @@ class VentanaVideo(QMainWindow):
                         (xs,ys,rs) = bolaSeleccionada
                         xs = xs - self.XIROI
                         ys = ys - self.YIROI
-                        singletonCompartida = SingletonCompartida(self.listaEtiquetada, (xs,ys,rs), tamROI,self.embocarNegra)
+                        singletonCompartida = SingletonCompartida(self.listaEtiquetada, (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
                         if(self.calculandoTiro == False):
                             self.hiloCalculoTiro = threading.Thread(target=IniciarCalculoTiro)
                             self.hiloCalculoTiro.start()
@@ -1592,7 +1592,8 @@ class VentanaVideo(QMainWindow):
 
                         if  self.hiloCalculoTiro.is_alive():
                             #aca se puede poner un spin en la interfaz:
-                            print("Calculando tiro...")
+                            #print("Calculando tiro...")
+                            i = 0
                         else:
                             self.calculandoTiro = False 
                             SingletonCompartida.delete_instance()
@@ -1607,9 +1608,7 @@ class VentanaVideo(QMainWindow):
                                 ListaApareadaConEtiquetas.clear() 
                             # self.IA = IA_Handler()
                             # self.IA.invocarIA()
-                           
-                            
-                           
+         
                                 #print(f"calculando {i+1} de 100...")
                                 #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
                                 #self.velXBlanca = random.randint(10,100)

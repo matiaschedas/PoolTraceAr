@@ -4,6 +4,7 @@ from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
 
 import os
 import gym
+import math
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 os.environ["SDL_VIDEO_WINDOW_POS"] = "50, 200"
@@ -46,6 +47,7 @@ class PoolEnv:
         reward_by_steps=REWARD_BY_STEPS,
         total_foul_times=TOTAL_FOUL_TIMES,
         observation_type=OBSERVATION_TYPE,
+        bola_en_mano=False
     ):
         # initialize some constants
         self.episodes = 0
@@ -76,9 +78,12 @@ class PoolEnv:
         self.ancho_ratio = 0
         self.alto_ratio = 0
         self.singleton = SingletonCompartida()
+        self.bola_en_mano = bola_en_mano
         if(self.singleton.listaApareada is not None):
             self.default = False    
+            self.bola_en_mano = self.singleton.bolaEnMano
         self.reiniciar_globales()
+        
 
         # gym environment
         self.spec = None
@@ -539,7 +544,8 @@ class PoolEnv:
                 self.running = False
 
     def process_action(self, action):
-        return (np.array(action) * VELOCITY_LIMIT).tolist()
+        velocidades = (np.array(action) * VELOCITY_LIMIT).tolist()
+        return velocidades
 
     def process_observation(self):
         if self.observation_type == "image":
@@ -928,7 +934,8 @@ class PoolEnv:
             "starting_time": copy(self.starting_time),
             "score_tracking": copy(self.score_tracking),
             "pocket_tracking": copy(self.pocket_tracking),
-            "cantidad_bolas": len(self.balls)
+            "cantidad_bolas": len(self.balls),
+            "bola_en_mano": self.bola_en_mano
         }
 
     def apply_attrs(self, attrs):
