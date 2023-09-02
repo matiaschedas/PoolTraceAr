@@ -321,6 +321,7 @@ class VentanaVideo(QMainWindow):
         self.puntos_trayectoria_bola_blanca = None
         self.puntos_trayectoria_bola_seleccionada = None
         self.puntos_trayectorias_bolas = None
+        self.velocidadRequerida = -0.1
 
         self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
@@ -1614,6 +1615,9 @@ class VentanaVideo(QMainWindow):
                             singletonRespuesta = SingletonRespuesta()
                             self.puntos_trayectoria_bola_blanca = singletonRespuesta.trayectoriaBlanca  
                             self.puntos_trayectorias_bolas = singletonRespuesta.trayectorias   
+                            self.velocidadRequerida = self.convertir_velocidad(singletonRespuesta.velocidad)
+                            print(f"velocidad de tiro requerida: {self.velocidadRequerida}")
+                            self.velocidadRequerida = -0.1
                             SingletonRespuesta.delete_instance()
                             print("fin calculo de trayectorias")
                             self.ultimaListaEtiquetada = self.listaEtiquetada.copy()
@@ -1832,6 +1836,11 @@ class VentanaVideo(QMainWindow):
         #Devolvemos false porque no cambiaron las bolas previo al tiro y todas fueron encontradas                         
         return False
     
+    #transforma una velocidad de 0 a 320 a un valor de 0 a 100
+    def convertir_velocidad(self, velocidad):
+        convertido = (velocidad/320)*100
+        return round(convertido,1)
+
     def graficar_trayectorias(self):
         if(self.puntos_trayectoria_bola_blanca is not None):
             for i in range(len(self.puntos_trayectoria_bola_blanca)):
@@ -1994,6 +2003,8 @@ class VentanaVideo(QMainWindow):
         x,y,_ = bolaSeleccionada
         etiquetaSeleccionada = ""
         for (x1,y1,r1), _, etiqueta in listaEtiquetada:
+            x1 = x1 + self.XIROI
+            y1 = y1 + self.YIROI
             if (x1 == x and y1 == y):
                etiquetaSeleccionada = etiqueta
                break
@@ -2008,6 +2019,8 @@ class VentanaVideo(QMainWindow):
        lisas = 0
        rayadas = 0 
        for (x1,y1,r1), _, etiqueta in listaEtiquetada:
+           x1 = x1 + self.XIROI
+           y1 = y1 + self.YIROI
            if etiqueta == "Lisa":
                lisas = lisas +1
            elif etiqueta == "Rayada":
