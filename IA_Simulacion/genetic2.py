@@ -45,36 +45,53 @@ class Player:
 
     def mutate(self, mu=1, bola_en_mano=True):
         rand = np.random.uniform(0, 1)
-        # if bola_en_mano == False:
-        #     if rand < mu / 5:
-        #         self.v = np.random.uniform(self.low, self.high, 2)
-        #     elif rand < mu:
-        #         for i in range(len(self.v)):
-        #             self.v[i] = min(
-        #                 max(
-        #                     self.v[i] + self.v[i] * np.random.normal(loc=0, scale=0.3),
-        #                     self.low,
-        #                 ),
-        #                 self.high,
-        #             )
-        # else:
-        velocidades = np.random.uniform(low=self.low, high=self.high, size=2)
-        direccion_radianes = math.atan2(velocidades[1],velocidades[0])
-        grados = math.degrees(direccion_radianes)
-        if grados < 0:
-            grados += 360
-        intentos = 0
-        while (grados>90 and grados<270) and intentos < 20000: 
+        if rand < mu / 5:
             velocidades = np.random.uniform(low=self.low, high=self.high, size=2)
             direccion_radianes = math.atan2(velocidades[1],velocidades[0])
             grados = math.degrees(direccion_radianes)
             if grados < 0:
                 grados += 360
-            intentos = intentos + 1
-            if intentos == 19999:
-                print("superado el limite de intentos para buscar una velocidad")
-        self.v = velocidades    
-        print(f"grados: {str(grados)}")   
+            intentos = 0
+            while (grados>90 and grados<270) and intentos < 20000: 
+                velocidades = np.random.uniform(low=self.low, high=self.high, size=2)
+                direccion_radianes = math.atan2(velocidades[1],velocidades[0])
+                grados = math.degrees(direccion_radianes)
+                if grados < 0:
+                    grados += 360
+                intentos = intentos + 1
+                if intentos == 19999:
+                    print("superado el limite de intentos para buscar una velocidad")
+            self.v = velocidades   
+        elif rand < mu:
+            intentos = 0
+            for i in range(len(self.v)):
+                    self.v[i] = min(
+                        max(
+                            self.v[i] + self.v[i] * np.random.normal(loc=0, scale=0.3),
+                            self.low,
+                        ),
+                        self.high,
+                    )
+            direccion_radianes = math.atan2(self.v[1], self.v[0])
+            grados = math.degrees(direccion_radianes)
+            if grados < 0:
+                grados += 360
+            while (grados>90 and grados<270) and intentos < 20000:
+                for i in range(len(self.v)):
+                    self.v[i] = min(
+                        max(
+                            self.v[i] + self.v[i] * np.random.normal(loc=0, scale=0.3),
+                            self.low,
+                        ),
+                        self.high,
+                    )
+                direccion_radianes = math.atan2( self.v[1], self.v[0])
+                grados = math.degrees(direccion_radianes)
+                if grados < 0:
+                    grados += 360
+                intentos = intentos + 1
+                if intentos == 19999:
+                    print("superado el limite de intentos para buscar una velocidad")
 
 
 class GeneticAlgorithm:
