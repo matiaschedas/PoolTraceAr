@@ -115,7 +115,7 @@ class Trainer:
         results = []
         self.itr = 0
         self.best_v = None
-        with multiprocessing.Pool() as pooling:
+        with multiprocessing.Pool(processes=4) as pooling:
             for i in range(self.batch):
                 for result in pooling.imap_unordered(
                     self.mlp_get_player,
