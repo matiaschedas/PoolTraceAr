@@ -17,5 +17,9 @@ class IA_Handler ():
             self.genetic.iniciar()
         self.genetic = None
         self.genetic2 = None
+    
+    def verSimulacion(self, attrs, best_player):
+        self.genetic.ver_simulacion(attrs,best_player)
+        self.genetic = None
 
    

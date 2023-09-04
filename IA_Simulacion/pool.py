@@ -47,7 +47,8 @@ class PoolEnv:
         reward_by_steps=REWARD_BY_STEPS,
         total_foul_times=TOTAL_FOUL_TIMES,
         observation_type=OBSERVATION_TYPE,
-        bola_en_mano=False
+        bola_en_mano=False,
+        graficar = True
     ):
         # initialize some constants
         self.episodes = 0
@@ -62,7 +63,8 @@ class PoolEnv:
         self.total_foul_times = total_foul_times
         self.observation_type = observation_type
         self.draw_screen = draw_screen or (observation_type == "image") or not training
-
+        self.graficar = graficar
+        
         # initialize space
         self.space = pm.Space()
         self.space.gravity = (0, 0)
@@ -83,7 +85,10 @@ class PoolEnv:
             self.default = False    
             self.bola_en_mano = self.singleton.bolaEnMano
         self.reiniciar_globales()
-        
+        if self.graficar == False:
+            self.draw_screen = False
+        self.attrs_respuesta = None
+        self.best_player_respuesta = None
 
         # gym environment
         self.spec = None
@@ -535,20 +540,21 @@ class PoolEnv:
         return True
 
     def redraw_screen(self):
-        self.screen.fill(pg.Color(TABLE_COLOR))
-        self.space.debug_draw(self.draw_options)
-
-        pg.display.flip()
-        self.clock.tick(FPS)
+        if self.draw_screen:
+            self.screen.fill(pg.Color(TABLE_COLOR))
+            self.space.debug_draw(self.draw_options)
+            pg.display.flip()
+            self.clock.tick(FPS)
 
     def process_events(self):
-        for event in pg.event.get():
-            if (
-                event.type == pg.QUIT
-                or event.type == pg.KEYDOWN
-                and event.key == pg.K_q
-            ):
-                self.running = False
+        if self.draw_screen == True:
+            for event in pg.event.get():
+                if (
+                    event.type == pg.QUIT
+                    or event.type == pg.KEYDOWN
+                    and event.key == pg.K_q
+                ):
+                    self.running = False
 
     def process_action(self, action):
         velocidades = (np.array(action) * VELOCITY_LIMIT).tolist()
@@ -642,12 +648,13 @@ class PoolEnv:
         else:
             primerContactoCorrecto = False
             tiroValido = False
-        singletonRespuesta = SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca)
+        singletonRespuesta = SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca, self.attrs_respuesta, self.best_player_respuesta)
 
 
 
     def step(self, action, *args, **kwargs):
         global velocidadXBlanca, velocidadYBlanca
+        self.best_player_respuesta = action
         # waiting for all balls to stop
         action = self.process_action(action)
         velocidadXBlanca = action[0]
@@ -807,19 +814,20 @@ class PoolEnv:
                 self.fps = 1 / (
                     (time.time() - self.starting_time) / (self.episode_steps + 1e-8)
                 )
-                if not self.reward_by_steps:
-                    pg.display.set_caption(
-                        f"FPS: {self.fps:.0f}   REWARD: {self.process_reward():.3f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int)}"
-                    )
-                else:
-                    pg.display.set_caption(
-                        f"FPS: {self.fps:.0f}   TOT_REWARD: {np.sum(self.episode_reward):.2f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int)}"
-                    )
-
-        if not self.training:
-            pg.display.set_caption(
-                f"FPS: {self.clock.get_fps():.0f}   REWARD: {self.process_reward():.3f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int).tolist()}"
-            )
+                if self.draw_screen:
+                    if not self.reward_by_steps:
+                        pg.display.set_caption(
+                            f"FPS: {self.fps:.0f}   REWARD: {self.process_reward():.3f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int)}"
+                        )
+                    else:
+                        pg.display.set_caption(
+                            f"FPS: {self.fps:.0f}   TOT_REWARD: {np.sum(self.episode_reward):.2f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int)}"
+                        )
+        if self.draw_screen:
+            if not self.training:
+                pg.display.set_caption(
+                    f"FPS: {self.clock.get_fps():.0f}   REWARD: {self.process_reward():.3f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int).tolist()}"
+                )
 
         # prepare observation
         if self.draw_screen:
@@ -946,6 +954,7 @@ class PoolEnv:
         }
 
     def apply_attrs(self, attrs):
+        self.attrs_respuesta = attrs
         balls_attrs = attrs["balls_attrs"]
         self.reward = attrs["reward"]
         self.episodes = attrs["episodes"]

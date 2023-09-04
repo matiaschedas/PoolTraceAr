@@ -149,25 +149,26 @@ class Genetic():
     def iniciar(self):
         #original: 150, testear con otros valores y ver rendimiento
         iterations = 150
-        pool = PoolEnv(training=False)
+        
+        pool = PoolEnv(training=False, graficar=False)
         trainer = Trainer(iterations)
-        i =0
-        #while i == 0:
+        
         attrs = pool.get_attrs()
         best_player, attrs = trainer.mlp_train(attrs)
-
-        direccion_radianes = math.atan2(best_player[1],best_player[0])
-        direccion_grados = math.degrees(direccion_radianes)
-        if direccion_grados < 0:
-            direccion_grados += 360
-        print(f"Angulo de tiro en grados: {direccion_grados}")
-
+        
         pool.apply_attrs(attrs)
         done = pool.step(best_player)[2]
-        #i =  i + 1
+        
         pool.close()
         pool = None
         trainer = None
+    
+    def ver_simulacion(self, attrs, best_player):
+        pool = PoolEnv(training=False, graficar=True)
+        pool.apply_attrs(attrs)
+        done = pool.step(best_player)[2]
+        pool.close()
+        pool = None
 
 if __name__ == "__main__":
     iterations = 150

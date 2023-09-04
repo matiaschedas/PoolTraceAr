@@ -32,8 +32,10 @@ from Clases.Fisicas import Fisicas
 from Clases.IA_Handler import IA_Handler
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
-from HiloCalculoTiro import variable_compartida_lock
-from HiloCalculoTiro import IniciarCalculoTiro
+
+
+from HiloCalculoTiro import tiroSeleccionado, variable_compartida_lock_tiro
+from HiloCalculoTiro import IniciarCalculoTiro, VerSimulacion
 
 screen_width, screen_height = pyautogui.size()
 
@@ -322,6 +324,15 @@ class VentanaVideo(QMainWindow):
         self.puntos_trayectoria_bola_seleccionada = None
         self.puntos_trayectorias_bolas = None
         self.velocidadRequerida = -0.1
+        self.attrs = None
+        self.best_player = None
+        self.simulacionIA = False
+        self.tiro_seleccionado = ""
+        self.singletonRespuestaIA_1 = None
+        self.singletonRespuestaIA_2 = None
+        self.respuesta_hiloTiro = None
+        self.repitiendo_simulacion = False
+
 
         self.hiloProyeccion = hiloProyeccion
         self.setMaximumSize(screen_width, screen_height)
@@ -929,7 +940,7 @@ class VentanaVideo(QMainWindow):
             print("No hay bola en mano")
         
     def ver_simulacion(self):
-        if(self.algunaEstaSeleccionada == True and self.velXBlanca != None and self.velYBlanca != None and self.botonVerSimulacion.isEnabled):
+        if(self.algunaEstaSeleccionada == True and self.botonVerSimulacion.isEnabled):
            self.repetirSimulacion = True
 
     #en base al checkbox determina si hay o no dos tiros para el turno:
@@ -1060,6 +1071,8 @@ class VentanaVideo(QMainWindow):
         global resaltarBola, bolaSeleccionada
         resaltarBola = False
         bolaSeleccionada = None
+        self.attrs = None
+        self.best_player = None
 
     def obtener_troneras(self):
             return self.troneras
@@ -1598,6 +1611,7 @@ class VentanaVideo(QMainWindow):
                         xs = xs - self.XIROI
                         ys = ys - self.YIROI
                         singletonCompartida = SingletonCompartida(self.listaEtiquetada, (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                        
                         if(self.calculandoTiro == False):
                             self.hiloCalculoTiro = threading.Thread(target=IniciarCalculoTiro)
                             self.hiloCalculoTiro.start()
@@ -1607,26 +1621,35 @@ class VentanaVideo(QMainWindow):
 
                         if  self.hiloCalculoTiro.is_alive():
                             #aca se puede poner un spin en la interfaz:
-                            #print("Calculando tiro...")
-                            i = 0
+                            print("Calculando tiro...")
                         else:
                             self.calculandoTiro = False 
+                            with variable_compartida_lock_tiro:
+                                self.tiro_seleccionado = tiroSeleccionado
+                            with variable_compartida_lock_tiro:
+                                tiroSeleccionado = 0
+                            
                             SingletonCompartida.delete_instance()
-                            singletonRespuesta = SingletonRespuesta()
-                            self.puntos_trayectoria_bola_blanca = singletonRespuesta.trayectoriaBlanca  
-                            self.puntos_trayectorias_bolas = singletonRespuesta.trayectorias   
-                            self.velocidadRequerida = self.convertir_velocidad(singletonRespuesta.velocidad)
+                            self.respuesta_hiloTiro = SingletonRespuesta()
+                            self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
+                            self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
+                            self.velocidadRequerida = self.convertir_velocidad( self.respuesta_hiloTiro.velocidad)
                             print(f"velocidad de tiro requerida: {self.velocidadRequerida}")
                             self.velocidadRequerida = -0.1
+                            self.attrs =  self.respuesta_hiloTiro.attrs
+                            self.best_player =  self.respuesta_hiloTiro.best_player
                             SingletonRespuesta.delete_instance()
                             print("fin calculo de trayectorias")
-                            self.ultimaListaEtiquetada = self.listaEtiquetada.copy()
                             self.listaEtiquetada = None
+                           
                             with variable_compartida_lock:
-                                ListaApareadaConEtiquetas.clear() 
+                                ListaApareadaConEtiquetas.clear()         
+                           
+
+                                
                             # self.IA = IA_Handler()
                             # self.IA.invocarIA()
-         
+        
                                 #print(f"calculando {i+1} de 100...")
                                 #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
                                 #self.velXBlanca = random.randint(10,100)
@@ -1641,24 +1664,37 @@ class VentanaVideo(QMainWindow):
                                 #if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
                                     #trayectoriasValidasBlanca.append(trayectoriasBlanca)
                                     #trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
-                                
-                    else:
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                else: 
-                    self.ultimaListaEtiquetada = None
-                    self.repetirSimulacion = False
+                       
 
-            if(self.repetirSimulacion == True and self.ultimaListaEtiquetada is not None):
-                self.repetirSimulacion = False      
-                tamROI = self.obtener_tam_ROI()
-                self.bolaBlanca = self.obtenerBolaBlanca(self.ultimaListaEtiquetada)
-                self.fisicas = None
-                self.fisicas = Fisicas(True, False, False, self.ultimaListaEtiquetada, bolaSeleccionada, self.bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
-                self.fisicas.setear_pasos_tiempo(5)
-                self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
-                self.fisicas.simular()                                       
-                self.fisicas.reiniciar_simulacion()
+            if(self.repetirSimulacion == True and bolaSeleccionada is not None):
+                if (self.tiro_seleccionado==1):
+                    if (self.repitiendo_simulacion == False): 
+                        self.repitiendo_simulacion = True     
+                        tamROI = self.obtener_tam_ROI()
+                        self.bolaBlanca = self.obtenerBolaBlanca(self.ultimaListaEtiquetada)
+                        self.fisicas = None
+                        self.fisicas = Fisicas(True, False, False, self.ultimaListaEtiquetada, bolaSeleccionada, self.bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                        self.fisicas.setear_pasos_tiempo(5)
+                        self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
+                        self.fisicas.simular()                                       
+                        self.fisicas.reiniciar_simulacion()
+                        self.repitiendo_simulacion = False
+
+                elif ((self.tiro_seleccionado==2 or self.tiro_seleccionado==3) and self.best_player is not None and self.attrs is not None):
+                    if(self.repitiendo_simulacion == False):
+                            self.hiloCalculoTiro = threading.Thread(target=VerSimulacion, args = (self.attrs, self.best_player))
+                            self.hiloCalculoTiro.start()
+                            self.repitiendo_simulacion = True
+
+                    self.hiloCalculoTiro.join(timeout=0.01)
+
+                    if  self.hiloCalculoTiro.is_alive():
+                        #aca se puede poner un spin en la interfaz:
+                        print("Simulando tiro...")
+                    else:
+                        self.repitiendo_simulacion = False 
+                self.tiro_seleccionado=0
+                self.repetirSimulacion = False
                     
                             
 
@@ -1746,19 +1782,6 @@ class VentanaVideo(QMainWindow):
                             #     for poligono in self.poligonosImposibles:
                             #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
 
-                            # #Dibujo de las troneras posibles: (esto esta bueno pero lagea)
-                            # if self.tronerasPosibles is not None:
-                            #     elapsed_time = time.time() - start_time
-                            #     global alpha
-                            #     frequency = 2.0 
-                            #     amplitude = 0.5 
-                            #     alpha = 0.5 + amplitude + np.sin(2 * np.pi * frequency * elapsed_time)
-
-                            #     temp_frame = self.frame.copy()
-                            #     for tronera in self.tronerasPosibles:
-                            #         (xtp, ytp) = tronera
-                            #         cv2.circle(temp_frame, (xtp,ytp), maxRadius, (0, 255, 0), -1)
-                            #     cv2.addWeighted(temp_frame, alpha, self.frame, 1 - alpha, 0, self.frame)                   
                                 
                         i+=1
                     if(self.algunaEstaSeleccionada == False):
@@ -1816,6 +1839,7 @@ class VentanaVideo(QMainWindow):
     async def getCircles(self):
         return self.circlesProyeccion
     
+       
     #determina si las bolas se movieron durante el calculo de tiro posible:
     def cambiaron_bolas_previo_al_tiro(self, listaEtiquetadas, actuales):
         if(listaEtiquetadas == None):

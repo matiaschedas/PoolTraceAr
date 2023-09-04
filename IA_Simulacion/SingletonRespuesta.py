@@ -1,4 +1,5 @@
 import math
+import copy
 
 class SingletonRespuesta:
     _instance = None
@@ -9,7 +10,7 @@ class SingletonRespuesta:
             cls._instance.init_singletonCompartida(*args, **kwargs)
         return cls._instance
     
-    def init_singletonCompartida(self, primerContactoCorrecto=None, cantCorrectas=None, cantIncorrectas=None, embocoNegraError=None, vxBlanca=None, vyBlanca=None, cantRebotesBlanca=None, tiroValido=None, trayectorias = None, trayectoriaBlanca = None):
+    def init_singletonCompartida(self, primerContactoCorrecto=None, cantCorrectas=None, cantIncorrectas=None, embocoNegraError=None, vxBlanca=None, vyBlanca=None, cantRebotesBlanca=None, tiroValido=None, trayectorias = None, trayectoriaBlanca = None, attrs=None, best_player=None):
         self.primerContactoCorrecto = primerContactoCorrecto
         self.cantCorrectas = cantCorrectas
         self.canIncorrectas = cantIncorrectas
@@ -22,8 +23,14 @@ class SingletonRespuesta:
         self.tiroValido = tiroValido
         self.trayectorias = trayectorias
         self.trayectoriaBlanca = trayectoriaBlanca
+        self.attrs = attrs
+        self.best_player = best_player
 
        
+    def copy(self):
+        # Utiliza la función copy.deepcopy() para crear una copia profunda del Singleton
+        return copy.deepcopy(self)
+
     def obtener_velocidad(self, velX, velY):
         return math.sqrt(velX**2 + velY**2)
 
