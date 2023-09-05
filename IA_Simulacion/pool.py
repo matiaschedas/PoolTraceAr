@@ -48,7 +48,8 @@ class PoolEnv:
         total_foul_times=TOTAL_FOUL_TIMES,
         observation_type=OBSERVATION_TYPE,
         bola_en_mano=False,
-        graficar = True
+        graficar = True,
+        simulacion = False
     ):
         # initialize some constants
         self.episodes = 0
@@ -64,7 +65,7 @@ class PoolEnv:
         self.observation_type = observation_type
         self.draw_screen = draw_screen or (observation_type == "image") or not training
         self.graficar = graficar
-        
+        self.simulacion = simulacion
         # initialize space
         self.space = pm.Space()
         self.space.gravity = (0, 0)
@@ -850,8 +851,8 @@ class PoolEnv:
                 RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2
             ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
             self.cue_ball.body.activate()
-
-        self.setear_respuesta()
+        if(self.simulacion != True):
+            self.setear_respuesta()
         return self.process_observation(), self.process_reward(), done, info
 
     def cantidad_para_embocar(self):

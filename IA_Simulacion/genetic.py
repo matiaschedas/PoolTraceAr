@@ -165,7 +165,7 @@ class Genetic():
         trainer = None
     
     def ver_simulacion(self, attrs, best_player):
-        pool = PoolEnv(training=False, graficar=True)
+        pool = PoolEnv(training=False, graficar=True, simulacion=True)
         pool.apply_attrs(attrs)
         time.sleep(2)
         done = pool.step(best_player)[2]
