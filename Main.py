@@ -59,7 +59,6 @@ display_monitor = 1
 
 circles_prev = None
 movimientoDetectado = False
-bolaSeleccionada = None
 resaltarBola = False
 
 aplicarBlur = True
@@ -332,6 +331,7 @@ class VentanaVideo(QMainWindow):
         self.singletonRespuestaIA_2 = None
         self.respuesta_hiloTiro = None
         self.repitiendo_simulacion = False
+        self.bolaSeleccionada = None
 
 
         self.hiloProyeccion = hiloProyeccion
@@ -1042,7 +1042,6 @@ class VentanaVideo(QMainWindow):
                     break
 
         if self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
-            global bolaSeleccionada
             if self.circles is not None:
                 for (x, y, r) in self.circles:
                     x = (x+self.XIROI)
@@ -1051,7 +1050,7 @@ class VentanaVideo(QMainWindow):
                     if distancia <=10:
                         print(f"bola {x},{y}")
                         clickEnBola = True
-                        bolaSeleccionada=(x,y,r)
+                        self.bolaSeleccionada=(x,y,r)
                         self.resaltar_bola_seleccionada()
                         self.etiquetar=True
                         self.tronerasPosibles = self.calcular_posibles_troneras()
@@ -1065,13 +1064,13 @@ class VentanaVideo(QMainWindow):
     def resaltar_bola_seleccionada(self):
         global resaltarBola
         SingletonCompartida.delete_instance()
-        if bolaSeleccionada is not None:
+        if self.bolaSeleccionada is not None:
             resaltarBola = True
             
     def deseleccionar_bola(self):
-        global resaltarBola, bolaSeleccionada
+        global resaltarBola
         resaltarBola = False
-        bolaSeleccionada = None
+        self.bolaSeleccionada = None
         self.attrs = None
         self.best_player = None
         SingletonCompartida.delete_instance()
@@ -1108,15 +1107,14 @@ class VentanaVideo(QMainWindow):
 
     #calcula cuales troneras tienen camino libre para la bola seleccionada:
     def calcular_posibles_troneras(self):
-        global bolaSeleccionada
         self.poligonos = []
         self.poligonosImposibles = []
-        if bolaSeleccionada is None:
+        if self.bolaSeleccionada is None:
             return
         troneras = self.obtener_troneras()
         tronerasPosibles = []
         for tronera in troneras:
-            (xb,yb,rb)=bolaSeleccionada
+            (xb,yb,rb)=self.bolaSeleccionada
             (x,y)=tronera
             vertices = []
 
@@ -1227,7 +1225,7 @@ class VentanaVideo(QMainWindow):
             x, y, radio = circulo
             x=x+self.XIROI
             y=y+self.YIROI
-            distancia = math.sqrt((bolaSeleccionada[0]-x)**2 + (bolaSeleccionada[1]-y)**2)
+            distancia = math.sqrt((self.bolaSeleccionada[0]-x)**2 + (self.bolaSeleccionada[1]-y)**2)
             #se saltea a si misma (la seleccionada)
             if distancia < radio + 1:
                 continue  
@@ -1451,7 +1449,7 @@ class VentanaVideo(QMainWindow):
     
     #bucle principal de ejecucion:
     def actualizar_video(self):
-        global bolaSeleccionada, resaltarBola, minRadius, maxRadius
+        global resaltarBola, minRadius, maxRadius
         if not self.seguirActualizando:
             return
         if self.cap is not None and not is_frame_black(self.frame):
@@ -1579,14 +1577,14 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
-                    elif(self.selecciono_negra(self.listaEtiquetada,bolaSeleccionada)==True and self.hayMesaAbierta == True):
+                    elif(self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True and self.hayMesaAbierta == True):
                         print("Error, no se puede seleccionar la negra cuando hay mesa abierta")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
-                    elif(self.seleccion_de_negra_incorrecto(self.listaEtiquetada, bolaSeleccionada)==True):
+                    elif(self.seleccion_de_negra_incorrecto(self.listaEtiquetada, self.bolaSeleccionada)==True):
                         print("Error, se selecciono la negra pero no es la ultima bola")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
@@ -1601,21 +1599,21 @@ class VentanaVideo(QMainWindow):
                         yb= yb + self.YIROI
                         self.bolaBlanca = (xb,yb,rb)
                     
-                    if (self.bolaBlanca is not None and bolaSeleccionada is not None):
+                    if (self.bolaBlanca is not None and self.bolaSeleccionada is not None):
                         tamROI = self.obtener_tam_ROI()
                         trayectoriasValidasBlanca = []
                         trayectoriasValidasSeleccionada = []
-                        #self.fisicas = Fisicas(False, False, False, self.listaEtiquetada, bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                        #self.fisicas = Fisicas(False, False, False, self.listaEtiquetada, self.bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
                         #self.fisicas.setear_pasos_tiempo(5)
                         
                         self.embocarNegra = False
-                        (xs,ys,rs) = bolaSeleccionada
+                        (xs,ys,rs) = self.bolaSeleccionada
                         xs = xs - self.XIROI
                         ys = ys - self.YIROI
-                        singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                        
                         
                         if(self.calculandoTiro == False):
-
+                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
                             self.hiloCalculoTiro = miHilo()
                             self.hiloCalculoTiro.start()
                             self.calculandoTiro = True
@@ -1666,14 +1664,14 @@ class VentanaVideo(QMainWindow):
                                     #trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
                        
 
-            if(self.repetirSimulacion == True and bolaSeleccionada is not None):
+            if(self.repetirSimulacion == True and self.bolaSeleccionada is not None):
                 if (self.tiro_seleccionado==3):
                     if (self.repitiendo_simulacion == False): 
                         self.repitiendo_simulacion = True     
                         tamROI = self.obtener_tam_ROI()
                         self.bolaBlanca = self.obtenerBolaBlanca(self.ultimaListaEtiquetada)
                         self.fisicas = None
-                        self.fisicas = Fisicas(True, False, False, self.ultimaListaEtiquetada, bolaSeleccionada, self.bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                        self.fisicas = Fisicas(True, False, False, self.ultimaListaEtiquetada, self.bolaSeleccionada, self.bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
                         self.fisicas.setear_pasos_tiempo(5)
                         self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
                         self.fisicas.simular()                                       
@@ -1764,8 +1762,8 @@ class VentanaVideo(QMainWindow):
                         id = self.obtener_id_bola(x,y)
                         if id != -1:
                             cv2.putText(self.frame, str(id),(xCircle,yCircle),cv2.FONT_HERSHEY_SIMPLEX, 2,(255,255,0),2)
-                        if resaltarBola == True and bolaSeleccionada is not None:
-                            (xs,ys,rs) = bolaSeleccionada
+                        if resaltarBola == True and self.bolaSeleccionada is not None:
+                            (xs,ys,rs) = self.bolaSeleccionada
                             (xTronera, yTronera) = self.troneras[0]
                             dist = np.sqrt((xCircle-xs)**2 + (yCircle-ys)**2)
                             if dist <=10:
@@ -1786,7 +1784,7 @@ class VentanaVideo(QMainWindow):
                                 
                         i+=1
                     if(self.algunaEstaSeleccionada == False):
-                        bolaSeleccionada = None
+                        self.bolaSeleccionada = None
                         self.puntos_trayectoria_bola_blanca = None
                         self.puntos_trayectoria_bola_seleccionada = None
                         self.puntos_trayectorias_bolas = None
@@ -1960,8 +1958,8 @@ class VentanaVideo(QMainWindow):
     def selecciono_la_blanca(self, listaEtiquetadas):
         if(listaEtiquetadas == None):
              return False
-        if (bolaSeleccionada is not None):
-            (xs, ys, rs) = bolaSeleccionada
+        if (self.bolaSeleccionada is not None):
+            (xs, ys, rs) = self.bolaSeleccionada
             for(x1,y1,r1), _, etiqueta in listaEtiquetadas:
                 x1=x1+self.XIROI
                 y1=y1+self.YIROI
@@ -2024,8 +2022,8 @@ class VentanaVideo(QMainWindow):
                 lisas = lisas + 1
         return lisas > 7
     
-    def selecciono_negra(self, listaEtiquetada, bolaSeleccionada):
-        x,y,_ = bolaSeleccionada
+    def selecciono_negra(self, listaEtiquetada, seleccionada):
+        x,y,_ = seleccionada
         etiquetaSeleccionada = ""
         for (x1,y1,r1), _, etiqueta in listaEtiquetada:
             x1 = x1 + self.XIROI
@@ -2038,8 +2036,8 @@ class VentanaVideo(QMainWindow):
         return False
 
         
-    def seleccion_de_negra_incorrecto(self, listaEtiquetada, bolaSeleccionada):
-       x,y,_ = bolaSeleccionada
+    def seleccion_de_negra_incorrecto(self, listaEtiquetada, seleccionada):
+       x,y,_ = seleccionada
        etiquetaSeleccionada = ""
        lisas = 0
        rayadas = 0 

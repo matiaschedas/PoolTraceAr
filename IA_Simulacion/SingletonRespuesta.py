@@ -1,13 +1,17 @@
 import math
 import copy
+import threading
 
 class SingletonRespuesta:
     _instance = None
+    _lock = threading.Lock()
     
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(SingletonRespuesta, cls).__new__(cls)
-            cls._instance.init_singletonCompartida(*args, **kwargs)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(SingletonRespuesta, cls).__new__(cls)
+                    cls._instance.init_singletonCompartida(*args, **kwargs)
         return cls._instance
     
     def init_singletonCompartida(self, primerContactoCorrecto=None, cantCorrectas=None, cantIncorrectas=None, embocoNegraError=None, vxBlanca=None, vyBlanca=None, cantRebotesBlanca=None, tiroValido=None, trayectorias = None, trayectoriaBlanca = None, attrs=None, best_player=None):

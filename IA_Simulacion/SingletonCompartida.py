@@ -1,11 +1,15 @@
+import threading
 
 class SingletonCompartida:
     _instance = None
+    _lock = threading.Lock()
     
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(SingletonCompartida, cls).__new__(cls)
-            cls._instance.init_singletonCompartida(*args, **kwargs)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(SingletonCompartida, cls).__new__(cls)
+                    cls._instance.init_singletonCompartida(*args, **kwargs)
         return cls._instance
     
     def init_singletonCompartida(self, listaApareada=None, bolaSeleccionada=None, tamROI=None, embocarNegra=None, bolaEnMano=None, dosTiros=None, mesaAbierta=None):

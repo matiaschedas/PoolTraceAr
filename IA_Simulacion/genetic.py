@@ -1,6 +1,7 @@
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.pool import PoolEnv
 
+import time
 import itertools
 import numpy as np
 import multiprocessing
@@ -166,6 +167,7 @@ class Genetic():
     def ver_simulacion(self, attrs, best_player):
         pool = PoolEnv(training=False, graficar=True)
         pool.apply_attrs(attrs)
+        time.sleep(2)
         done = pool.step(best_player)[2]
         pool.close()
         pool = None
