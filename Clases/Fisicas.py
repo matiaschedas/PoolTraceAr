@@ -62,8 +62,18 @@ class Fisicas():
         self.entroLaBlanca = False
         self.entroLaSeleccionada = False
         self.entroLaNegra = False
-       
+    
+    def setear_bolas_y_reiniciar_simulacion(self,listaApareada,bolaSeleccionada,bolaBlanca):
+        self.listaApareada=listaApareada
+        self.bolaSeleccionada=bolaSeleccionada    
+        self.bolaBlanca=bolaBlanca
+        self.reiniciar_simulacion()
 
+    def setear_ver_simulacion_graficos_resultados(self,verSimulacion,verGrafico,verResultadosConsola):
+        self.verSimulacion=verSimulacion
+        self.verGrafico=verGrafico
+        self.verResultadosConsola=verResultadosConsola
+        
     def create_ball(self, space, x, y, radius, mass, etiqueta):
         body = pymunk.Body(mass, pymunk.moment_for_circle(mass, 0, radius))
         body.position = x, y
@@ -273,7 +283,7 @@ class Fisicas():
         trayectoriaSeleccionada = []
         
 
-        dt = 1.0 / 10
+        dt = 1.0 / (10*self.pasos)
         total_steps = 100
         (ancho, alto) = self.ROI
         #se crean las paredes:
