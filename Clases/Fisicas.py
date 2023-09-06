@@ -71,7 +71,7 @@ class Fisicas():
         #ajustar para conseguir mesa real:
         shape.elasticity = 0.9 #determina cuanta energia cinetica se conserva en la colision (1.0 es 100% elastica)
         #con estos filtros seteo que las bolas puedan colisionar con las paredes y con otras bolas:
-        shape.filter = pymunk.ShapeFilter(categories=0b0010, mask = 0b0100 | 0b0010)
+        shape.filter = pymunk.ShapeFilter(categories=0b001, mask = 0b111)
         shape.userData = etiqueta
         space.add(body, shape)
         return body
@@ -79,29 +79,34 @@ class Fisicas():
     def create_tronera(self, space, x, y, radius, nro):
         body = pymunk.Body(body_type=pymunk.Body.STATIC)
         body.position = x,y
+        #print(x,y)
+        #print('create_tronera')
         shape = pymunk.Circle(body, radius)
         shape.elasticity = 0.9
-        shape.filter = pymunk.ShapeFilter(categories=0b0001)
+        shape.filter = pymunk.ShapeFilter(categories=0b010, mask = 0b000)
         shape.userData = "Tronera " + str(nro)
         space.add(body, shape)
         return body
+    
+    def create_segment(self,space, x1,y1, x2,y2):
+        segment_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+        #segment_shape = pymunk.Segment(segment_body, (-10, -6), (705,-6),5)
+        segment_shape = pymunk.Segment(segment_body, (x1, y1), (x2,y2),5)
+        #print('create_segment')
+        #print((x1, y1), (x2,y2))
+        #ajustar para conseguir mesa real:
+        segment_shape.elasticity = 0.5
+        #ajustar para conseguir mesa real:
+        segment_shape.friction = 0.1
+        segment_shape.filter = pymunk.ShapeFilter(categories=0b100, mask=0b111)
+        space.add(segment_body,segment_shape)
+        return segment_body
 
     #aplica la friccion de la bola contra la mesa (tambien se puede no usar este metodo y aplicarl la friccion al crear la bola):
     #ajustar para conseguir mesa real:
     def apply_friction(self, body, friction_coefficient):
         velocity = body.velocity
         body.apply_impulse_at_local_point((-velocity.x * friction_coefficient, -velocity.y * friction_coefficient))
-
-    def create_segment(self,space, x1,y1, x2,y2):
-        segment_body = pymunk.Body(body_type=pymunk.Body.STATIC)
-        segment_shape = pymunk.Segment(segment_body, (x1, y1), (x2,y2),5)
-        #ajustar para conseguir mesa real:
-        segment_shape.elasticity = 0.5
-        #ajustar para conseguir mesa real:
-        segment_shape.friction = 0.1
-        segment_shape.filter = pymunk.ShapeFilter(categories=0b0100, mask=0b0010)
-        space.add(segment_body,segment_shape)
-        return segment_body
 
     def create_walls(self, space, width, height):
         mitad = width/2
@@ -111,20 +116,20 @@ class Fisicas():
         for i, punto in enumerate(puntos):
             xp, yp = punto
             if i>=0 and i<=3:
-                puntos[i]=(xp-self.XIROI,self.YIROI-self.YIROI)
+                puntos[i]=(xp-self.XIROI, self.YIROI-self.YIROI)
             if i==4 or i == 5:
-                puntos[i]=(self.XDROI-self.XIROI,yp-self.YIROI)
+                puntos[i]=(self.XDROI-self.XIROI, yp-self.YIROI)
             if i>=6 and i<=9:
-                puntos[i]=(xp-self.XIROI,self.YDROI-self.YIROI)
+                puntos[i]=(xp-self.XIROI, self.YDROI-self.YIROI)
             if i==10 or i == 11:
-                puntos[i]=(self.XIROI-self.XIROI,yp-self.YIROI)
+                puntos[i]=(self.XIROI-self.XIROI, yp-self.YIROI)
 
-        walls = [[(puntos[0]),(puntos[1])],
-                 [(puntos[2]),(puntos[3])],
-                 [(puntos[4]),(puntos[5])],
-                 [(puntos[6]),(puntos[7])],
-                 [(puntos[8]),(puntos[9])],
-                 [(puntos[10]),(puntos[11])]]
+        # walls = [[(puntos[0]),(puntos[1])],
+        #          [(puntos[2]),(puntos[3])],
+        #          [(puntos[4]),(puntos[5])],
+        #          [(puntos[6]),(puntos[7])],
+        #          [(puntos[8]),(puntos[9])],
+        #          [(puntos[10]),(puntos[11])]]
             
         # walls = [[(0+self.radioTronera,0),(mitad-self.radioTronera,0)],
         #          [(mitad+self.radioTronera,0),(width-self.radioTronera,0)],
@@ -132,9 +137,18 @@ class Fisicas():
         #          [(width-self.radioTronera,height),(mitad+self.radioTronera,height)],
         #          [(mitad-self.radioTronera,height),(0+self.radioTronera,height)],
         #          [(0,height-self.radioTronera),(0,0+self.radioTronera)]]
+
+        walls = [
+                 [(13, -12), (mitad - 27, -12)],
+                 [(mitad + 27, -12), (width - 9, -12)], 
+                 [(13, height + 24), (mitad - 27, height + 24)],
+                 [(mitad + 27, height + 24), (width - 9, height + 24)],
+                 [(-10, 18), (-10, height - 10)],
+                 [(width + 20, 18), (width + 20, height - 10)]
+                ]
  
         for wall in walls:
-            (x1, y1),(x2,y2) = wall 
+            (x1, y1),(x2,y2) = wall
             wallsPy.append(self.create_segment(space,x1,y1,x2,y2))
         return walls
 
@@ -144,6 +158,7 @@ class Fisicas():
     #metodo que se ejecuta cuando hay colision entre 2 objetos:
     def on_collision_begin(self, arbiter, space, data):
         global bolaBlancaPrimerColision, bolaPrimerColision
+        #print('colision...')
         # Obtiene los cuerpos involucrados en la colisión
         ball_shape_1, ball_shape_2 = arbiter.shapes
         if(isinstance(ball_shape_1, pymunk.Circle) and isinstance( ball_shape_2, pymunk.Circle)):
@@ -416,7 +431,7 @@ class Fisicas():
         # # Graficar las trayectorias después de cerrar la simulación
         #esto grafica las rectas de todas las trayectorias, son las misma rectas que vamos a tener que retornar y luego graficar con opencv
         if(self.verGrafico):
-            plt.figure()
+            #plt.figure()
             
             for ball_index, trajectory in enumerate(trajectories):
                 if len(trajectory) > 0:

@@ -6,8 +6,6 @@ class CalculadorTirosFisica:
         self.verGrafico=verGrafico
         self.verResultadosConsola=verResultadosConsola
         self.listaApareada=listaApareada
-        self.bolaSeleccionada=bolaSeleccionada
-        self.bolaBlanca=bolaBlanca
         self.ROI=ROI
         self.XIROI=XIROI
         self.YIROI=YIROI
@@ -20,9 +18,15 @@ class CalculadorTirosFisica:
         self.bolaEnMano=bolaEnMano
         self.dosTiros=dosTiros
         self.mesaAbierta=mesaAbierta
-        self.fisicas = Fisicas(verSimulacion, verGrafico,verResultadosConsola, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI,XDROI,YDROI, troneras,radioTronera, radioBolas,puntosParedes,bolaEnMano,dosTiros,mesaAbierta)
-        self.velocidades=45
-
+        self.bolaSeleccionada = bolaSeleccionada
+        self.bolaBlanca = bolaBlanca
+        x, y, z = bolaSeleccionada
+        bolaSeleccionada_mas_roi = (x+XIROI,y+YIROI, z)
+        x, y, z = bolaBlanca
+        bolaBlanca_mas_roi = (x+XIROI,y+YIROI, z)
+        self.fisicas = Fisicas(verSimulacion, verGrafico,verResultadosConsola, listaApareada, bolaSeleccionada_mas_roi, bolaBlanca_mas_roi, ROI, XIROI, YIROI,XDROI,YDROI, troneras,radioTronera, radioBolas,puntosParedes,bolaEnMano,dosTiros,mesaAbierta)
+        self.velocidades= 60
+        
     def definir_signos(self,inicio,fin):
         return 1 if inicio[0]<fin[0] else -1,1 if inicio[1]<fin[1] else -1
 
@@ -30,22 +34,25 @@ class CalculadorTirosFisica:
         return None
 
     def calcular(self):
-        (vx,vy)=self.tiros_posibles()
+        (vx,vy)=self.tiros_posibles() 
         self.fisicas.setear_velocidad_inicial_blanca(vx,vy) #20 35
         self.fisicas.setear_pasos_tiempo(1)
         self.fisicas.simular()
     
     def tiros_posibles(self):
-        tronera=self.troneras_posibles()
-        radioBola=8
+        tronera = self.troneras_posibles()
         xt=tronera[0]-self.XIROI
         yt=tronera[1]-self.YIROI
-        (xb,yb,radioBola)=self.listaApareada[0][0]
-        (xo,yo,_)=self.listaApareada[2][0]
+        radioBola=8
+        (xb,yb,radioBola)= self.listaApareada[0][0]
+        (xo,yo,_)= self.listaApareada[2][0]
+
         angulo=abs(math.atan((yo-yt)/(xo-xt)))
         
         sx,sy=self.definir_signos((xt,yt),(xo,yo))
         xi,yi=(xo+sx*2*radioBola*math.cos(angulo),yo+sy*2*radioBola*math.sin(angulo))
+        print('Puntos', xi-xb, yi-yb)
+
         angulo2=abs(math.atan((yi-yb)/(xi-xb)))
         sx,sy=self.definir_signos((xb,yb),(xi,yi))
         return (sx*self.velocidades*math.cos(angulo2),sy*self.velocidades*math.sin(angulo2))
