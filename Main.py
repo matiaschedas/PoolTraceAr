@@ -173,9 +173,8 @@ class VentanaProyeccion(QMainWindow):
 
         self.label.setGeometry(0, 0, 1920, 1080)
         self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.frame = np.zeros((resXProy, resYProy, 3), dtype=np.uint8)
-        self.frame = cv2.resize(
-            self.frame, (resYProy, resXProy), interpolation=cv2.INTER_LINEAR)
+        self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
+        self.frame = cv2.resize(self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
         self.resize(1920, 1080)
         # Establecer el icono de la ventana
 
@@ -195,8 +194,15 @@ class VentanaProyeccion(QMainWindow):
 
     #mueve la imagen del proyector al monitor de la pc que se elija:
     def set_nroMonitor(self, numero):
+        global resXProy,resYProy
         self.nroMonitor = numero
-        monitor = QDesktopWidget().screenGeometry(self.nroMonitor)
+        monitor = QDesktopWidget().screenGeometry(self.nroMonitor)        
+        monitor_width = monitor.width()
+        monitor_height = monitor.height()
+        resXProy = monitor_width
+        resYProy = monitor_height
+        self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
+        self.frame = cv2.resize(self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
         self.move(monitor.left() + 7, monitor.top())
 
     #dibuja los circulos en la ventana de proyeccion:
@@ -207,14 +213,24 @@ class VentanaProyeccion(QMainWindow):
         cv2.rectangle(self.frame, puntoA,
                               puntoB, color, grosor)
 
-    def re_init_frame(self, h, w):
-        self.frame = self.frame.copy()
-        self.frame = cv2.resize(
-            self.frame, (w, h), interpolation=cv2.INTER_LINEAR)
+    def re_init_frame(self, w, h):
+        self.framecopy = self.frame.copy()
+        if self.framecopy is not None:
+            try:
+                self.framecopy = cv2.resize(self.framecopy, (w, h), interpolation=cv2.INTER_LINEAR)
+                self.frame = self.framecopy
+            except Exception as e:
+                self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
+                self.frame = cv2.resize(self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
+                print("Se ha producido un error:",e)    
+
+        else:
+            print("La imagen self.frame es nula o vacía.")
+        
         
     def agregarImagen(self):
         # Crea un marco transparente para trabajar con él
-        self.frame_copy = np.zeros((resXProy, resYProy, 4), dtype=np.uint8)
+        self.frame_copy = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
 
         # Achicar la imagen a las dimensiones deseadas
         desired_width = 800
@@ -237,24 +253,20 @@ class VentanaProyeccion(QMainWindow):
         
 
     def dibujar(self):
+        global resXProy,resYProy
         self.frame = cv2.resize(
-            self.frame, (resYProy, resXProy), interpolation=cv2.INTER_LINEAR)
+            self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
 
         #self.agregarImagen()
 
         frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-        imagen = QImage(frame_rgb.data, resYProy,
-                        resXProy, QImage.Format_RGB888)
+        imagen = QImage(frame_rgb.data, resXProy,resYProy, QImage.Format_RGB888)
         imagen = QPixmap.fromImage(imagen)
         self.label.setPixmap(imagen)
 
-       
-
-
-
     #limpia el frame para que no queden rastros de los circulos:
     def limpiar_circulos(self):
-        self.frame = np.zeros((resXProy, resYProy, 3), dtype=np.uint8)
+        self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
 
 
 class HiloProyeccion(threading.Thread):
@@ -276,14 +288,13 @@ class HiloProyeccion(threading.Thread):
             # limpiar ventana de proyeccion:
             self.ventanaProyeccion.limpiar_circulos()
             if self.circles is not None and self.height is not None and self.width is not None:
-                self.ventanaProyeccion.re_init_frame(self.height, self.width)
+                self.ventanaProyeccion.re_init_frame(self.width, self.height)
                 global minRadius, maxRadius
                 radioProm = int((minRadius+maxRadius)/2)
                 for (x, y, r) in self.circles:
                     # se dibujan los circulos en la interfaz: 
-                    self.ventanaProyeccion.dibujar_circulos(
-                        x , y , radioProm+7, (0, 255, 0), 2)
-                    self.ventanaProyeccion.dibujar_ROI((self.xiroi, self.yiroi),(self.xdroi, self.ydroi),(0, 255, 0),5)
+                    self.ventanaProyeccion.dibujar_circulos(x , y , radioProm+7, (0, 255, 0), 2)
+                    # self.ventanaProyeccion.dibujar_ROI((self.xiroi, self.yiroi),(self.xdroi, self.ydroi),(0, 255, 0),5)
        
             self.ventanaProyeccion.dibujar()
             if self.detener:
@@ -860,9 +871,10 @@ class VentanaVideo(QMainWindow):
             self.actualizarHough()
         self.cambio_camara(self.comboCamaras.currentIndex())
         self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
-
-        self.hiloProyeccion.actualizar_proporcion_interfaz(
-            ResolucionY, ResolucionX)
+        # self.roi = self.frame[self.YIROI:self.YDROI 
+        #                     , self.XIROI:self.XDROI]
+        # altura, ancho = self.frame.shape[:2]
+        self.hiloProyeccion.actualizar_proporcion_interfaz(ResolucionY,ResolucionX )
 
     #cambia la webcam a la que selecciono el usuario:
     def cambio_camara(self, index):
@@ -1457,7 +1469,7 @@ class VentanaVideo(QMainWindow):
         else:
             ret = False
             width, height = ResolucionX, ResolucionY
-            frame = frame = np.zeros((height, width, 3), dtype=np.uint8)
+            frame = np.zeros((height, width, 3), dtype=np.uint8)
             h, w, ch = frame.shape
             bytes_per_line = ch * w
             q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
@@ -2072,8 +2084,8 @@ class VentanaVideo(QMainWindow):
 
         
 
-resXProy = 1080
-resYProy = 1920
+resXProy = 1920
+resYProy = 1080
 
 #levanta archivo de configuracion antes de iniciar todo:
 def levantar_configuracion():
