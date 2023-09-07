@@ -1627,7 +1627,7 @@ class VentanaVideo(QMainWindow):
                         
                         
                         if(self.calculandoTiro == False):
-                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta, 3)
                             self.hiloCalculoTiro = miHilo()
                             self.hiloCalculoTiro.start()
                             self.calculandoTiro = True
