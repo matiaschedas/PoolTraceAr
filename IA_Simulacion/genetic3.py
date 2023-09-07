@@ -6,6 +6,8 @@ import numpy as np
 import multiprocessing
 import math
 
+
+
 class Player:
     def __init__(self, env: PoolEnv, bola_en_mano=False, embocarNegra=True) -> None:
         self.env = env
@@ -55,7 +57,7 @@ class GeneticAlgorithm:
     
 
     def create_env(self):
-        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"], embocarNegra=True)
+        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"], embocarNegra=True, simulacion=True, nroTronera=self.attrs["nroTronera"])
         env.apply_attrs(self.attrs)
         return env
 
