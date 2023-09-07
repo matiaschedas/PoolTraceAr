@@ -49,7 +49,8 @@ class PoolEnv:
         observation_type=OBSERVATION_TYPE,
         bola_en_mano=False,
         graficar = True,
-        simulacion = False
+        simulacion = False,
+        embocarNegra = False
     ):
         # initialize some constants
         self.episodes = 0
@@ -90,6 +91,7 @@ class PoolEnv:
             self.draw_screen = False
         self.attrs_respuesta = None
         self.best_player_respuesta = None
+        self.embocarNegra = embocarNegra
 
         # gym environment
         self.spec = None
@@ -190,14 +192,38 @@ class PoolEnv:
             self.rails.append(rail)
 
         self.pockets = []
-        for pocket_loc in POCKET_LOCATION:
-            pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
-            pocket.color = pg.Color(BLACK)
-            pocket.collision_type = 2
-            pocket.elasticity = 0
-            pocket.friction = 0
-            pocket.filter = pm.ShapeFilter(categories=0b00010)
-            self.pockets.append(pocket)
+        if self.embocarNegra == False:
+            for pocket_loc in POCKET_LOCATION:
+                pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+                pocket.color = pg.Color(BLACK)
+                pocket.collision_type = 2
+                pocket.elasticity = 0
+                pocket.friction = 0
+                pocket.filter = pm.ShapeFilter(categories=0b00010)
+                self.pockets.append(pocket)
+        else:
+            i=0
+            for pocket_loc in POCKET_LOCATION:
+                i = i+1
+                if (i==self.singleton.nroTronera):
+                    pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+                    pocket.color = pg.Color(BLACK)
+                    pocket.collision_type = 2
+                    pocket.elasticity = 0
+                    pocket.friction = 0
+                    pocket.filter = pm.ShapeFilter(categories=0b00010)
+                    self.pockets.append(pocket)
+                else:
+                    pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+                    pocket.color = pg.Color(TABLE_SIDE_COLOR)
+                    pocket.collision_type = 3
+                    pocket.elasticity = 0
+                    pocket.friction = 0
+                    pocket.filter = pm.ShapeFilter(categories=0b00001)
+                    self.pockets.append(pocket)
+                
+
+        
 
         self.space.add(*self.rails, *self.pockets)
 
@@ -215,8 +241,6 @@ class PoolEnv:
         self.num_balls = len(self.singleton.listaApareada)
         positions = []
 
-        if(self.singleton.etiquetaDeSeleccionada == "Negra"):
-            self.singleton.embocarNegra = True
         
         contadorLisas = 0
         contadorRayadas = 8
