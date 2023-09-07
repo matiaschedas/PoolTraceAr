@@ -108,7 +108,7 @@ class GeneticAlgorithm:
     
 
     def create_env(self):
-        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"], embocarNegra=True)
+        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"], embocarNegra=True, simulacion=True)
         env.apply_attrs(self.attrs)
         return env
 

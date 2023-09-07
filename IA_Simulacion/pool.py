@@ -50,7 +50,8 @@ class PoolEnv:
         bola_en_mano=False,
         graficar = True,
         simulacion = False,
-        embocarNegra = False
+        embocarNegra = False,
+        nroTronera = -1
     ):
         # initialize some constants
         self.episodes = 0
@@ -92,6 +93,17 @@ class PoolEnv:
         self.attrs_respuesta = None
         self.best_player_respuesta = None
         self.embocarNegra = embocarNegra
+        self.nroTronera = nroTronera
+        self.troneras  = (np.array(
+                                [
+                                    (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                                    (WIDTH // 2, SIDE_POCKET_DIST),
+                                    (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                                    (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+                                    (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                                ]
+                            )* ZOOM_MULTIPLIER).astype(int)
 
         # gym environment
         self.spec = None
@@ -108,7 +120,7 @@ class PoolEnv:
         else:
             # ball_x, ball_y, ball_type(pocketed, solid, strips, 8-ball, cue-ball) x 16 balls
             self.table_info = np.concatenate(
-                [np.array(RAIL_POLY).flatten(), POCKET_LOCATION.flatten()]
+                [np.array(RAIL_POLY).flatten(), self.troneras.flatten()]
             )
             self.table_info = self.table_info / self.table_info.max()
             low = np.concatenate(
@@ -192,8 +204,23 @@ class PoolEnv:
             self.rails.append(rail)
 
         self.pockets = []
-        if self.embocarNegra == False:
-            for pocket_loc in POCKET_LOCATION:
+
+        if self.nroTronera != -1:
+            if self.embocarNegra == True:
+                pocketElegido = None
+                i=1
+                for pocket_coord in POCKETS_COORDS:
+                    if i==self.nroTronera:
+                        pocketElegido = pocket_coord
+                        break
+                    i = i +1
+                self.troneras = (np.array(
+                [
+                pocketElegido,
+                ])* ZOOM_MULTIPLIER).astype(int)
+
+
+        for pocket_loc in self.troneras:
                 pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
                 pocket.color = pg.Color(BLACK)
                 pocket.collision_type = 2
@@ -201,29 +228,7 @@ class PoolEnv:
                 pocket.friction = 0
                 pocket.filter = pm.ShapeFilter(categories=0b00010)
                 self.pockets.append(pocket)
-        else:
-            i=0
-            for pocket_loc in POCKET_LOCATION:
-                i = i+1
-                if (i==self.singleton.nroTronera):
-                    pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
-                    pocket.color = pg.Color(BLACK)
-                    pocket.collision_type = 2
-                    pocket.elasticity = 0
-                    pocket.friction = 0
-                    pocket.filter = pm.ShapeFilter(categories=0b00010)
-                    self.pockets.append(pocket)
-                else:
-                    pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
-                    pocket.color = pg.Color(TABLE_SIDE_COLOR)
-                    pocket.collision_type = 3
-                    pocket.elasticity = 0
-                    pocket.friction = 0
-                    pocket.filter = pm.ShapeFilter(categories=0b00001)
-                    self.pockets.append(pocket)
                 
-
-        
 
         self.space.add(*self.rails, *self.pockets)
 
@@ -975,7 +980,8 @@ class PoolEnv:
             "score_tracking": copy(self.score_tracking),
             "pocket_tracking": copy(self.pocket_tracking),
             "cantidad_bolas": len(self.balls),
-            "bola_en_mano": self.bola_en_mano
+            "bola_en_mano": self.bola_en_mano,
+            "nroTronera": self.singleton.nroTronera
         }
 
     def apply_attrs(self, attrs):
