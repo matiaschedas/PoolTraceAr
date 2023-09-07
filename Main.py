@@ -902,9 +902,11 @@ class VentanaVideo(QMainWindow):
         global display_monitor
         opcion = self.comboMonitores.itemText(index)
         print(f"monitor: {opcion}")
-        numero = int(re.search(r'\d+', opcion).group())
-        display_monitor = numero
-        self.ventanaProyeccion.set_nroMonitor(display_monitor)
+        if opcion != '':
+            numero = int(re.search(r'\d+', opcion).group())
+            numero = numero -1
+            display_monitor = numero
+            self.ventanaProyeccion.set_nroMonitor(display_monitor)
 
     def distancia_media_entre_puntos(self, x1, x2):
         distancia = (x2 - x1)
@@ -912,7 +914,7 @@ class VentanaVideo(QMainWindow):
 
     #define si se esta proyectando en otro monitor o solo se esta viendo la interfaz principal:
     def proyectar(self):
-        global proyectando, cerrarProyeccion
+        global proyectando, cerrarProyeccion, display_monitor
         self.cambio_monitor(display_monitor-1)
         if(proyectando==False):
             proyectando = True
