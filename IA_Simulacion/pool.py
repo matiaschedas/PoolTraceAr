@@ -94,6 +94,11 @@ class PoolEnv:
         self.best_player_respuesta = None
         self.embocarNegra = embocarNegra
         self.nroTronera = nroTronera
+        if self.nroTronera is None:
+            self.nroTronera = -1
+        if self.singleton.nroTronera is not None:
+            self.nroTronera = self.singleton.nroTronera
+
         self.troneras  = (np.array(
                                 [
                                     (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
@@ -204,8 +209,9 @@ class PoolEnv:
             self.rails.append(rail)
 
         self.pockets = []
-
+        resto_troneras = None
         if self.nroTronera != -1:
+            resto_troneras = self.troneras.copy()
             if self.embocarNegra == True:
                 pocketElegido = None
                 i=1
@@ -219,15 +225,27 @@ class PoolEnv:
                 pocketElegido,
                 ])* ZOOM_MULTIPLIER).astype(int)
 
-
-        for pocket_loc in self.troneras:
-                pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
-                pocket.color = pg.Color(BLACK)
-                pocket.collision_type = 2
+                indice = np.where(np.all(resto_troneras == self.troneras, axis=1))
+                resto_troneras = np.delete(resto_troneras, indice, axis=0)
+                
+        if resto_troneras is not None:
+            for pocket_falso in resto_troneras:
+                pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_falso.tolist())
+                pocket.color = pg.Color(TABLE_SIDE_COLOR)
+                pocket.collision_type = 3
                 pocket.elasticity = 0
                 pocket.friction = 0
-                pocket.filter = pm.ShapeFilter(categories=0b00010)
+                pocket.filter = pm.ShapeFilter(categories=0b00001)
                 self.pockets.append(pocket)
+
+        for pocket_loc in self.troneras:
+            pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+            pocket.color = pg.Color(BLACK)
+            pocket.collision_type = 2
+            pocket.elasticity = 0
+            pocket.friction = 0
+            pocket.filter = pm.ShapeFilter(categories=0b00010)
+            self.pockets.append(pocket)
                 
 
         self.space.add(*self.rails, *self.pockets)

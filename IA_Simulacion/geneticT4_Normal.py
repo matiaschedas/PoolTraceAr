@@ -57,7 +57,7 @@ class GeneticAlgorithm:
     
 
     def create_env(self):
-        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"], embocarNegra=True, simulacion=True, nroTronera=self.attrs["nroTronera"])
+        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"], embocarNegra=True, simulacion=True, nroTronera=4)
         env.apply_attrs(self.attrs)
         return env
 
@@ -146,11 +146,11 @@ class Trainer:
         player, attrs = agent.train(self.best_v, bola_en_mano=attrs["bola_en_mano"])
         return list(player.v), player.reward, agent.i, attrs
 
-class Genetic3():
+class GeneticT4_Normal():
     def iniciar(self):
         #original: 150, testear con otros valores y ver rendimiento
         iterations = 150
-        pool = PoolEnv(training=False, graficar=True, embocarNegra=True)
+        pool = PoolEnv(training=False, graficar=True, embocarNegra=True, nroTronera=4)
         trainer = Trainer(iterations)
  
         attrs = pool.get_attrs()

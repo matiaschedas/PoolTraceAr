@@ -6,36 +6,21 @@ import numpy as np
 import multiprocessing
 import math
 
+
+
 class Player:
-    def __init__(self, env: PoolEnv, bola_en_mano=True, embocarNegra=True) -> None:
+    def __init__(self, env: PoolEnv, bola_en_mano=False, embocarNegra=True) -> None:
         self.env = env
         self.reward = -1
         self.low = self.env.action_space.low[0]
         self.high = self.env.action_space.high[0]
         self.bola_en_mano = bola_en_mano
-
-    
-        velocidades = np.random.uniform(low=self.low, high=self.high, size=2)
-        direccion_radianes = math.atan2(velocidades[1],velocidades[0])
-        grados = math.degrees(direccion_radianes)
-        if grados < 0:
-            grados += 360
-        intentos = 0
-        while (grados>90 and grados<270) and intentos < 20000: 
-            velocidades = np.random.uniform(low=self.low, high=self.high, size=2)
-            direccion_radianes = math.atan2(velocidades[1],velocidades[0])
-            grados = math.degrees(direccion_radianes)
-            if grados < 0:
-                grados += 360
-            intentos = intentos + 1
-            if intentos == 19999:
-                print("superado el limite de intentos para buscar una velocidad")
-        self.v = velocidades        
+        self.v = np.random.uniform(low=self.low, high=self.high, size=2)      
 
         
         
 
-    def clone(self, bola_en_mano=True):
+    def clone(self, bola_en_mano=False):
         player = Player(self.env, bola_en_mano=bola_en_mano)
         player.v = np.copy(self.v)
         return player
@@ -43,55 +28,19 @@ class Player:
     def step(self):
         self.reward = self.env.step(self.v)[1]
 
-    def mutate(self, mu=1, bola_en_mano=True):
+    def mutate(self, mu=1, bola_en_mano=False):
         rand = np.random.uniform(0, 1)
         if rand < mu / 5:
-            velocidades = np.random.uniform(low=self.low, high=self.high, size=2)
-            direccion_radianes = math.atan2(velocidades[1],velocidades[0])
-            grados = math.degrees(direccion_radianes)
-            if grados < 0:
-                grados += 360
-            intentos = 0
-            while (grados>90 and grados<270) and intentos < 20000: 
-                velocidades = np.random.uniform(low=self.low, high=self.high, size=2)
-                direccion_radianes = math.atan2(velocidades[1],velocidades[0])
-                grados = math.degrees(direccion_radianes)
-                if grados < 0:
-                    grados += 360
-                intentos = intentos + 1
-                if intentos == 19999:
-                    print("superado el limite de intentos para buscar una velocidad")
-            self.v = velocidades   
+            self.v = np.random.uniform(self.low, self.high, 2)
         elif rand < mu:
-            intentos = 0
             for i in range(len(self.v)):
-                    self.v[i] = min(
-                        max(
-                            self.v[i] + self.v[i] * np.random.normal(loc=0, scale=0.3),
-                            self.low,
-                        ),
-                        self.high,
-                    )
-            direccion_radianes = math.atan2(self.v[1], self.v[0])
-            grados = math.degrees(direccion_radianes)
-            if grados < 0:
-                grados += 360
-            while (grados>90 and grados<270) and intentos < 20000:
-                for i in range(len(self.v)):
-                    self.v[i] = min(
-                        max(
-                            self.v[i] + self.v[i] * np.random.normal(loc=0, scale=0.3),
-                            self.low,
-                        ),
-                        self.high,
-                    )
-                direccion_radianes = math.atan2( self.v[1], self.v[0])
-                grados = math.degrees(direccion_radianes)
-                if grados < 0:
-                    grados += 360
-                intentos = intentos + 1
-                if intentos == 19999:
-                    print("superado el limite de intentos para buscar una velocidad")
+                self.v[i] = min(
+                    max(
+                        self.v[i] + self.v[i] * np.random.normal(loc=0, scale=0.3),
+                        self.low,
+                    ),
+                    self.high,
+                )
 
 
 class GeneticAlgorithm:
@@ -108,11 +57,11 @@ class GeneticAlgorithm:
     
 
     def create_env(self):
-        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"], embocarNegra=True, simulacion=True)
+        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"], embocarNegra=True, simulacion=True, nroTronera=5)
         env.apply_attrs(self.attrs)
         return env
 
-    def train(self, v=None, score_threshold=0.65,bola_en_mano=True):
+    def train(self, v=None, score_threshold=0.65,bola_en_mano=False):
         if v is not None:
             self.best_player.v = v
         for _ in range(self.iterations):
@@ -197,11 +146,11 @@ class Trainer:
         player, attrs = agent.train(self.best_v, bola_en_mano=attrs["bola_en_mano"])
         return list(player.v), player.reward, agent.i, attrs
 
-class Genetic4():
+class GeneticT5_Normal():
     def iniciar(self):
         #original: 150, testear con otros valores y ver rendimiento
         iterations = 150
-        pool = PoolEnv(training=False, graficar=False, embocarNegra=True)
+        pool = PoolEnv(training=False, graficar=True, embocarNegra=True, nroTronera=5)
         trainer = Trainer(iterations)
  
         attrs = pool.get_attrs()
