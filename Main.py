@@ -212,6 +212,70 @@ class VentanaProyeccion(QMainWindow):
     def dibujar_ROI(self, puntoA, puntoB, color, grosor):
         cv2.rectangle(self.frame, puntoA,
                               puntoB, color, grosor)
+    
+    def dibujar_trayectorias(self, trayectoriaBlanca, trayectorias, xiroi, yiroi, verTodasTrayectorias):
+        if(trayectoriaBlanca is not None):
+            for i in range(len(trayectoriaBlanca)):
+                if(i == len(trayectoriaBlanca) - 1):
+                    if isinstance(trayectoriaBlanca[i], tuple):  
+                        punto = int(trayectoriaBlanca[i][0]), int(trayectoriaBlanca[i][1])
+                    else:
+                        punto = trayectoriaBlanca[i].int_tuple
+                    x,y = punto
+                    # x = x + xiroi
+                    # y = y + yiroi
+                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
+                    break
+                if isinstance(trayectoriaBlanca[i], tuple):
+                    puntoa = int(trayectoriaBlanca[i][0]), int(trayectoriaBlanca[i][1])
+                else:    
+                    puntoa = trayectoriaBlanca[i].int_tuple
+                if isinstance(trayectoriaBlanca[i+1], tuple):
+                    puntob = int(trayectoriaBlanca[i+1][0]), int(trayectoriaBlanca[i+1][1])
+                else:
+                    puntob = trayectoriaBlanca[i+1].int_tuple
+                xa,ya = puntoa
+                xb,yb = puntob
+                # xa = xa + xiroi
+                # ya = ya + yiroi
+                # xb = xb + xiroi
+                # yb = yb + yiroi
+                if i == 0:
+                    cv2.line(self.frame,(xa,ya) , (xb,yb), (255,0,0), 2)
+                else:
+                    cv2.line(self.frame,(xa,ya) , (xb,yb), (0,255,0), 2)
+        if(verTodasTrayectorias):
+            if(trayectorias is not None):
+                for i in range(len(trayectorias)):
+                    listaBola = trayectorias[i] 
+                    if(len(listaBola)>0):
+                        for x in range(len(listaBola)):
+                            if(x == len(listaBola)-1):
+                                if isinstance(listaBola[x], tuple):
+                                    punto = int(listaBola[x][0]), int(listaBola[x][1])
+                                else:
+                                    punto = listaBola[x].int_tuple
+                                x,y = punto
+                                # x = x + xiroi
+                                # y = y + yiroi
+                                cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
+                                break
+                            if isinstance(listaBola[x], tuple):
+                                puntoa = int(listaBola[x][0]), int(listaBola[x][1])
+                            else:
+                                puntoa = listaBola[x].int_tuple
+                            if isinstance(listaBola[x+1], tuple):
+                                puntob = int(listaBola[x+1][0]), int(listaBola[x+1][1])
+                            else:
+                                puntob = listaBola[x+1].int_tuple
+                            xa,ya = puntoa
+                            xb,yb = puntob
+                            # xa = xa + xiroi
+                            # ya = ya + yiroi
+                            # xb = xb + xiroi
+                            # yb = yb + yiroi
+                            cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
+        
 
     def re_init_frame(self, w, h):
         self.framecopy = self.frame.copy()
@@ -280,6 +344,9 @@ class HiloProyeccion(threading.Thread):
         self.circles = None
         self.height = None
         self.width = None
+        self.trayectoriaBlanca = None
+        self.trayectorias = None
+        self.verTodasTrayectorias = False
         
 
     def run(self):
@@ -295,13 +362,17 @@ class HiloProyeccion(threading.Thread):
                     # se dibujan los circulos en la interfaz: 
                     self.ventanaProyeccion.dibujar_circulos(x , y , radioProm+7, (0, 255, 0), 2)
                     # self.ventanaProyeccion.dibujar_ROI((self.xiroi, self.yiroi),(self.xdroi, self.ydroi),(0, 255, 0),5)
-       
+                self.ventanaProyeccion.dibujar_trayectorias(self.trayectoriaBlanca, self.trayectorias, self.xiroi, self.yiroi, self.verTodasTrayectorias)
             self.ventanaProyeccion.dibujar()
             if self.detener:
                 break
 
     def actualizar_circles(self, circles):
         self.circles = circles
+    
+    def actualizar_trayectorias(self, trayectoriaBlanca, trayectorias):
+        self.trayectoriaBlanca = trayectoriaBlanca
+        self.trayectorias = trayectorias
 
     def actualizar_proporcion_interfaz(self, height, width):
         self.height = height
@@ -312,6 +383,9 @@ class HiloProyeccion(threading.Thread):
         self.yiroi = yiroi
         self.xdroi = xdroi
         self.ydroi = ydroi
+
+    def ver_todas_trayectorias(self, verTodasTrayectorias):
+        self.verTodasTrayectorias = verTodasTrayectorias
 
     def detener_hilo(self):
         with self.bloqueo:
@@ -975,6 +1049,7 @@ class VentanaVideo(QMainWindow):
         else:
             self.VerTodasTrayectorias = False
             print("No se visualizan todas las trayectorias")
+        self.hiloProyeccion.ver_todas_trayectorias(self.VerTodasTrayectorias)
 
     #en base al checkbox determina si hay o no mesa abierta para el turno:
     def mesa_abierta(self):
@@ -1879,6 +1954,7 @@ class VentanaVideo(QMainWindow):
         return round(convertido,1)
 
     def graficar_trayectorias(self):
+        self.hiloProyeccion.actualizar_trayectorias(self.puntos_trayectoria_bola_blanca, self.puntos_trayectorias_bolas)
         if(self.puntos_trayectoria_bola_blanca is not None):
             for i in range(len(self.puntos_trayectoria_bola_blanca)):
                 if(i == len(self.puntos_trayectoria_bola_blanca) - 1):
