@@ -41,6 +41,7 @@ screen_width, screen_height = pyautogui.size()
 
 computo = None
 anguloRotar = 0
+aspectRatio = 2
 ResolucionX = 1280
 ResolucionY = 720
 resoluciones = [(426, 240), (640, 360), (800, 450), (896, 504), (912, 513), (928, 522), (960, 540), (1024, 576), (1152, 648),
@@ -206,14 +207,14 @@ class VentanaProyeccion(QMainWindow):
         self.move(monitor.left() + 7, monitor.top())
 
     #dibuja los circulos en la ventana de proyeccion:
-    def dibujar_circulos(self, x, y, r, color, grosor):
-        cv2.circle(self.frame, (x, y), r, color, grosor)
+    def dibujar_circulos(self, x, y, r, color, grosor,frameDestino):
+        cv2.circle(frameDestino, (x, y), r, color, grosor)
 
-    def dibujar_ROI(self, puntoA, puntoB, color, grosor):
-        cv2.rectangle(self.frame, puntoA,
+    def dibujar_ROI(self, puntoA, puntoB, color, grosor,frameDestino):
+        cv2.rectangle(frameDestino, puntoA,
                               puntoB, color, grosor)
     
-    def dibujar_trayectorias(self, trayectoriaBlanca, trayectorias, xiroi, yiroi, verTodasTrayectorias):
+    def dibujar_trayectorias(self, trayectoriaBlanca, trayectorias, xiroi, yiroi, verTodasTrayectorias,frameDestino):
         if(trayectoriaBlanca is not None):
             for i in range(len(trayectoriaBlanca)):
                 if(i == len(trayectoriaBlanca) - 1):
@@ -222,9 +223,9 @@ class VentanaProyeccion(QMainWindow):
                     else:
                         punto = trayectoriaBlanca[i].int_tuple
                     x,y = punto
-                    # x = x + xiroi
-                    # y = y + yiroi
-                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
+                    x = x + xiroi
+                    y = y + yiroi
+                    cv2.circle(frameDestino, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
                     break
                 if isinstance(trayectoriaBlanca[i], tuple):
                     puntoa = int(trayectoriaBlanca[i][0]), int(trayectoriaBlanca[i][1])
@@ -236,14 +237,14 @@ class VentanaProyeccion(QMainWindow):
                     puntob = trayectoriaBlanca[i+1].int_tuple
                 xa,ya = puntoa
                 xb,yb = puntob
-                # xa = xa + xiroi
-                # ya = ya + yiroi
-                # xb = xb + xiroi
-                # yb = yb + yiroi
+                xa = xa + xiroi
+                ya = ya + yiroi
+                xb = xb + xiroi
+                yb = yb + yiroi
                 if i == 0:
-                    cv2.line(self.frame,(xa,ya) , (xb,yb), (255,0,0), 2)
+                    cv2.line(frameDestino,(xa,ya) , (xb,yb), (255,0,0), 2)
                 else:
-                    cv2.line(self.frame,(xa,ya) , (xb,yb), (0,255,0), 2)
+                    cv2.line(frameDestino,(xa,ya) , (xb,yb), (0,255,0), 2)
         if(verTodasTrayectorias):
             if(trayectorias is not None):
                 for i in range(len(trayectorias)):
@@ -256,9 +257,9 @@ class VentanaProyeccion(QMainWindow):
                                 else:
                                     punto = listaBola[x].int_tuple
                                 x,y = punto
-                                # x = x + xiroi
-                                # y = y + yiroi
-                                cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
+                                x = x + xiroi
+                                y = y + yiroi
+                                cv2.circle(frameDestino, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
                                 break
                             if isinstance(listaBola[x], tuple):
                                 puntoa = int(listaBola[x][0]), int(listaBola[x][1])
@@ -270,28 +271,44 @@ class VentanaProyeccion(QMainWindow):
                                 puntob = listaBola[x+1].int_tuple
                             xa,ya = puntoa
                             xb,yb = puntob
-                            # xa = xa + xiroi
-                            # ya = ya + yiroi
-                            # xb = xb + xiroi
-                            # yb = yb + yiroi
-                            cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
+                            xa = xa + xiroi
+                            ya = ya + yiroi
+                            xb = xb + xiroi
+                            yb = yb + yiroi
+                            cv2.line(frameDestino, (xa,ya),(xb,yb), (0,0,255), 2)
         
+        
+    def resize_frame(self):
+        """
+        Reescala un frame de imagen a una relación de aspecto específica.
 
-    def re_init_frame(self, w, h):
-        self.framecopy = self.frame.copy()
-        if self.framecopy is not None:
-            try:
-                self.framecopy = cv2.resize(self.framecopy, (w, h), interpolation=cv2.INTER_LINEAR)
-                self.frame = self.framecopy
-            except Exception as e:
-                self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
-                self.frame = cv2.resize(self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
-                print("Se ha producido un error:",e)    
+        Args:
+            frame: El frame de imagen que deseas reescalar (de tipo numpy.ndarray).
+            new_aspect_ratio: La relación de aspecto deseada como una tupla (ancho, alto).
 
+        Returns:
+            El frame de imagen reescalado.
+        """
+        new_aspect_ratio = (2,1)
+        height, width, _ = self.frame.shape  # Obtiene las dimensiones originales del frame
+        new_width, new_height = new_aspect_ratio
+
+        # Aplica la escala manteniendo la relación de aspecto
+        if width / height > new_width / new_height:
+            # La imagen es más ancha, ajustamos la altura
+            scaled_height = int(new_width / width * height)
+            frame_resized = cv2.resize(self.frame, (new_width, scaled_height))
+            y_offset = (scaled_height - new_height) // 2
+            frame_cropped = frame_resized[y_offset:y_offset + new_height, :, :]
         else:
-            print("La imagen self.frame es nula o vacía.")
-        
-        
+            # La imagen es más alta, ajustamos el ancho
+            scaled_width = int(new_height / height * width)
+            frame_resized = cv2.resize(self.frame, (scaled_width, new_height))
+            x_offset = (scaled_width - new_width) // 2
+            frame_cropped = frame_resized[:, x_offset:x_offset + new_width, :]
+
+        return frame_cropped
+    
     def agregarImagen(self):
         # Crea un marco transparente para trabajar con él
         self.frame_copy = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
@@ -318,11 +335,6 @@ class VentanaProyeccion(QMainWindow):
 
     def dibujar(self):
         global resXProy,resYProy
-        self.frame = cv2.resize(
-            self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
-
-        #self.agregarImagen()
-
         frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
         imagen = QImage(frame_rgb.data, resXProy,resYProy, QImage.Format_RGB888)
         imagen = QPixmap.fromImage(imagen)
@@ -331,6 +343,8 @@ class VentanaProyeccion(QMainWindow):
     #limpia el frame para que no queden rastros de los circulos:
     def limpiar_circulos(self):
         self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
+        color_fondo = (255, 255, 255)  # Color blanco en formato BGR
+        self.frame[:] = color_fondo
 
 
 class HiloProyeccion(threading.Thread):
@@ -339,7 +353,7 @@ class HiloProyeccion(threading.Thread):
         self.detener = False
         self.bloqueo = bloqueo
         self.hora_inicio = datetime.now()
-        self.ventanaProyeccion = ventanaProyeccion
+        self.ventanaProyeccion = ventanaProyeccion        
         self.actualizar_interfaz = False
         self.circles = None
         self.height = None
@@ -347,23 +361,36 @@ class HiloProyeccion(threading.Thread):
         self.trayectoriaBlanca = None
         self.trayectorias = None
         self.verTodasTrayectorias = False
-        
+  
 
     def run(self):
         while not self.detener:
             time.sleep(0.0167)
             # limpiar ventana de proyeccion:
             self.ventanaProyeccion.limpiar_circulos()
+
             if self.circles is not None and self.height is not None and self.width is not None:
-                self.ventanaProyeccion.re_init_frame(self.width, self.height)
+                #Creamos un frame del tamaño del frame del video mostrado en ventanaVideo
+                self.frameAntesDeReescalar = np.zeros((self.height, self.width, 3), dtype=np.uint8)        
+
                 global minRadius, maxRadius
-                radioProm = int((minRadius+maxRadius)/2)
+                radioProm = int((minRadius+maxRadius)/2)                
                 for (x, y, r) in self.circles:
                     # se dibujan los circulos en la interfaz: 
-                    self.ventanaProyeccion.dibujar_circulos(x , y , radioProm+7, (0, 255, 0), 2)
-                    # self.ventanaProyeccion.dibujar_ROI((self.xiroi, self.yiroi),(self.xdroi, self.ydroi),(0, 255, 0),5)
-                self.ventanaProyeccion.dibujar_trayectorias(self.trayectoriaBlanca, self.trayectorias, self.xiroi, self.yiroi, self.verTodasTrayectorias)
+                    self.ventanaProyeccion.dibujar_circulos(self.xiroi + x , self.yiroi + y , radioProm, (0, 255, 0), 2,self.frameAntesDeReescalar)
+                    self.ventanaProyeccion.dibujar_ROI((self.xiroi, self.yiroi),(self.xdroi, self.ydroi),(0, 255, 0),5,self.frameAntesDeReescalar)
+                self.ventanaProyeccion.dibujar_trayectorias(self.trayectoriaBlanca, self.trayectorias, self.xiroi, self.yiroi, self.verTodasTrayectorias,self.frameAntesDeReescalar)
+                
+
+                self.roi = self.frameAntesDeReescalar[self.yiroi:self.ydroi, self.xiroi:self.xdroi]
+                global aspectRatio
+                altoDestino = int(resXProy / aspectRatio)
+                medidaFranja = int((resYProy - altoDestino)/2)
+                self.roi = cv2.resize(self.roi, (resXProy, altoDestino), interpolation=cv2.INTER_LINEAR)
+                # Superpone el pedazo de frame en el frame principal en las coordenadas especificadas
+                self.ventanaProyeccion.frame[medidaFranja:altoDestino+medidaFranja, 0:resXProy] = self.roi
             self.ventanaProyeccion.dibujar()
+
             if self.detener:
                 break
 
@@ -435,6 +462,7 @@ class VentanaVideo(QMainWindow):
         self.controlWindow.maxRadiusChanged.connect(self.onMaxRadiusChanged)
         self.controlWindow.maxCirclesChanged.connect(self.onMaxCirclesChanged)
         self.controlWindow.anguloChanged.connect(self.onAnguloChanged)
+        self.controlWindow.aspectRatioChanged.connect(self.onAspectRatioChanged)
         self.controlWindow.radioTroneraChanged.connect(self.onRadioTroneraChanged)
 
         icon_path = os.path.join(script_dir, "images/bola8.png")
@@ -846,6 +874,10 @@ class VentanaVideo(QMainWindow):
         global anguloRotar
         anguloRotar = anguloNew
 
+    def onAspectRatioChanged(self, aspectRatioNew):
+        global aspectRatio
+        aspectRatio = aspectRatioNew
+
     #cambio del radio de todas las troneras:
     def onRadioTroneraChanged(self, radioTroneraNew):
         global anguloRotar
@@ -924,10 +956,8 @@ class VentanaVideo(QMainWindow):
         ResolucionX = resolucion_encontrada[0]
         ResolucionY = resolucion_encontrada[1]
         if self.frame is not None:
-            self.frame = cv2.resize(
-                self.frame, (ResolucionX, ResolucionY), interpolation=cv2.INTER_LINEAR)
-            ventanaProyeccion.frame = cv2.resize(
-                ventanaProyeccion.frame, (resYProy, resXProy), interpolation=cv2.INTER_LINEAR)
+            self.frame = cv2.resize(self.frame, (ResolucionX, ResolucionY), interpolation=cv2.INTER_LINEAR)
+            # ventanaProyeccion.frame = cv2.resize(ventanaProyeccion.frame, (resYProy, resXProy), interpolation=cv2.INTER_LINEAR)
         self.XIROI, self.YIROI = 10, 10
         self.XDROI, self.YDROI = ResolucionY - \
             int(ResolucionY/2), ResolucionY-int(ResolucionY/2)
@@ -945,10 +975,8 @@ class VentanaVideo(QMainWindow):
             self.actualizarHough()
         self.cambio_camara(self.comboCamaras.currentIndex())
         self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
-        # self.roi = self.frame[self.YIROI:self.YDROI 
-        #                     , self.XIROI:self.XDROI]
-        # altura, ancho = self.frame.shape[:2]
-        self.hiloProyeccion.actualizar_proporcion_interfaz(ResolucionY,ResolucionX )
+        
+        self.hiloProyeccion.actualizar_proporcion_interfaz(ResolucionY,ResolucionX)
 
     #cambia la webcam a la que selecciono el usuario:
     def cambio_camara(self, index):
@@ -1556,8 +1584,7 @@ class VentanaVideo(QMainWindow):
                 self.XIROI, self.YIROI = 100, 100
                 self.XDROI, self.YDROI = 150, 150
                 self.inicio = False
-                self.hiloProyeccion.actualizar_roi(
-                    xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
+                self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
                 self.actualizar_roi()
            
             altura, ancho = self.frame.shape[:2]
@@ -1824,6 +1851,7 @@ class VentanaVideo(QMainWindow):
                 self.circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
             global circles_prev
            
+            self.hiloProyeccion.actualizar_circles([])
             if self.circles is not None:
                 if(computo == "GPU"):
                     self.circles = self.circles.download()
