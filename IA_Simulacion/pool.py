@@ -158,6 +158,8 @@ class PoolEnv:
         self.pocket_collision_handler.begin = self.ball_pocketed
         self.rail_collision_handler = self.space.add_collision_handler(1, 3)
         self.rail_collision_handler.begin = self.rail_contacted
+        self.pocket_falso_collision_handler = self.space.add_collision_handler(1, 5)
+        self.pocket_falso_collision_handler.begin = self.ball_pocketed_falso
         self.reset()
     
     def reiniciar_globales(self):
@@ -232,7 +234,7 @@ class PoolEnv:
             for pocket_falso in resto_troneras:
                 pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_falso.tolist())
                 pocket.color = pg.Color(TABLE_SIDE_COLOR)
-                pocket.collision_type = 3
+                pocket.collision_type = 5
                 pocket.elasticity = 0
                 pocket.friction = 0
                 pocket.filter = pm.ShapeFilter(categories=0b00001)
@@ -529,7 +531,20 @@ class PoolEnv:
                 data["pocket_tracking"]["first_contacted_ball"] = other_ball
         return True
 
-    
+    def ball_pocketed_falso(self, arbiter, space, data):
+        global bolasEmbocadas, trayectorias, trayectoriaBlanca
+        ball, pocket = arbiter.shapes
+        bolasEmbocadas.append(ball.copy())
+
+        try:
+            data["balls"].remove(ball)
+        except ValueError:
+            pass
+        space.remove(ball, ball.body)
+        return False
+
+        
+
     def ball_pocketed(self, arbiter, space, data):
         global bolasEmbocadas, trayectorias, trayectoriaBlanca
         # arbiter: [ball, pocket]
@@ -567,9 +582,40 @@ class PoolEnv:
 
     
     def rail_contacted(self, arbiter, space, data):
-        global cantidadRebotesBlanca, trayectorias, trayectoriaBlanca
-        ball, rail = arbiter.shapes
+        global cantidadRebotesBlanca, trayectorias, trayectoriaBlanca, bolasEmbocadas 
+        ball, railOFalsaTronera = arbiter.shapes
         # count bank/carrom shot collisions
+        # if isinstance(railOFalsaTronera, pm.Circle):
+        #     data["pocket_tracking"]["potted_balls"].append(ball.number)
+        #     bolasEmbocadas.append(ball.copy())
+
+        #     if (ball.userData == 'Blanca'):
+        #         trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
+        #     elif ( trayectorias is not None ):
+        #         index = self.balls_copy.index(ball)
+        #         trayectorias[index].append(self.destransformar_coordenadas(ball.body.position))
+        
+        #     if ball.number == 0:
+        #         data["pocket_tracking"]["cue_ball_pocketed"] = True
+        #     elif ball.number == 8:
+        #         # check for solids winning
+        #         data["pocket_tracking"]["black_ball_pocketed"] = True
+        #         if (
+        #             any([b.number >= 1 and b.number <= 7 for b in data["balls"]])
+        #             or data["pocket_tracking"]["first_contacted_ball"].number != 8
+        #         ):
+        #             data["pocket_tracking"]["is_won"] = False
+        #         else:
+        #             data["pocket_tracking"]["is_won"] = True
+        #     elif 1 <= ball.number <= 7:
+        #         data["pocket_tracking"]["total_potted_balls"] += 1
+
+        #     try:
+        #         data["balls"].remove(ball)
+        #     except ValueError:
+        #         pass
+        #     space.remove(ball, ball.body)
+        # else:
         if(ball.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
             trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
@@ -969,6 +1015,8 @@ class PoolEnv:
         self.pocket_collision_handler.data["balls"] = self.balls
         self.pocket_collision_handler.data["pocket_tracking"] = self.pocket_tracking
         self.rail_collision_handler.data["pocket_tracking"] = self.pocket_tracking
+        self.pocket_falso_collision_handler.data["balls"]=self.balls
+        self.pocket_falso_collision_handler.data["pocket_tracking"]=self.pocket_tracking
 
         if self.draw_screen:
             self.process_events()
@@ -1055,6 +1103,8 @@ class PoolEnv:
         self.pocket_collision_handler.data["balls"] = self.balls
         self.pocket_collision_handler.data["pocket_tracking"] = self.pocket_tracking
         self.rail_collision_handler.data["pocket_tracking"] = self.pocket_tracking
+        self.pocket_falso_collision_handler.data["balls"] = self.balls
+        self.pocket_falso_collision_handler.data["pocket_tracking"] = self.pocket_tracking
 
     def run(self, model=None):
         observation = self.reset()
