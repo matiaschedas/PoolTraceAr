@@ -40,37 +40,39 @@ class IA_Handler ():
 
     def invocarIA(self):
         singleton = SingletonCompartida()
+        response = None
         if singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 1:
-            self.geneticT1N.iniciar()
+            response = self.geneticT1N.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 1:
-            self.geneticT1BEN.iniciar()
+            response = self.geneticT1BEN.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 2:
-            self.geneticT2N.iniciar()
+            response = self.geneticT2N.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 2:
-            self.geneticT2BEN.iniciar()
+            response = self.geneticT2BEN.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 3:
-            self.geneticT3N.iniciar()
+            response = self.geneticT3N.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 3:
-            self.geneticT3BEN.iniciar()
+            response = self.geneticT3BEN.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 4:
-            self.geneticT4N.iniciar()
+            response = self.geneticT4N.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 4:
-            self.geneticT4BEN.iniciar()
+            response = self.geneticT4BEN.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 5:
-            self.geneticT5N.iniciar()
+            response = self.geneticT5N.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 5:
-            self.geneticT5BEN.iniciar()
+            response = self.geneticT5BEN.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 6:
-            self.geneticT6N.iniciar()
+            response = self.geneticT6N.iniciar()
         elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 6:
-            self.geneticT6BEN.iniciar()
+            response = self.geneticT6BEN.iniciar()
             
         elif singleton.bolaEnMano == True:
-            self.genetic2.iniciar() 
+            response = self.genetic2.iniciar() 
         else:
-            self.genetic.iniciar()
+            response = self.genetic.iniciar()
         self.genetic = None
         self.genetic2 = None
+        return response
     
     def verSimulacion(self, attrs, best_player):
         self.genetic.ver_simulacion(attrs,best_player)

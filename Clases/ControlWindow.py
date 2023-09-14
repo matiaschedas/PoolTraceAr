@@ -207,8 +207,8 @@ class ControlWindow(QMainWindow):
         
         aspect_ratio_label = QLabel("Relacion de aspecto")
         self.aspect_ratio_slider = QSlider(Qt.Horizontal)
-        self.aspect_ratio_slider.setRange(18, 23)
-        self.aspect_ratio_slider.setValue(int(self.aspect_ratio * 10))
+        self.aspect_ratio_slider.setRange(180, 500)
+        self.aspect_ratio_slider.setValue(int(self.aspect_ratio * 100))
         self.aspect_ratio_slider.valueChanged.connect(self.AspectRatioSliderChange)
         self.aspect_ratio_text = QLineEdit()
         self.aspect_ratio_text.setValidator(QDoubleValidator())
@@ -303,7 +303,7 @@ class ControlWindow(QMainWindow):
         self.anguloChanged.emit(self.angulo)
 
     def AspectRatioSliderChange(self, value):
-        self.aspect_ratio = value / 10.0  # Dividir por 10.0 para obtener el valor decimal
+        self.aspect_ratio = value / 100.0  # Dividir por 10.0 para obtener el valor decimal
         self.aspect_ratio_text.setText(str(self.aspect_ratio))
         self.aspectRatioChanged.emit(self.aspect_ratio)
 
@@ -337,7 +337,7 @@ class ControlWindow(QMainWindow):
     def OnAspectRatioTextChange(self, text):
         try:
             self.aspect_ratio = float(text)  # Dividir por 10 para obtener el valor decimal
-            self.aspect_ratio_slider.setValue(int(self.aspect_ratio * 10))
+            self.aspect_ratio_slider.setValue(int(self.aspect_ratio * 100))
         except ValueError:
             pass
     

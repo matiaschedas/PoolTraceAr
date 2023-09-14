@@ -13,16 +13,13 @@ class miHilo(threading.Thread):
         with self.lock:
              #aca tenemos que llamar 2 veces a la IA y 1 vez a la simulacion fisica
             ia = IA_Handler()
-            ia.invocarIA()
-            ia = None
-            respuesta = SingletonRespuesta()
+            respuesta = ia.invocarIA()
+            ia = None            
             self.tiroSeleccionado = 1
-            if respuesta.tiroValido != True or respuesta.primerContactoCorrecto!=True or respuesta.cantCorrectas==0 or respuesta.canIncorrectas>0:
-                SingletonRespuesta.delete_instance()
+            if respuesta.tiroValido != True or respuesta.primerContactoCorrecto!=True or respuesta.cantCorrectas==0 or respuesta.canIncorrectas>0:                
                 ia = IA_Handler()
-                ia.invocarIA()
-                ia = None
-                respuesta = SingletonRespuesta()
+                respuesta = ia.invocarIA()
+                ia = None                
                 self.tiroSeleccionado = 2
     def VerSimulacion(self,attrs, best_player):
         print("inicia hilo simulacion")

@@ -742,7 +742,7 @@ class PoolEnv:
         else:
             primerContactoCorrecto = False
             tiroValido = False
-        singletonRespuesta = SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca, self.attrs_respuesta, self.best_player_respuesta)
+        return SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca, self.attrs_respuesta, self.best_player_respuesta)
 
 
 
@@ -944,9 +944,11 @@ class PoolEnv:
                 RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2
             ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
             self.cue_ball.body.activate()
+        
         if(self.simulacion != True):
-            self.setear_respuesta()
-        return self.process_observation(), self.process_reward(), done, info
+            respuesta = self.setear_respuesta()        
+            return self.process_observation(), self.process_reward(), done, info, respuesta
+        else: return self.process_observation(), self.process_reward(), done, info, None
 
     def cantidad_para_embocar(self):
         cant = 0

@@ -158,19 +158,21 @@ class Genetic():
         best_player, attrs = trainer.mlp_train(attrs)
         
         pool.apply_attrs(attrs)
-        done = pool.step(best_player)[2]
+        respuesta = pool.step(best_player)[4]
         
         pool.close()
         pool = None
         trainer = None
+        return respuesta
     
     def ver_simulacion(self, attrs, best_player):
         pool = PoolEnv(training=False, graficar=True, simulacion=True)
         pool.apply_attrs(attrs)
         time.sleep(2)
-        done = pool.step(best_player)[2]
+        respuesta = pool.step(best_player)[4]
         pool.close()
         pool = None
+        return respuesta
 
 if __name__ == "__main__":
     iterations = 150

@@ -208,10 +208,11 @@ class Genetic2():
         best_player, attrs = trainer.mlp_train(attrs)
 
         pool.apply_attrs(attrs)
-        done = pool.step(best_player)[2]
+        respuesta = pool.step(best_player)[4]
         pool.close()
         pool = None
         trainer = None
+        return respuesta
 
 if __name__ == "__main__":
     iterations = 150
