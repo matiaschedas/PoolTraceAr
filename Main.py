@@ -159,13 +159,13 @@ def enable_maximize_button(window):
 
 class VentanaProyeccion(QMainWindow):
     def __init__(self):
-        global script_dir, display_monitor, resXProy, resYProy
+        global script_dir, display_monitor
         super().__init__()
-        # Establece la geometría de la ventana en pantalla completa
-        self.setWindowState(Qt.WindowFullScreen)
         self.setWindowTitle("Proyeccion")
         self.label = QLabel(self)
-        self.png_image = cv2.imread(script_dir+"\\images\\PoolTraceAr.png", cv2.IMREAD_UNCHANGED)        
+        global resXProy, resYProy
+        self.png_image = cv2.imread(script_dir+"\\images\\PoolTraceAr.png", cv2.IMREAD_UNCHANGED)
+        
         self.nroMonitor = display_monitor
         self.frame_copy = None
 
@@ -176,12 +176,13 @@ class VentanaProyeccion(QMainWindow):
         self.label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
         self.frame = cv2.resize(self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
-
+        self.resize(1920, 1080)
         # Establecer el icono de la ventana
+
         icon_path = os.path.join(script_dir, "images/proyector.png")
         icon = QIcon(icon_path)
         self.setWindowIcon(icon)
-        # self.showFullScreen() 
+        self.showFullScreen() 
         global cerrarProyeccion
         cerrarProyeccion=True
         self.close()
@@ -194,27 +195,16 @@ class VentanaProyeccion(QMainWindow):
 
     #mueve la imagen del proyector al monitor de la pc que se elija:
     def set_nroMonitor(self, numero):
-        with lockResProy:
-            global resXProy,resYProy        
-            self.nroMonitor = numero
-            monitor = QDesktopWidget().screenGeometry(self.nroMonitor)        
-            monitor_width = monitor.width()
-            monitor_height = monitor.height()
-            resXProy = monitor_width
-            resYProy = monitor_height
-            # Obtén la información del monitor actual
-            desktop = QDesktopWidget()
-            current_screen = desktop.screenNumber(self)
-
-            # Calcula el número del siguiente monitor
-            total_screens = desktop.screenCount()
-            next_screen = (current_screen + 1) % total_screens
-
-            # Obtén la geometría del siguiente monitor
-            screen_rect = desktop.screenGeometry(next_screen)
-
-            # Mueve la ventana al siguiente monitor y ajusta su tamaño
-            self.setGeometry(screen_rect)
+        global resXProy,resYProy
+        self.nroMonitor = numero
+        monitor = QDesktopWidget().screenGeometry(self.nroMonitor)        
+        monitor_width = monitor.width()
+        monitor_height = monitor.height()
+        resXProy = monitor_width
+        resYProy = monitor_height
+        self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
+        self.frame = cv2.resize(self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
+        self.move(monitor.left() + 7, monitor.top())
 
     #dibuja los circulos en la ventana de proyeccion:
     def dibujar_circulos(self, x, y, r, color, grosor,frameDestino):
@@ -341,6 +331,7 @@ class VentanaProyeccion(QMainWindow):
         imagen = QImage(frame_rgb.data, resYProy, resXProy, QImage.Format_RGBA8888)
         imagen = QPixmap.fromImage(imagen)
         self.label.setPixmap(imagen)
+        
 
     def dibujar(self):
         global resXProy,resYProy
@@ -375,28 +366,30 @@ class HiloProyeccion(threading.Thread):
     def run(self):
         while not self.detener:
             time.sleep(0.0167)
-            #limpiar ventana de proyeccion:
-            with lockResProy:
-                self.ventanaProyeccion.limpiar_circulos()
-                if self.circles is not None and self.height is not None and self.width is not None:
-                    global minRadius, maxRadius
-                    #Creamos un frame del tamaño del frame del video mostrado en ventanaVideo
-                    self.frameAntesDeReescalar = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-                    radioProm = int((minRadius+maxRadius)/2)
-                    for (x, y, r) in self.circles:
-                        #se dibujan los circulos en la interfaz: 
-                        self.ventanaProyeccion.dibujar_circulos(self.xiroi + x , self.yiroi + y , radioProm, (0, 255, 0), 2,self.frameAntesDeReescalar)
-                        self.ventanaProyeccion.dibujar_ROI((self.xiroi, self.yiroi),(self.xdroi, self.ydroi),(0, 255, 0),5,self.frameAntesDeReescalar)
-                        self.ventanaProyeccion.dibujar_trayectorias(self.trayectoriaBlanca, self.trayectorias, self.xiroi, self.yiroi, self.verTodasTrayectorias,self.frameAntesDeReescalar)
-                        self.roi = self.frameAntesDeReescalar[self.yiroi:self.ydroi, self.xiroi:self.xdroi]
-                        global aspectRatio
-                        
-                        altoDestino = int(resXProy / aspectRatio)
-                        medidaFranja = int((resYProy - altoDestino)/2)
-                        self.roi = cv2.resize(self.roi, (resXProy, altoDestino), interpolation=cv2.INTER_LINEAR)
-                        #Superpone el pedazo de frame en el frame principal en las coordenadas especificadas                    
-                        self.ventanaProyeccion.frame[medidaFranja:altoDestino+medidaFranja, 0:resXProy] = self.roi
-                self.ventanaProyeccion.dibujar()
+            # limpiar ventana de proyeccion:
+            self.ventanaProyeccion.limpiar_circulos()
+
+            if self.circles is not None and self.height is not None and self.width is not None:
+                #Creamos un frame del tamaño del frame del video mostrado en ventanaVideo
+                self.frameAntesDeReescalar = np.zeros((self.height, self.width, 3), dtype=np.uint8)        
+
+                global minRadius, maxRadius
+                radioProm = int((minRadius+maxRadius)/2)                
+                for (x, y, r) in self.circles:
+                    # se dibujan los circulos en la interfaz: 
+                    self.ventanaProyeccion.dibujar_circulos(self.xiroi + x , self.yiroi + y , radioProm, (0, 255, 0), 2,self.frameAntesDeReescalar)
+                    self.ventanaProyeccion.dibujar_ROI((self.xiroi, self.yiroi),(self.xdroi, self.ydroi),(0, 255, 0),5,self.frameAntesDeReescalar)
+                self.ventanaProyeccion.dibujar_trayectorias(self.trayectoriaBlanca, self.trayectorias, self.xiroi, self.yiroi, self.verTodasTrayectorias,self.frameAntesDeReescalar)
+                
+
+                self.roi = self.frameAntesDeReescalar[self.yiroi:self.ydroi, self.xiroi:self.xdroi]
+                global aspectRatio
+                altoDestino = int(resXProy / aspectRatio)
+                medidaFranja = int((resYProy - altoDestino)/2)
+                self.roi = cv2.resize(self.roi, (resXProy, altoDestino), interpolation=cv2.INTER_LINEAR)
+                # Superpone el pedazo de frame en el frame principal en las coordenadas especificadas
+                self.ventanaProyeccion.frame[medidaFranja:altoDestino+medidaFranja, 0:resXProy] = self.roi
+            self.ventanaProyeccion.dibujar()
 
             if self.detener:
                 break
@@ -1737,6 +1730,7 @@ class VentanaVideo(QMainWindow):
                         
                         if(self.calculandoTiro == False):
                             singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta, 4)
+                            SingletonRespuesta.delete_instance()
                             self.hiloCalculoTiro = miHilo()
                             self.hiloCalculoTiro.start()
                             self.calculandoTiro = True
@@ -1751,7 +1745,7 @@ class VentanaVideo(QMainWindow):
                             
                             self.tiro_seleccionado = self.hiloCalculoTiro.tiroSeleccionado                           
 
-                            self.respuesta_hiloTiro = SingletonRespuesta()
+                            self.respuesta_hiloTiro = self.hiloCalculoTiro.respuesta
                             self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
                             self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
                             self.velocidadRequerida = self.convertir_velocidad( self.respuesta_hiloTiro.velocidad)
@@ -2199,8 +2193,6 @@ class VentanaVideo(QMainWindow):
 
 resXProy = 1920
 resYProy = 1080
-lockResProy = threading.Lock()
-
 
 #levanta archivo de configuracion antes de iniciar todo:
 def levantar_configuracion():

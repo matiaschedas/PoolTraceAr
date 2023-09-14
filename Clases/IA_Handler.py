@@ -16,10 +16,14 @@ from IA_Simulacion.geneticT5_BolaEnMano import GeneticT5_BolaEnMano
 from IA_Simulacion.geneticT6_BolaEnMano import GeneticT6_BolaEnMano
 
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
+
 import os
 
-template_dir = '../templates/templateconfig.py'
-config_dir = '../IA_Simulacion/utils/config.py'
+directorio_actual = os.path.dirname(os.path.abspath(__file__))
+
+template_dir = os.path.join(directorio_actual, '../Templates/templateconfig.py')
+config_dir = os.path.join(directorio_actual, '../IA_Simulacion/utils/config.py')
+
 
 array_nro_tronera = [
 "(CORNER_POCKET_DIST, CORNER_POCKET_DIST)",
@@ -51,11 +55,7 @@ class IA_Handler ():
 
 
     def invocarIA(self):
-        with open(template_dir, 'r') as archivoTemplate:
-            contenidoTemplate = archivoTemplate.read()
-        contenidoTemplateModificado = contenidoTemplate.replace("POCKET_LOCATION = None", self.pockets)
-        with open(config_dir, 'w') as archivoConfig:
-            archivoConfig.write(contenidoTemplateModificado)
+        singleton = SingletonCompartida()
         if(singleton.embocarNegra == False):
             pocket = """POCKET_LOCATION = (
                     np.array(
@@ -74,40 +74,46 @@ class IA_Handler ():
             pocket = """POCKET_LOCATION = (
                 np.array(
                     [
-                    """+array_nro_tronera[singleton.nroTonera - 1]+"""
+                    """+array_nro_tronera[singleton.nroTronera - 1]+"""
                     ]
                 )
                 * ZOOM_MULTIPLIER
             ).astype(int)"""
 
-        singleton = SingletonCompartida()
+        with open(template_dir, 'r') as archivoTemplate:
+            contenidoTemplate = archivoTemplate.read()
+        contenidoTemplateModificado = contenidoTemplate.replace("POCKET_LOCATION = None", pocket)
+        with open(config_dir, 'w') as archivoConfig:
+            archivoConfig.write(contenidoTemplateModificado)
+
         response = None
-        if singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 1:
-            response = self.geneticT1N.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 1:
-            response = self.geneticT1BEN.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 2:
-            response = self.geneticT2N.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 2:
-            response = self.geneticT2BEN.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 3:
-            response = self.geneticT3N.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 3:
-            response = self.geneticT3BEN.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 4:
-            response = self.geneticT4N.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 4:
-            response = self.geneticT4BEN.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 5:
-            response = self.geneticT5N.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 5:
-            response = self.geneticT5BEN.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 6:
-            response = self.geneticT6N.iniciar()
-        elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 6:
-            response = self.geneticT6BEN.iniciar()
+
+        # if singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 1:
+        #     response = self.geneticT1N.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 1:
+        #     response = self.geneticT1BEN.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 2:
+        #     response = self.geneticT2N.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 2:
+        #     response = self.geneticT2BEN.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 3:
+        #     response = self.geneticT3N.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 3:
+        #     response = self.geneticT3BEN.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 4:
+        #     response = self.geneticT4N.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 4:
+        #     response = self.geneticT4BEN.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 5:
+        #     response = self.geneticT5N.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 5:
+        #     response = self.geneticT5BEN.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 6:
+        #     response = self.geneticT6N.iniciar()
+        # elif singleton.embocarNegra == True and singleton.bolaEnMano == True and singleton.nroTronera == 6:
+        #     response = self.geneticT6BEN.iniciar()
             
-        elif singleton.bolaEnMano == True:
+        if singleton.bolaEnMano == True:
             response = self.genetic2.iniciar() 
         else:
             response = self.genetic.iniciar()

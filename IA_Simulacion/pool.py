@@ -1,6 +1,7 @@
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.utils import *
 from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
+from IA_Simulacion.Respuesta import Respuesta
 
 import os
 import gym
@@ -99,17 +100,6 @@ class PoolEnv:
         if self.singleton.nroTronera is not None:
             self.nroTronera = self.singleton.nroTronera
 
-        self.troneras  = (np.array(
-                                [
-                                    (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                                    (WIDTH // 2, SIDE_POCKET_DIST),
-                                    (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                                    (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
-                                    (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                                ]
-                            )* ZOOM_MULTIPLIER).astype(int)
-
         # gym environment
         self.spec = None
         self.num_envs = 1
@@ -125,7 +115,7 @@ class PoolEnv:
         else:
             # ball_x, ball_y, ball_type(pocketed, solid, strips, 8-ball, cue-ball) x 16 balls
             self.table_info = np.concatenate(
-                [np.array(RAIL_POLY).flatten(), self.troneras.flatten()]
+                [np.array(RAIL_POLY).flatten(), POCKET_LOCATION.flatten()]
             )
             self.table_info = self.table_info / self.table_info.max()
             low = np.concatenate(
@@ -211,36 +201,9 @@ class PoolEnv:
             self.rails.append(rail)
 
         self.pockets = []
-        resto_troneras = None
-        if self.nroTronera != -1:
-            resto_troneras = self.troneras.copy()
-            if self.embocarNegra == True:
-                pocketElegido = None
-                i=1
-                for pocket_coord in POCKETS_COORDS:
-                    if i==self.nroTronera:
-                        pocketElegido = pocket_coord
-                        break
-                    i = i +1
-                self.troneras = (np.array(
-                [
-                pocketElegido,
-                ])* ZOOM_MULTIPLIER).astype(int)
+            
 
-                indice = np.where(np.all(resto_troneras == self.troneras, axis=1))
-                resto_troneras = np.delete(resto_troneras, indice, axis=0)
-                
-        if resto_troneras is not None:
-            for pocket_falso in resto_troneras:
-                pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_falso.tolist())
-                pocket.color = pg.Color(TABLE_SIDE_COLOR)
-                pocket.collision_type = 5
-                pocket.elasticity = 0
-                pocket.friction = 0
-                pocket.filter = pm.ShapeFilter(categories=0b00001)
-                self.pockets.append(pocket)
-
-        for pocket_loc in self.troneras:
+        for pocket_loc in POCKET_LOCATION:
             pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
             pocket.color = pg.Color(BLACK)
             pocket.collision_type = 2
@@ -742,7 +705,7 @@ class PoolEnv:
         else:
             primerContactoCorrecto = False
             tiroValido = False
-        return SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca, self.attrs_respuesta, self.best_player_respuesta)
+        return Respuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca, self.attrs_respuesta, self.best_player_respuesta)
 
 
 

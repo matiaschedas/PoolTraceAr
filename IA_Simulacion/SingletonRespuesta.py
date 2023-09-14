@@ -11,10 +11,10 @@ class SingletonRespuesta:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super(SingletonRespuesta, cls).__new__(cls)
-                    cls._instance.init_singletonCompartida(*args, **kwargs)
+                    cls._instance.init_singletonRespuesta(*args, **kwargs)
         return cls._instance
     
-    def init_singletonCompartida(self, primerContactoCorrecto=None, cantCorrectas=None, cantIncorrectas=None, embocoNegraError=None, vxBlanca=None, vyBlanca=None, cantRebotesBlanca=None, tiroValido=None, trayectorias = None, trayectoriaBlanca = None, attrs=None, best_player=None):
+    def init_singletonRespuesta(self, primerContactoCorrecto=None, cantCorrectas=None, cantIncorrectas=None, embocoNegraError=None, vxBlanca=None, vyBlanca=None, cantRebotesBlanca=None, tiroValido=None, trayectorias = None, trayectoriaBlanca = None, attrs=None, best_player=None):
         self.primerContactoCorrecto = primerContactoCorrecto
         self.cantCorrectas = cantCorrectas
         self.canIncorrectas = cantIncorrectas
@@ -41,3 +41,4 @@ class SingletonRespuesta:
     @classmethod
     def delete_instance(cls):
         cls._instance = None
+        print("instancia borrada")

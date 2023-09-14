@@ -32,22 +32,17 @@ if ZOOM_MULTIPLIER < 1:
     CORNER_POCKET_DIST = int(33 * ZOOM_MULTIPLIER)
 else:
     SIDE_POCKET_DIST = int(30 * ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(48 * ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(52 * ZOOM_MULTIPLIER)
 POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
-    np.array(
-        [
-           (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-           (WIDTH // 2, SIDE_POCKET_DIST),
-           (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-           (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-           (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
-           (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-        ]
-    )
-    * ZOOM_MULTIPLIER
-).astype(int)
+                np.array(
+                    [
+                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST)
+                    ]
+                )
+                * ZOOM_MULTIPLIER
+            ).astype(int)
 
 POCKETS_COORDS = [
             (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
@@ -87,6 +82,7 @@ HANGING_BALL_LOCATION = (
 # ======== RAILS ========#
 RAIL_FRICTION = 0.5
 RAIL_ELASTICITY = 0.8
+#Cambia el tamaño de la mesa
 RAIL_DISTANCE = int(54 * ZOOM_MULTIPLIER)
 SIDE_RAIL_OFFSET = int(11.7 * ZOOM_MULTIPLIER)
 SIDE_RAIL_OFFSET_2 = int(15 * ZOOM_MULTIPLIER)
