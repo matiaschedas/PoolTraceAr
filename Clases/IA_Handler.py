@@ -16,7 +16,19 @@ from IA_Simulacion.geneticT5_BolaEnMano import GeneticT5_BolaEnMano
 from IA_Simulacion.geneticT6_BolaEnMano import GeneticT6_BolaEnMano
 
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
+import os
 
+template_dir = '../templates/templateconfig.py'
+config_dir = '../IA_Simulacion/utils/config.py'
+
+array_nro_tronera = [
+"(CORNER_POCKET_DIST, CORNER_POCKET_DIST)",
+"(WIDTH // 2, SIDE_POCKET_DIST)",
+"(WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST)",
+"(CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST)",
+"(WIDTH // 2, HEIGHT - SIDE_POCKET_DIST)",
+"(WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST)"
+]
 class IA_Handler ():
 
     def __init__(self):
@@ -39,6 +51,35 @@ class IA_Handler ():
 
 
     def invocarIA(self):
+        with open(template_dir, 'r') as archivoTemplate:
+            contenidoTemplate = archivoTemplate.read()
+        contenidoTemplateModificado = contenidoTemplate.replace("POCKET_LOCATION = None", self.pockets)
+        with open(config_dir, 'w') as archivoConfig:
+            archivoConfig.write(contenidoTemplateModificado)
+        if(singleton.embocarNegra == False):
+            pocket = """POCKET_LOCATION = (
+                    np.array(
+                        [
+                        (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                        (WIDTH // 2, SIDE_POCKET_DIST),
+                        (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                        (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                        (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+                        (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                        ]
+                    )
+                    * ZOOM_MULTIPLIER
+                ).astype(int)"""
+        if(singleton.embocarNegra == True):
+            pocket = """POCKET_LOCATION = (
+                np.array(
+                    [
+                    """+array_nro_tronera[singleton.nroTonera - 1]+"""
+                    ]
+                )
+                * ZOOM_MULTIPLIER
+            ).astype(int)"""
+
         singleton = SingletonCompartida()
         response = None
         if singleton.embocarNegra == True and singleton.bolaEnMano == False and singleton.nroTronera == 1:

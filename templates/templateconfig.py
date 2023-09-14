@@ -1,0 +1,170 @@
+import numpy as np
+
+# ======== UNIVERSAL ========#
+FPS = 500
+ZOOM_MULTIPLIER = 1  # change screen size, can boost fps
+TOTAL_FOUL_TIMES = 25  # amount of fouls before end the game
+WIDTH, HEIGHT = 1000, 500
+
+NUM_BALLS = 16  # number of balls generated on table (16 is a normal game)
+TRAINING = True  # training or playing (fast dt)
+DRAW_SCREEN = False  # draw screen (will not affect if using image observation or not training)
+REWARD_BY_STEPS = True  # whether calculate reward based on steps or episodes
+OBSERVATION_TYPE = "none" # choose between ["none, "vector", "image"]
+VELOCITY_LIMIT = int(320 * ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
+
+# dimension of image observation if used
+IMAGE_WIDTH = 120
+IMAGE_HEIGHT = int(IMAGE_WIDTH * (HEIGHT / WIDTH))
+
+
+# ======== BALLS ========#
+BALL_MASS = 10
+BALL_FRICTION = 0.9
+BALL_ELASTICITY = 0.95
+BALL_DAMPING_THRESHOLD = 9
+BALL_RADIUS = int(12 * ZOOM_MULTIPLIER)
+
+
+# ======== POCKETS ========#
+if ZOOM_MULTIPLIER < 1:
+    SIDE_POCKET_DIST = None
+    CORNER_POCKET_DIST = None
+else:
+    SIDE_POCKET_DIST = None
+    CORNER_POCKET_DIST = None
+POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
+
+POCKET_LOCATION = None
+
+POCKETS_COORDS = [
+            (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+           (WIDTH // 2, SIDE_POCKET_DIST),
+           (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+           (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+           (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+           (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST)]
+
+HANGING_BALL_OFFSET = int(45 * ZOOM_MULTIPLIER)
+HANGING_BALL_LOCATION = (
+    np.array(
+        [
+            (
+                CORNER_POCKET_DIST + HANGING_BALL_OFFSET,
+                CORNER_POCKET_DIST + HANGING_BALL_OFFSET,
+            ),
+            (WIDTH // 2, SIDE_POCKET_DIST + HANGING_BALL_OFFSET),
+            (
+                WIDTH - CORNER_POCKET_DIST - HANGING_BALL_OFFSET,
+                CORNER_POCKET_DIST + HANGING_BALL_OFFSET,
+            ),
+            (
+                CORNER_POCKET_DIST + HANGING_BALL_OFFSET,
+                HEIGHT - CORNER_POCKET_DIST - HANGING_BALL_OFFSET,
+            ),
+            (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST - HANGING_BALL_OFFSET),
+            (
+                WIDTH - CORNER_POCKET_DIST - HANGING_BALL_OFFSET,
+                HEIGHT - CORNER_POCKET_DIST - HANGING_BALL_OFFSET,
+            ),
+        ]
+    )
+    * ZOOM_MULTIPLIER
+).astype(int)
+
+# ======== RAILS ========#
+RAIL_FRICTION = 0.5
+RAIL_ELASTICITY = 0.8
+#Cambia el tamaño de la mesa
+RAIL_DISTANCE = None
+SIDE_RAIL_OFFSET = int(11.7 * ZOOM_MULTIPLIER)
+SIDE_RAIL_OFFSET_2 = int(15 * ZOOM_MULTIPLIER)
+CORNER_RAIL_OFFSET = int(31.7 * ZOOM_MULTIPLIER)
+
+RAIL_LOCATION = (
+    np.array(
+        [RAIL_DISTANCE, WIDTH - RAIL_DISTANCE, RAIL_DISTANCE, HEIGHT - RAIL_DISTANCE]
+    )
+    * ZOOM_MULTIPLIER
+).astype(int)
+
+# top-left --> top-right --> bottom-right --> bottom-left
+RAIL_POLY = [
+    [
+        [0, CORNER_RAIL_OFFSET],
+        [RAIL_LOCATION[0], RAIL_LOCATION[2] + CORNER_RAIL_OFFSET],
+        [RAIL_LOCATION[0], RAIL_LOCATION[3] - CORNER_RAIL_OFFSET],
+        [0, int(HEIGHT * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET],
+    ],  # left
+    [
+        [CORNER_RAIL_OFFSET, 0],
+        [int(WIDTH * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2, 0],
+        [
+            int(WIDTH * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
+            RAIL_LOCATION[2],
+        ],
+        [RAIL_LOCATION[0] + CORNER_RAIL_OFFSET, RAIL_LOCATION[2]],
+    ],  # top 1
+    [
+        [int(WIDTH * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2, 0],
+        [int(WIDTH * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET, 0],
+        [RAIL_LOCATION[1] - CORNER_RAIL_OFFSET, RAIL_LOCATION[2]],
+        [
+            int(WIDTH * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
+            RAIL_LOCATION[2],
+        ],
+    ],  # top 2
+    [
+        [RAIL_LOCATION[1], RAIL_LOCATION[2] + CORNER_RAIL_OFFSET],
+        [int(WIDTH * ZOOM_MULTIPLIER), CORNER_RAIL_OFFSET],
+        [
+            int(WIDTH * ZOOM_MULTIPLIER),
+            int(HEIGHT * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
+        ],
+        [RAIL_LOCATION[1], RAIL_LOCATION[3] - CORNER_RAIL_OFFSET],
+    ],  # right
+    [
+        [RAIL_LOCATION[0] + CORNER_RAIL_OFFSET, RAIL_LOCATION[3]],
+        [
+            int(WIDTH * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
+            RAIL_LOCATION[3],
+        ],
+        [
+            int(WIDTH * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2,
+            int(HEIGHT * ZOOM_MULTIPLIER),
+        ],
+        [CORNER_RAIL_OFFSET, int(HEIGHT * ZOOM_MULTIPLIER)],
+    ],  # bottom 1
+    [
+        [
+            int(WIDTH * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
+            RAIL_LOCATION[3],
+        ],
+        [RAIL_LOCATION[1] - CORNER_RAIL_OFFSET, RAIL_LOCATION[3]],
+        [
+            int(WIDTH * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
+            int(HEIGHT * ZOOM_MULTIPLIER),
+        ],
+        [
+            int(WIDTH * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2,
+            int(HEIGHT * ZOOM_MULTIPLIER),
+        ],
+    ],  # bottom 2
+]
+
+
+# ======== COLORS ========#
+BLACK = (0, 0, 0)
+GRAY = (127, 127, 127)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+MAGENTA = (0, 255, 255)
+CYAN = (255, 0, 255)
+
+TABLE_COLOR = (0, 100, 0)
+TABLE_SIDE_COLOR = (200, 200, 0)
+SOLIDS_COLOR = (0, 0, 255)
+STRIPS_COLOR = (255, 0, 0)
