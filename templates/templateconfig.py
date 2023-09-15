@@ -37,6 +37,8 @@ POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = None
 
+POCKET_LOCATION_RESTO = []
+
 POCKETS_COORDS = [
             (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
            (WIDTH // 2, SIDE_POCKET_DIST),
@@ -87,6 +89,7 @@ RAIL_LOCATION = (
     )
     * ZOOM_MULTIPLIER
 ).astype(int)
+
 
 # top-left --> top-right --> bottom-right --> bottom-left
 RAIL_POLY = [

@@ -70,19 +70,34 @@ class IA_Handler ():
                     )
                     * ZOOM_MULTIPLIER
                 ).astype(int)"""
+            pocket_resto = "POCKET_LOCATION_RESTO = []"
+            
         if(singleton.embocarNegra == True):
             pocket = """POCKET_LOCATION = (
-                np.array(
-                    [
-                    """+array_nro_tronera[singleton.nroTronera - 1]+"""
-                    ]
-                )
-                * ZOOM_MULTIPLIER
-            ).astype(int)"""
+                        np.array(
+                            [
+                            """+array_nro_tronera[singleton.nroTronera - 1]+"""
+                            ]
+                        )
+                        * ZOOM_MULTIPLIER
+                    ).astype(int)"""
+            resto = ""
+            for i in range(6):
+                if i != singleton.nroTronera-1:
+                   resto += array_nro_tronera[i]+","
+            pocket_resto = """POCKET_LOCATION_RESTO = (
+                        np.array(
+                            [
+                            """+resto+"""
+                            ]
+                        )
+                        * ZOOM_MULTIPLIER
+                    ).astype(int)"""
 
         with open(template_dir, 'r') as archivoTemplate:
             contenidoTemplate = archivoTemplate.read()
         contenidoTemplateModificado = contenidoTemplate.replace("POCKET_LOCATION = None", pocket)
+        contenidoTemplateModificado = contenidoTemplateModificado.replace("POCKET_LOCATION_RESTO = []", pocket_resto)
         with open(config_dir, 'w') as archivoConfig:
             archivoConfig.write(contenidoTemplateModificado)
 

@@ -201,7 +201,15 @@ class PoolEnv:
             self.rails.append(rail)
 
         self.pockets = []
-            
+     
+        for pocket_loc in POCKET_LOCATION_RESTO:
+            pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+            pocket.color = pg.Color(TABLE_SIDE_COLOR)
+            pocket.collision_type = 5
+            pocket.elasticity = 0
+            pocket.friction = 0
+            pocket.filter = pm.ShapeFilter(categories=0b00001)
+            self.pockets.append(pocket)
 
         for pocket_loc in POCKET_LOCATION:
             pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
