@@ -136,12 +136,12 @@ class Fisicas():
             if i==10 or i == 11:
                 puntos[i]=(self.XIROI-self.XIROI, yp-self.YIROI)
 
-        # walls = [[(puntos[0]),(puntos[1])],
-        #          [(puntos[2]),(puntos[3])],
-        #          [(puntos[4]),(puntos[5])],
-        #          [(puntos[6]),(puntos[7])],
-        #          [(puntos[8]),(puntos[9])],
-        #          [(puntos[10]),(puntos[11])]]
+        walls = [[(puntos[0]),(puntos[1])],
+                 [(puntos[2]),(puntos[3])],
+                 [(puntos[4]),(puntos[5])],
+                 [(puntos[6]),(puntos[7])],
+                 [(puntos[8]),(puntos[9])],
+                 [(puntos[10]),(puntos[11])]]
             
         # walls = [[(0+self.radioTronera,0),(mitad-self.radioTronera,0)],
         #          [(mitad+self.radioTronera,0),(width-self.radioTronera,0)],
@@ -261,6 +261,7 @@ class Fisicas():
             pygame.display.set_caption("Billiards Simulation")
             clock = pygame.time.Clock()
             table_image = pygame.image.load(script_dir + "\\mesa.png").convert_alpha()
+            # table_image = pygame.transform.scale(table_image, (screen_width+40, screen_height+50))
             table_image = pygame.transform.scale(table_image, (screen_width+40, screen_height+50))
             screen.fill((50, 50, 50))
 
