@@ -31,27 +31,25 @@ if ZOOM_MULTIPLIER < 1:
     SIDE_POCKET_DIST = int(21 * ZOOM_MULTIPLIER)
     CORNER_POCKET_DIST = int(33 * ZOOM_MULTIPLIER)
 else:
-    SIDE_POCKET_DIST = int(30 * ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(52 * ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(21 * ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(33 * ZOOM_MULTIPLIER)
 POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
-                        np.array(
-                            [
-                            (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST)
-                            ]
-                        )
-                        * ZOOM_MULTIPLIER
-                    ).astype(int)
+                    np.array(
+                        [
+                        (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                        (WIDTH // 2, SIDE_POCKET_DIST),
+                        (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                        (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                        (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+                        (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                        ]
+                    )
+                    * ZOOM_MULTIPLIER
+                ).astype(int)
 
-POCKET_LOCATION_RESTO = (
-                        np.array(
-                            [
-                            (CORNER_POCKET_DIST, CORNER_POCKET_DIST),(WIDTH // 2, SIDE_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),(WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                            ]
-                        )
-                        * ZOOM_MULTIPLIER
-                    ).astype(int)
+POCKET_LOCATION_RESTO = []
 
 POCKETS_COORDS = [
             (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
