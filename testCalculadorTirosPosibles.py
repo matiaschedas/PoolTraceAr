@@ -1,11 +1,10 @@
 from CalculadorTirosFisica import CalculadorTirosFisica
 from time import time
 
-
 ROI=(693.0, 351.0)
 XIROI=184
 YIROI=84
-XDROI=877 
+XDROI=877
 YDROI=435
 troneras=[(174, 78),(533, 73),(889, 78), (174, 448), (532, 453),(890, 449)]
 radioTronera=19
@@ -16,7 +15,10 @@ bolaSeleccionada=(100+XIROI,50+YIROI,8) #
 bolaBlanca=(350+XIROI,100+YIROI,8)
 bs=(bolaSeleccionada[0]-XIROI,bolaSeleccionada[1]-YIROI,bolaSeleccionada[2])
 bb=(bolaBlanca[0]-XIROI,bolaBlanca[1]-YIROI,bolaBlanca[2])
+bs=(bolaSeleccionada[0], bolaSeleccionada[1], bolaSeleccionada[2])
+bb=(bolaBlanca[0], bolaBlanca[1], bolaBlanca[2])
 
+#la lista apareada no lleva la suma de ROI
 listaApareada=[
  (bb, 'crop_1_20230829_165538.png', 'Blanca'),
  ((394, 800, 8), 'crop_2_20230829_165538.png', 'Negra'),
@@ -32,5 +34,3 @@ start=time()
 calculador.calcular(bs,1,50)
 print(time()-start)
 #calculador.prueba_tiro_banda_borrar_despues()
-
-

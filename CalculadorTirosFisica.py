@@ -7,8 +7,6 @@ class CalculadorTirosFisica:
         self.verGrafico=verGrafico
         self.verResultadosConsola=verResultadosConsola
         self.listaApareada=listaApareada
-        self.bolaSeleccionada=bolaSeleccionada
-        self.bolaBlanca=bolaBlanca
         self.ROI=ROI
         self.XIROI=XIROI
         self.YIROI=YIROI
@@ -54,9 +52,7 @@ class CalculadorTirosFisica:
                     self.fisicas.setear_velocidad_inicial_blanca(vector_velocidad[0]*velocidad,vector_velocidad[1]*velocidad)
                     self.fisicas.simular()
                 return True
-            
-
-
+ 
 
     def calcular_tiro_posible(self):
         for tronera in self.tronerasSinROI:
@@ -66,7 +62,7 @@ class CalculadorTirosFisica:
         return  None
 
                 
-                
+           
 
     
     def camino_libre(obj1,obj2):
@@ -76,7 +72,6 @@ class CalculadorTirosFisica:
         (vx,vy)=self.tiro_directo(bolaSeleccionada,self.tronerasSinROI[tronera-1])
         self.fisicas.setear_velocidad_inicial_blanca(vx*velocidad,vy*velocidad) 
         trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, entroLaBlanca, entroLaSeleccionada, entroLaNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias=self.fisicas.simular()
-
 
     def definir_signos(self,inicio,fin):
         return 1 if inicio[0]<fin[0] else -1,1 if inicio[1]<fin[1] else -1
@@ -92,7 +87,6 @@ class CalculadorTirosFisica:
         direccion=self.normalizar_vector((xo-xt,yo-yt))
         xi,yi=(xo+self.diametroBola*direccion[0],yo+self.diametroBola*direccion[1])
         return self.normalizar_vector((xi-xb,yi-yb))
-    
 
 
     def test_tiro_con_banda(self,bolaSeleccionada,tronera,banda):
