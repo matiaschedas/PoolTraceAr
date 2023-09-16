@@ -69,11 +69,11 @@ class IA_Handler ():
         #hacerlo configurable por el usuario, mesa chica o mesa grande:
         #medidas para mesa grande:
             #rail_distance: int(54 * ZOOM_MULTIPLIER)
-            #side_pocket_dist: int(21 * ZOOM_MULTIPLIER)
-            #corner_pocket_dist: int(33 * ZOOM_MULTIPLIER)
+            #side_pocket_dist: int(30 * ZOOM_MULTIPLIER)
+            #corner_pocket_dist: int(52 * ZOOM_MULTIPLIER)
         rail_distance = "RAIL_DISTANCE = int(54 * ZOOM_MULTIPLIER)"
-        side_pocket_dist = "SIDE_POCKET_DIST = int(21 * ZOOM_MULTIPLIER)"
-        corner_pocket_dist = "CORNER_POCKET_DIST = int(33 * ZOOM_MULTIPLIER)"
+        side_pocket_dist = "SIDE_POCKET_DIST = int(30 * ZOOM_MULTIPLIER)"
+        corner_pocket_dist = "CORNER_POCKET_DIST = int(52 * ZOOM_MULTIPLIER)"
 
         with open(template_dir, 'r') as archivoTemplate:
             contenidoTemplate = archivoTemplate.read()
