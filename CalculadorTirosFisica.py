@@ -22,7 +22,7 @@ class CalculadorTirosFisica:
         self.dosTiros=dosTiros
         self.mesaAbierta=mesaAbierta
         self.fisicas = Fisicas(verSimulacion, verGrafico,verResultadosConsola, listaApareada, bolaSeleccionada, bolaBlanca, ROI, XIROI, YIROI,XDROI,YDROI, troneras,radioTronera, radioBolas,puntosParedes,bolaEnMano,dosTiros,mesaAbierta)
-        self.velocidades=[50,60,40,20]
+        self.velocidades=[100,60,40,20]
         self.bolaBlancaSinROI=(bolaBlanca[0]-XIROI,bolaBlanca[1]-YIROI,bolaBlanca[2])
         self.bolaSeleccionadaSinROI=(bolaSeleccionada[0]-XIROI,bolaSeleccionada[1]-YIROI,bolaBlanca[2])
         self.fisicas.setear_pasos_tiempo(1000)
@@ -40,7 +40,7 @@ class CalculadorTirosFisica:
     def simular_tiro(self, vector_velocidad):
         for velocidad in self.velocidades:
             self.fisicas.setear_bolas_y_reiniciar_simulacion(self.listaApareada,self.bolaSeleccionada,self.bolaBlanca)
-            self.fisicas.setear_ver_simulacion_graficos_resultados(True,True,True)
+            self.fisicas.setear_ver_simulacion_graficos_resultados(False,False,False)
             self.fisicas.setear_velocidad_inicial_blanca(vector_velocidad[0]*velocidad,vector_velocidad[1]*velocidad)
             trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, entroLaBlanca, entroLaSeleccionada, entroLaNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias=self.fisicas.simular()
             with open("trayec.txt","w") as file:
@@ -53,22 +53,20 @@ class CalculadorTirosFisica:
                     self.fisicas.setear_ver_simulacion_graficos_resultados(True,True,True)
                     self.fisicas.setear_velocidad_inicial_blanca(vector_velocidad[0]*velocidad,vector_velocidad[1]*velocidad)
                     self.fisicas.simular()
-                return True
-            
-
-
+                return True        
 
     def calcular_tiro_posible(self):
+
+        if self.bolaEnMano == True:
+            self.calcular_con_bolaEnMano()
+            return None
+
         for tronera in self.tronerasSinROI:
             vector_velocidad=self.tiro_directo(self.bolaSeleccionadaSinROI,tronera)    
             if vector_velocidad is not None and self.simular_tiro(vector_velocidad) is True:
                 print("Tiro posible!")
         return  None
-
                 
-                
-
-    
     def camino_libre(obj1,obj2):
         return None
     
@@ -77,6 +75,16 @@ class CalculadorTirosFisica:
         self.fisicas.setear_velocidad_inicial_blanca(vx*velocidad,vy*velocidad) 
         trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, entroLaBlanca, entroLaSeleccionada, entroLaNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias=self.fisicas.simular()
 
+    def calcular_con_bolaEnMano(self):
+        if (self.bolaSeleccionadaSinROI[0] < self.tronerasSinROI[1][0]):
+            print("No hay tiro directo con bola en mano. [Implementar tiro con banda].")
+            return None
+
+        troneras_permitidas = [2, 5]
+        for tronera in troneras_permitidas:
+            vector_velocidad=self.tiro_directo(self.bolaSeleccionadaSinROI, self.tronerasSinROI[tronera])    
+            if vector_velocidad is not None and self.simular_tiro(vector_velocidad) is True:
+                print("Tiro posible!")
 
     def definir_signos(self,inicio,fin):
         return 1 if inicio[0]<fin[0] else -1,1 if inicio[1]<fin[1] else -1
@@ -93,8 +101,6 @@ class CalculadorTirosFisica:
         xi,yi=(xo+self.diametroBola*direccion[0],yo+self.diametroBola*direccion[1])
         return self.normalizar_vector((xi-xb,yi-yb))
     
-
-
     def test_tiro_con_banda(self,bolaSeleccionada,tronera,banda):
         vx,vy=self.tiro_con_banda(self.bolaSeleccionadaSinROI,self.tronerasSinROI[tronera-1],banda)
         self.simular_tiro((vx,vy))
