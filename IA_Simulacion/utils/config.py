@@ -17,7 +17,7 @@ VELOCITY_LIMIT = int(320 * ZOOM_MULTIPLIER)  # max velocity of cue ball default:
 IMAGE_WIDTH = 120
 IMAGE_HEIGHT = int(IMAGE_WIDTH * (HEIGHT / WIDTH))
 
-BOLA_EN_MANO = True
+BOLA_EN_MANO = False
 # ======== BALLS ========#
 BALL_MASS = 10
 BALL_FRICTION = 0.9
@@ -36,20 +36,22 @@ else:
 POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
-                    np.array(
-                        [
-                        (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                        (WIDTH // 2, SIDE_POCKET_DIST),
-                        (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                        (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                        (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
-                        (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                        ]
-                    )
-                    * ZOOM_MULTIPLIER
-                ).astype(int)
+                        np.array(
+                            [
+                            (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST)
+                            ]
+                        )
+                        * ZOOM_MULTIPLIER
+                    ).astype(int)
 
-POCKET_LOCATION_RESTO = []
+POCKET_LOCATION_RESTO = (
+                        np.array(
+                            [
+                            (CORNER_POCKET_DIST, CORNER_POCKET_DIST),(WIDTH // 2, SIDE_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),(CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                            ]
+                        )
+                        * ZOOM_MULTIPLIER
+                    ).astype(int)
 
 POCKETS_COORDS = [
             (CORNER_POCKET_DIST, CORNER_POCKET_DIST),

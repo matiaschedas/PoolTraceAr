@@ -493,7 +493,7 @@ class VentanaVideo(QMainWindow):
         # region coordenadas de huecos(troneras):
         self.troneras =[(0, 0),(0, 0),(0, 0),(0, 0),(0, 0),(0, 0)]
         self.troneras_labels = ["T1", "T2", "T3", "T4", "T5", "T6"]
-        self.troneras_labels_usuario = ["T1", "T4", "T6", "T3", "T2", "T5"]
+        self.troneras_labels_usuario = ["T1", "T6", "T4", "T3", "T2", "T5"]
         self.puntos_paredes = [(0,0),(5,0),(10,0),(15,0),(0,5),(20,5),(0,10),(20,10),(0,15),(5,15),(10,15),(15,15)]
         self.puntos_paredes_labels =["1","2","3","4","5","6","7","8","9","10","11","12"]
         self.radioTronera = int(radioMax)+3
@@ -672,10 +672,12 @@ class VentanaVideo(QMainWindow):
         if estado_actual == True:
             self.tiroFinal=True
             self.comboTroneraTiroFinal.show()
+            self.troneraTiroFinal=self.comboTroneraTiroFinal.currentIndex()+1
             print("Hay Tiro Final")
         else:
             self.tiroFinal = False
             self.comboTroneraTiroFinal.hide()
+            self.troneraTiroFinal=-1
             print("No Hay Tiro Final")
 
     def cambio_tronera_tiro_final(self):
@@ -1675,7 +1677,21 @@ class VentanaVideo(QMainWindow):
             if( self.listaEtiquetada is not None and self.etiquetando==False):
                 #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
                 if(self.calculandoTiro == False):
-                    if( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
+                    if(self.checkTiroFinal.isChecked() and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==False):
+                        print("Error, no selecciono la bola negra para el tiro final")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif(self.checkTiroFinal.isChecked() == False and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True):
+                        print("Error, selecciono la bola negra pero no indico la tronera")
+                        self.deseleccionar_bola()
+                        self.listaEtiquetada.clear()
+                        self.listaEtiquetada = None
+                        self.ultimaListaEtiquetada = None
+                        self.repetirSimulacion = False
+                    elif( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
                         print("Error, las bolas cambiaron de posicion.")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
@@ -1842,10 +1858,11 @@ class VentanaVideo(QMainWindow):
                         self.repitiendo_simulacion = False 
                 
                 self.repetirSimulacion = False
-                    
-            for tronera, label in zip(self.troneras, self.troneras_labels_usuario):
-                    x, y = tronera
-                    cv2.putText(self.frame, label, (x , y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+
+            if self.verROI == False:
+                for tronera, label in zip(self.troneras, self.troneras_labels_usuario):
+                        x, y = tronera
+                        cv2.putText(self.frame, label, (x , y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
             if self.verROI:
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
@@ -1854,7 +1871,7 @@ class VentanaVideo(QMainWindow):
                 for tronera, label in zip(self.troneras, self.troneras_labels):
                     x, y = tronera
                     cv2.circle(self.frame, (x, y), self.radioTronera, (255, 255, 0), 2)
-                    cv2.putText(self.frame, label, (x + 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+                    cv2.putText(self.frame, label, (x , y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
                 #grafica los puntos de paredes:
                 for punto, label in zip(self.puntos_paredes, self.puntos_paredes_labels):
