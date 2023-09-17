@@ -473,13 +473,13 @@ class PoolEnv:
 
         if(ball_shape_1.userData=="Blanca" and primerContacto == None):
             primerContacto = ball_shape_2
-            if(primerContactoCoordenada == None):
-                primerContactoCoordenada = ball_shape_2.copy()
+        if ball_shape_1.userData=="Blanca" and primerContactoCoordenada == None:
+            primerContactoCoordenada = ball_shape_2.copy()
             
         elif (ball_shape_2.userData == "Blanca" and primerContacto == None):
             primerContacto = ball_shape_1 
-            if primerContactoCoordenada == None:
-                primerContactoCoordenada = ball_shape_1.copy()
+        if ball_shape_2.userData == "Blanca"  and primerContactoCoordenada == None:
+            primerContactoCoordenada = ball_shape_1.copy()
 
         if( trayectorias is not None ):
             if(ball_shape_1.userData == 'Blanca' ):
@@ -703,6 +703,7 @@ class PoolEnv:
         if primerContactoCoordenada is not None and primerContactoCoordenada != 1:
             if primerContactoCoordenada.body.position[0] < (WIDTH/2):
                 self.bola_en_mano_error = True
+                self.reward = 0
         print(self.process_reward())
         return reward
 

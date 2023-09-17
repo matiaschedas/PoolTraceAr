@@ -13,6 +13,7 @@ class Player:
         self.low = self.env.action_space.low[0]
         self.high = self.env.action_space.high[0]
         self.bola_en_mano = bola_en_mano
+        self.BolaEnManoError = False
 
     
         velocidades = np.random.uniform(low=self.low, high=self.high, size=2)
@@ -42,6 +43,7 @@ class Player:
 
     def step(self):
         self.reward = self.env.step(self.v)[1]
+        self.BolaEnManoError = self.env.bola_en_mano_error
 
     def mutate(self, mu=1, bola_en_mano=True):
         rand = np.random.uniform(0, 1)
@@ -138,7 +140,7 @@ class GeneticAlgorithm:
                     self.player_rewards, (player.reward + 2) ** 3
                 )
 
-            if self.best_player.reward < player.reward and player.env.bola_en_mano_error == False:
+            if self.best_player.reward < player.reward and player.BolaEnManoError == False:
                 self.best_player = player
                 direccion_radianes = math.atan2(self.best_player.v[1],self.best_player.v[0])
                 grados = math.degrees(direccion_radianes)
