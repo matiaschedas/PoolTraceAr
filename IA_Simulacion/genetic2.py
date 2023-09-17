@@ -138,8 +138,12 @@ class GeneticAlgorithm:
                     self.player_rewards, (player.reward + 2) ** 3
                 )
 
-            if self.best_player.reward < player.reward:
+            if self.best_player.reward < player.reward and player.env.bola_en_mano_error == False:
                 self.best_player = player
+                direccion_radianes = math.atan2(self.best_player.v[1],self.best_player.v[0])
+                grados = math.degrees(direccion_radianes)
+                if grados < 0:
+                    grados += 360
             if self.best_player.reward > score_threshold:
                 break
             self.i += 1
@@ -201,7 +205,7 @@ class Genetic2():
     def iniciar(self):
         #original: 150, testear con otros valores y ver rendimiento
         iterations = 150
-        pool = PoolEnv(training=False, graficar=False)
+        pool = PoolEnv(training=False, graficar=False, bola_en_mano=True)
         trainer = Trainer(iterations)
  
         attrs = pool.get_attrs()

@@ -17,7 +17,7 @@ VELOCITY_LIMIT = int(320 * ZOOM_MULTIPLIER)  # max velocity of cue ball default:
 IMAGE_WIDTH = 120
 IMAGE_HEIGHT = int(IMAGE_WIDTH * (HEIGHT / WIDTH))
 
-
+BOLA_EN_MANO = True
 # ======== BALLS ========#
 BALL_MASS = 10
 BALL_FRICTION = 0.9

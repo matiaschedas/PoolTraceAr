@@ -493,6 +493,7 @@ class VentanaVideo(QMainWindow):
         # region coordenadas de huecos(troneras):
         self.troneras =[(0, 0),(0, 0),(0, 0),(0, 0),(0, 0),(0, 0)]
         self.troneras_labels = ["T1", "T2", "T3", "T4", "T5", "T6"]
+        self.troneras_labels_usuario = ["T1", "T4", "T6", "T3", "T2", "T5"]
         self.puntos_paredes = [(0,0),(5,0),(10,0),(15,0),(0,5),(20,5),(0,10),(20,10),(0,15),(5,15),(10,15),(15,15)]
         self.puntos_paredes_labels =["1","2","3","4","5","6","7","8","9","10","11","12"]
         self.radioTronera = int(radioMax)+3
@@ -507,6 +508,9 @@ class VentanaVideo(QMainWindow):
         self.hayMesaAbierta = False
         self.hayMovimiento = False
         self.bolaBlanca = None
+
+        self.tiroFinal = False
+        self.troneraTiroFinal=-1
         # endregion
 
         # region Configuraciones opencv
@@ -569,6 +573,13 @@ class VentanaVideo(QMainWindow):
         self.botonVerSimulacion.setEnabled = False
         self.botonVerSimulacion.clicked.connect(self.ver_simulacion)
 
+        self.labelTiroFinal = self.crear_label("Tiro Final: ", 5, 820, 100, 25)
+        self.checkTiroFinal = self.crear_checkbox(80, 820, 50, 30)
+        self.checkTiroFinal.stateChanged.connect(self.tiro_final)
+        self.comboTroneraTiroFinal=self.crear_combobox(self.troneras_labels,80,820,40,30,0)
+        self.comboTroneraTiroFinal.currentIndexChanged.connect(self.cambio_tronera_tiro_final)
+        self.comboTroneraTiroFinal.adjustSize()
+
         self.botonGuardarPreset.clicked.connect(self.guardar_preset)
         self.botonCargarPreset.clicked.connect(self.cargar_preset)
         # endregion
@@ -611,10 +622,14 @@ class VentanaVideo(QMainWindow):
         self.layout2.addWidget(self.checkMesaAbierta, 3, 2)
         self.layout2.addWidget(self.checkTrayectorias,3,3)
         self.layout2.addWidget(self.botonVerSimulacion,3,4)
+        self.layout2.addWidget(self.labelTiroFinal, 1,5)
+        self.layout2.addWidget(self.checkTiroFinal, 2, 5)
+        self.layout2.addWidget(self.comboTroneraTiroFinal, 3,5)
+        self.comboTroneraTiroFinal.hide()
 
         # Agregar el contador de FPS con alineación a la esquina inferior derecha
-        self.layout2.addWidget(self.labelFps, 3, 10)
-        self.layout2.addWidget(self.fpsText, 3, 11, Qt.AlignBottom | Qt.AlignRight)
+        self.layout2.addWidget(self.labelFps, 3, 9)
+        self.layout2.addWidget(self.fpsText, 3, 10, Qt.AlignBottom | Qt.AlignRight)
 
         self.setCentralWidget(widgetPrincipal)
         
@@ -651,6 +666,22 @@ class VentanaVideo(QMainWindow):
         inicioHilos()
         self.initCameras()
 
+
+    def tiro_final(self):
+        estado_actual = self.checkTiroFinal.isChecked()
+        if estado_actual == True:
+            self.tiroFinal=True
+            self.comboTroneraTiroFinal.show()
+            print("Hay Tiro Final")
+        else:
+            self.tiroFinal = False
+            self.comboTroneraTiroFinal.hide()
+            print("No Hay Tiro Final")
+
+    def cambio_tronera_tiro_final(self):
+        self.troneraTiroFinal=self.comboTroneraTiroFinal.currentIndex()+1
+        print("Tronera seleccionada para tiro final: "+str(self.troneraTiroFinal))
+    
     def initCameras(self):
         self.cambio_camara(self.current_camera_index)  # Llamar al método para mostrar la primera cámara
 
@@ -1729,7 +1760,7 @@ class VentanaVideo(QMainWindow):
                         
                         
                         if(self.calculandoTiro == False):
-                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta, 4)
+                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal)
                             SingletonRespuesta.delete_instance()
                             self.hiloCalculoTiro = miHilo()
                             self.hiloCalculoTiro.start()
@@ -1812,7 +1843,9 @@ class VentanaVideo(QMainWindow):
                 
                 self.repetirSimulacion = False
                     
-                            
+            for tronera, label in zip(self.troneras, self.troneras_labels_usuario):
+                    x, y = tronera
+                    cv2.putText(self.frame, label, (x , y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
             if self.verROI:
                 cv2.rectangle(self.frame, (self.XIROI, self.YIROI),

@@ -74,6 +74,10 @@ class IA_Handler ():
         rail_distance = "RAIL_DISTANCE = int(54 * ZOOM_MULTIPLIER)"
         side_pocket_dist = "SIDE_POCKET_DIST = int(30 * ZOOM_MULTIPLIER)"
         corner_pocket_dist = "CORNER_POCKET_DIST = int(52 * ZOOM_MULTIPLIER)"
+        bola_en_mano = "BOLA_EN_MANO = False"
+        if singleton.bolaEnMano == True:
+            bola_en_mano = "BOLA_EN_MANO = True"
+        
 
         with open(template_dir, 'r') as archivoTemplate:
             contenidoTemplate = archivoTemplate.read()
@@ -82,6 +86,7 @@ class IA_Handler ():
         contenidoTemplateModificado = contenidoTemplateModificado.replace("RAIL_DISTANCE = None",rail_distance)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("SIDE_POCKET_DIST = None",side_pocket_dist)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("CORNER_POCKET_DIST = None",corner_pocket_dist)
+        contenidoTemplateModificado = contenidoTemplateModificado.replace("BOLA_EN_MANO = None",bola_en_mano)
         with open(config_dir, 'w') as archivoConfig:
             archivoConfig.write(contenidoTemplateModificado)
 

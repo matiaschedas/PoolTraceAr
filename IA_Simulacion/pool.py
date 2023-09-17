@@ -23,6 +23,7 @@ from copy import copy
 import pymunk.pygame_util as pygame_util
 
 primerContacto = None
+primerContactoCoordenada = None
 primerContactoCorrecto = False
 bolasEmbocadas = []
 bolasCorrectasEmbocadas = 0
@@ -99,6 +100,7 @@ class PoolEnv:
             self.nroTronera = -1
         if self.singleton.nroTronera is not None:
             self.nroTronera = self.singleton.nroTronera
+        self.bola_en_mano_error = False
 
         # gym environment
         self.spec = None
@@ -153,8 +155,9 @@ class PoolEnv:
         self.reset()
     
     def reiniciar_globales(self):
-        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca
+        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca, primerContactoCoordenada
         primerContacto = None
+        primerContactoCoordenada = None
         primerContactoCorrecto = False
         bolasEmbocadas = []
         bolasCorrectasEmbocadas = 0
@@ -462,18 +465,22 @@ class PoolEnv:
     def ball_contacted(self, arbiter, space, data):
         global trayectoriaBlanca, trayectorias
         # count bank/carrom shot collisions
-        global primerContacto, cantidadRebotesBlanca
+        global primerContacto, cantidadRebotesBlanca, primerContactoCoordenada
         ball_shape_1, ball_shape_2 = arbiter.shapes
+
         if(ball_shape_1.userData == "Blanca" or ball_shape_2.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
-        
 
         if(ball_shape_1.userData=="Blanca" and primerContacto == None):
             primerContacto = ball_shape_2
-    
+            if(primerContactoCoordenada == None):
+                primerContactoCoordenada = ball_shape_2.copy()
+            
         elif (ball_shape_2.userData == "Blanca" and primerContacto == None):
             primerContacto = ball_shape_1 
-        
+            if primerContactoCoordenada == None:
+                primerContactoCoordenada = ball_shape_1.copy()
+
         if( trayectorias is not None ):
             if(ball_shape_1.userData == 'Blanca' ):
                 trayectoriaBlanca.append(self.destransformar_coordenadas(ball_shape_1.body.position))
@@ -553,43 +560,16 @@ class PoolEnv:
 
     
     def rail_contacted(self, arbiter, space, data):
-        global cantidadRebotesBlanca, trayectorias, trayectoriaBlanca, bolasEmbocadas 
-        ball, railOFalsaTronera = arbiter.shapes
-        # count bank/carrom shot collisions
-        # if isinstance(railOFalsaTronera, pm.Circle):
-        #     data["pocket_tracking"]["potted_balls"].append(ball.number)
-        #     bolasEmbocadas.append(ball.copy())
-
-        #     if (ball.userData == 'Blanca'):
-        #         trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
-        #     elif ( trayectorias is not None ):
-        #         index = self.balls_copy.index(ball)
-        #         trayectorias[index].append(self.destransformar_coordenadas(ball.body.position))
-        
-        #     if ball.number == 0:
-        #         data["pocket_tracking"]["cue_ball_pocketed"] = True
-        #     elif ball.number == 8:
-        #         # check for solids winning
-        #         data["pocket_tracking"]["black_ball_pocketed"] = True
-        #         if (
-        #             any([b.number >= 1 and b.number <= 7 for b in data["balls"]])
-        #             or data["pocket_tracking"]["first_contacted_ball"].number != 8
-        #         ):
-        #             data["pocket_tracking"]["is_won"] = False
-        #         else:
-        #             data["pocket_tracking"]["is_won"] = True
-        #     elif 1 <= ball.number <= 7:
-        #         data["pocket_tracking"]["total_potted_balls"] += 1
-
-        #     try:
-        #         data["balls"].remove(ball)
-        #     except ValueError:
-        #         pass
-        #     space.remove(ball, ball.body)
-        # else:
+        global cantidadRebotesBlanca, trayectorias, trayectoriaBlanca, bolasEmbocadas, primerContactoCoordenada
+        ball, rail = arbiter.shapes
+  
         if(ball.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
             trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
+            if primerContactoCoordenada is None:
+                if ball.body.position.x > (WIDTH/2):
+                    primerContactoCoordenada = 1
+
         elif( trayectorias is not None ):
             index = self.balls_copy.index(ball)
             trayectorias[index].append(self.destransformar_coordenadas(ball.body.position))
@@ -715,6 +695,16 @@ class PoolEnv:
             tiroValido = False
         return Respuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca, self.attrs_respuesta, self.best_player_respuesta)
 
+    def verificarBolaEnMano(self):
+        global primerContactoCoordenada
+        reward = 1
+        if BOLA_EN_MANO == False:
+            return reward
+        if primerContactoCoordenada is not None and primerContactoCoordenada != 1:
+            if primerContactoCoordenada.body.position[0] < (WIDTH/2):
+                self.bola_en_mano_error = True
+        print(self.process_reward())
+        return reward
 
 
     def step(self, action, *args, **kwargs):
@@ -806,7 +796,7 @@ class PoolEnv:
         # rewarding
         # if cue ball touch the rail first, subtract the reward
         self.reward -= 2 * self.pocket_tracking["rail_collision_count"]
-
+    
         fcb = self.pocket_tracking["first_contacted_ball"]
         if (
             fcb is not None
@@ -916,10 +906,13 @@ class PoolEnv:
             ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
             self.cue_ball.body.activate()
         
+        rw = self.verificarBolaEnMano()
+
         if(self.simulacion != True):
-            respuesta = self.setear_respuesta()        
+            respuesta = self.setear_respuesta()
             return self.process_observation(), self.process_reward(), done, info, respuesta
-        else: return self.process_observation(), self.process_reward(), done, info, None
+        else: 
+             return self.process_observation(), self.process_reward(), done, info, None
 
     def cantidad_para_embocar(self):
         cant = 0
