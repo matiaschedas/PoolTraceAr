@@ -52,7 +52,7 @@ class CalculadorTirosFisica:
                     self.fisicas.setear_ver_simulacion_graficos_resultados(True,True,True)
                     self.fisicas.setear_velocidad_inicial_blanca(vector_velocidad[0]*velocidad,vector_velocidad[1]*velocidad)
                     self.fisicas.simular()
-                return True        
+                return trayectoriaBlanca, trayectoriaSeleccionada      
 
     def calcular_tiro_posible(self):
 
@@ -62,8 +62,11 @@ class CalculadorTirosFisica:
 
         for tronera in self.tronerasSinROI:
             vector_velocidad=self.tiro_directo(self.bolaSeleccionadaSinROI,tronera)    
-            if vector_velocidad is not None and self.simular_tiro(vector_velocidad) is True:
-                print("Tiro posible!")
+            if vector_velocidad is not None: 
+                resultadoSimulacion=self.simular_tiro(vector_velocidad)
+                if resultadoSimulacion is not None:
+                    print("Tiro posible!")
+                    return resultadoSimulacion
         return  None
                 
    
@@ -73,7 +76,6 @@ class CalculadorTirosFisica:
         trayectoriaBlanca, trayectoriaSeleccionada, tiroValido, entroLaBlanca, entroLaSeleccionada, entroLaNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias=self.fisicas.simular()
 
     def calcular_con_bolaEnMano(self):
-
         if (self.bolaSeleccionadaSinROI[0] < self.tronerasSinROI[1][0]):
             print("No hay tiro directo con bola en mano. [Implementar tiro con banda].")
             return None
@@ -81,8 +83,12 @@ class CalculadorTirosFisica:
         troneras_permitidas = [2, 5]
         for tronera in troneras_permitidas:
             vector_velocidad=self.tiro_directo(self.bolaSeleccionadaSinROI, self.tronerasSinROI[tronera])    
-            if vector_velocidad is not None and self.simular_tiro(vector_velocidad) is True:
-                print("Tiro posible!")
+            if vector_velocidad is not None:
+                resultadoSimulacion=self.simular_tiro(vector_velocidad)
+                if resultadoSimulacion is not None:
+                    print("Tiro posible!")
+                    return resultadoSimulacion
+
 
     def definir_signos(self,inicio,fin):
         return 1 if inicio[0]<fin[0] else -1,1 if inicio[1]<fin[1] else -1
