@@ -11,13 +11,13 @@ TRAINING = True  # training or playing (fast dt)
 DRAW_SCREEN = False  # draw screen (will not affect if using image observation or not training)
 REWARD_BY_STEPS = True  # whether calculate reward based on steps or episodes
 OBSERVATION_TYPE = "none" # choose between ["none, "vector", "image"]
-VELOCITY_LIMIT = int(320 * ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
+VELOCITY_LIMIT = int(320* ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
 
 # dimension of image observation if used
 IMAGE_WIDTH = 120
 IMAGE_HEIGHT = int(IMAGE_WIDTH * (HEIGHT / WIDTH))
 
-BOLA_EN_MANO = True
+BOLA_EN_MANO = False
 # ======== BALLS ========#
 BALL_MASS = 10
 BALL_FRICTION = 0.9
@@ -28,11 +28,11 @@ BALL_RADIUS = int(12 * ZOOM_MULTIPLIER)
 
 # ======== POCKETS ========#
 if ZOOM_MULTIPLIER < 1:
-    SIDE_POCKET_DIST = int(30 * ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(52 * ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(30* ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(52* ZOOM_MULTIPLIER)
 else:
-    SIDE_POCKET_DIST = int(30 * ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(52 * ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(30* ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(52* ZOOM_MULTIPLIER)
 POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
@@ -90,7 +90,7 @@ HANGING_BALL_LOCATION = (
 RAIL_FRICTION = 0.5
 RAIL_ELASTICITY = 0.8
 #Cambia el tamaño de la mesa
-RAIL_DISTANCE = int(54 * ZOOM_MULTIPLIER)
+RAIL_DISTANCE = int(54* ZOOM_MULTIPLIER)
 SIDE_RAIL_OFFSET = int(11.7 * ZOOM_MULTIPLIER)
 SIDE_RAIL_OFFSET_2 = int(15 * ZOOM_MULTIPLIER)
 CORNER_RAIL_OFFSET = int(31.7 * ZOOM_MULTIPLIER)

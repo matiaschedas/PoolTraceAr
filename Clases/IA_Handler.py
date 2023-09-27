@@ -26,7 +26,7 @@ class IA_Handler ():
         self.genetic2 = Genetic2()
 
 
-    def invocarIA(self):
+    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes):
         singleton = SingletonCompartida()
         if(singleton.embocarNegra == False):
             pocket = """POCKET_LOCATION = (
@@ -66,15 +66,22 @@ class IA_Handler ():
                         * ZOOM_MULTIPLIER
                     ).astype(int)"""
             
-        #hacerlo configurable por el usuario, mesa chica o mesa grande:
+        #hacer configurable por el usuario todos los parametros:
         #medidas para mesa grande:
             #rail_distance: int(54 * ZOOM_MULTIPLIER)
             #side_pocket_dist: int(30 * ZOOM_MULTIPLIER)
             #corner_pocket_dist: int(52 * ZOOM_MULTIPLIER)
-        rail_distance = "RAIL_DISTANCE = int(54 * ZOOM_MULTIPLIER)"
-        side_pocket_dist = "SIDE_POCKET_DIST = int(30 * ZOOM_MULTIPLIER)"
-        corner_pocket_dist = "CORNER_POCKET_DIST = int(52 * ZOOM_MULTIPLIER)"
+        
+        #friccion normal de las bolas: 0.9
+        #friccion normal de los railes: 0.5
+        #limite de velocidad normal: int(320 * ZOOM_MULTIPLIER)
+        rail_distance = "RAIL_DISTANCE = int("+str(rail_distance)+"* ZOOM_MULTIPLIER)"
+        side_pocket_dist = "SIDE_POCKET_DIST = int("+str(side_pocket_dist)+"* ZOOM_MULTIPLIER)"
+        corner_pocket_dist = "CORNER_POCKET_DIST = int("+str(corner_pocket_dist)+"* ZOOM_MULTIPLIER)"
         bola_en_mano = "BOLA_EN_MANO = False"
+        limite_velocidad = "VELOCITY_LIMIT = int("+str(limite_velocidad)+"* ZOOM_MULTIPLIER)"
+        friccion_bola = "BALL_FRICTION = "+str(friccion_bola)
+        friccion_railes = "RAIL_FRICTION = "+str(friccion_railes)
         if singleton.bolaEnMano == True:
             bola_en_mano = "BOLA_EN_MANO = True"
         
@@ -87,6 +94,9 @@ class IA_Handler ():
         contenidoTemplateModificado = contenidoTemplateModificado.replace("SIDE_POCKET_DIST = None",side_pocket_dist)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("CORNER_POCKET_DIST = None",corner_pocket_dist)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("BOLA_EN_MANO = None",bola_en_mano)
+        contenidoTemplateModificado = contenidoTemplateModificado.replace("RAIL_FRICTION = None", friccion_railes)
+        contenidoTemplateModificado = contenidoTemplateModificado.replace("BALL_FRICTION = None",friccion_bola)
+        contenidoTemplateModificado = contenidoTemplateModificado.replace("VELOCITY_LIMIT = None", limite_velocidad)
         with open(config_dir, 'w') as archivoConfig:
             archivoConfig.write(contenidoTemplateModificado)
 

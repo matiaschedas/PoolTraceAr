@@ -11,7 +11,7 @@ TRAINING = True  # training or playing (fast dt)
 DRAW_SCREEN = False  # draw screen (will not affect if using image observation or not training)
 REWARD_BY_STEPS = True  # whether calculate reward based on steps or episodes
 OBSERVATION_TYPE = "none" # choose between ["none, "vector", "image"]
-VELOCITY_LIMIT = int(320 * ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
+VELOCITY_LIMIT = None  # max velocity of cue ball default: 420
 
 # dimension of image observation if used
 IMAGE_WIDTH = 120
@@ -20,7 +20,7 @@ IMAGE_HEIGHT = int(IMAGE_WIDTH * (HEIGHT / WIDTH))
 BOLA_EN_MANO = None
 # ======== BALLS ========#
 BALL_MASS = 10
-BALL_FRICTION = 0.9
+BALL_FRICTION = None
 BALL_ELASTICITY = 0.95
 BALL_DAMPING_THRESHOLD = 9
 BALL_RADIUS = int(12 * ZOOM_MULTIPLIER)
@@ -75,7 +75,7 @@ HANGING_BALL_LOCATION = (
 ).astype(int)
 
 # ======== RAILS ========#
-RAIL_FRICTION = 0.5
+RAIL_FRICTION = None
 RAIL_ELASTICITY = 0.8
 #Cambia el tamaño de la mesa
 RAIL_DISTANCE = None

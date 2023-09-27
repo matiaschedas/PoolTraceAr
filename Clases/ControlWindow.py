@@ -41,6 +41,7 @@ class ControlWindow(QMainWindow):
     botonProyectar = None
     botonConfigurarROI = None
     botonPreprocesamientos = None
+    botonParametrosSimulacion = None
     comboCamaras = None
 
     def __init__(self, parent=None):
@@ -231,6 +232,7 @@ class ControlWindow(QMainWindow):
         self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
         self.botonConfigurarROI = self.crear_boton("Configurar ROI", 1290, 125, 100, 30)
         self.botonPreprocesamientos = self.crear_boton("Preprocesamientos", 1290, 125, 100, 30)
+        self.botonParametrosSimulacion = self.crear_boton("Parametros Simulacion", 1290, 125, 100, 30)
         self.botonGuardarPreset = self.crear_boton("Guardar Preset", 1290,125,100,30)
         self.botonCargarPreset = self.crear_boton("Cargar Preset", 1290,125,100, 30)
         self.botonSetearIDS = self.crear_boton("Setear IDS", 1290,125,100,30)
@@ -248,9 +250,10 @@ class ControlWindow(QMainWindow):
         layout.addWidget(self.botonConfigurarROI, pos, 1)
         layout.addWidget(self.botonPreprocesamientos, pos, 2)
         layout.addWidget(self.botonGuardarPreset,pos,3)
-
+        
         pos = pos + 1 
-        layout.addWidget(self.comboMonitores, pos, 0)        
+        layout.addWidget(self.comboMonitores, pos, 0) 
+        layout.addWidget(self.botonParametrosSimulacion, pos,2)       
         layout.addWidget(self.botonCargarPreset,pos,3)
 
 
@@ -267,7 +270,7 @@ class ControlWindow(QMainWindow):
         return self.comboMonitores
     
     def obtenerBotones(self):
-        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonSetearIDS
+        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonSetearIDS, self.botonParametrosSimulacion
 
     def crear_boton(self, texto, x, y, ancho, alto):
         boton = QPushButton(texto, self)
@@ -465,11 +468,11 @@ class ControlWindow(QMainWindow):
         self.minDist_slider.setValue(self.minDist)
     
     
-# def main():
-#     app = QApplication(sys.argv)
-#     window = ControlWindow()
-#     window.show()
-#     sys.exit(app.exec_())
+def main():
+    app = QApplication(sys.argv)
+    window = ControlWindow()
+    window.show()
+    sys.exit(app.exec_())
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

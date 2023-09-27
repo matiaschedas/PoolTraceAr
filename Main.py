@@ -14,6 +14,7 @@ from PyQt5.QtCore import Qt, QTimer, QEvent
 from HiloEtiquetador import ListaApareadaConEtiquetas, variable_compartida_lock
 from HiloEtiquetador import Etiquetar
 from Clases.ControlWindow import ControlWindow
+from Clases.ParametrosSimulacionWindow import ParametrosSimulacionWindow
 from Clases.PreprocesamientoWindow import PreprocesamientoWindow
 import win32con
 import win32gui
@@ -27,6 +28,7 @@ import ImageProcessor
 from pathlib import Path
 import random
 import copy
+from IA_Simulacion.utils import config
 
 from Clases.Fisicas import Fisicas
 from Clases.IA_Handler import IA_Handler
@@ -94,6 +96,15 @@ hough = None
 d_frame = None
 d_circles = None
 alpha = 0.0
+
+distancia_railes = 54
+distancia_troneras_esquinas = 52
+distancia_troneras_medias = 30
+limite_velocidad = 320
+friccion_bolas = 0.9
+friccion_railes = 0.5
+
+
 
 def iniciar_GPU():
     global hough,d_frame,d_circles
@@ -420,7 +431,7 @@ class HiloProyeccion(threading.Thread):
 
 
 class VentanaVideo(QMainWindow):
-    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow):
+    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow, ventanaParametrosSimulacion: ParametrosSimulacionWindow):
         super().__init__()
         global script_dir 
 
@@ -451,6 +462,7 @@ class VentanaVideo(QMainWindow):
         self.resize(ResolucionX, ResolucionY)
         self.setWindowTitle("PoolTraceAR")
         self.ventanaPrepro = ventanaPreprocesamiento
+        self.ventanaParametrosSimulacion = ventanaParametrosSimulacion
         self.controlWindow = ventanaParametros
         self.controlWindow.dpChanged.connect(self.onDpChanged)
         self.controlWindow.minDistChanged.connect(self.onMinDistChanged)
@@ -537,7 +549,7 @@ class VentanaVideo(QMainWindow):
         # endregion
 
         #region creacion de interfaz
-        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset, self.botonCargarPreset, self.botonSetearIDS = ventanaParametros.obtenerBotones()
+        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset, self.botonCargarPreset, self.botonSetearIDS, self.botonParametrosSimulacion = ventanaParametros.obtenerBotones()
         self.comboCamaras = ventanaParametros.obtenerComboCamaras()
         self.comboMonitores = ventanaParametros.obtenerComboMonitores()
         #self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
@@ -555,6 +567,8 @@ class VentanaVideo(QMainWindow):
         self.comboMonitores.currentIndexChanged.connect(self.cambio_monitor)
         self.botonROI.clicked.connect(self.crear_ROI)
         self.botonPreprocesamientos.clicked.connect(self.abrir_preprocesamiento)
+        self.botonParametrosSimulacion.clicked.connect(self.abrir_parametros_simulacion)
+
 
         self.labelBolaEnMano = self.crear_label("Bola en mano: ", 5, 820, 100, 25)
         self.label2Tiros = self.crear_label("2 Tiros: ", 5,820,100,25)
@@ -638,6 +652,13 @@ class VentanaVideo(QMainWindow):
         self.ventanaPrepro.alphaChanged.connect(self.onAlphaChanged)
         self.ventanaPrepro.betaChanged.connect(self.onBetaChanged)
         self.ventanaPrepro.blurChanged.connect(self.onBlurChanged)
+
+        self.ventanaParametrosSimulacion.distRailesChanged.connect(self.setDistRailes)
+        self.ventanaParametrosSimulacion.distTronerasEsquinasChanged.connect(self.setDistTronerasEsquinas)
+        self.ventanaParametrosSimulacion.distTronerasMediasChanged.connect(self.setDistTronerasMedias)
+        self.ventanaParametrosSimulacion.limiteVelocidadChanged.connect(self.setLimiteVelocidad)
+        self.ventanaParametrosSimulacion.friccionRailesChanged.connect(self.setFriccionRailes)
+        self.ventanaParametrosSimulacion.friccionBolasChanged.connect(self.setFriccionBolas)
         
 
         self.ventanaPrepro.blurChecked.connect(self.aplicarBlur)
@@ -841,6 +862,27 @@ class VentanaVideo(QMainWindow):
     def aplicarContraste(self, value):
         global aplicarContraste
         aplicarContraste = value
+    #endregion
+
+    #region cambios para parametros de simulacion:
+    def setDistRailes(self, value):
+        global distancia_railes
+        distancia_railes= value
+    def setDistTronerasEsquinas(self, value):
+        global distancia_troneras_esquinas
+        distancia_troneras_esquinas= value
+    def setDistTronerasMedias(self, value):
+        global distancia_troneras_medias
+        distancia_troneras_medias= value
+    def setLimiteVelocidad(self, value):
+        global limite_velocidad
+        limite_velocidad= value
+    def setFriccionRailes(self, value):
+        global friccion_railes
+        friccion_railes= value
+    def setFriccionBolas(self, value):
+        global friccion_bolas
+        friccion_bolas= value
     #endregion
 
     def ver_frame(self):
@@ -1076,6 +1118,7 @@ class VentanaVideo(QMainWindow):
         if cv2.getWindowProperty("Frame", cv2.WND_PROP_VISIBLE) > 0:
             cv2.destroyWindow("Frame")
         self.ventanaPrepro.close()
+        self.ventanaParametrosSimulacion.close()
         event.accept()
 
     #en base al checkbox determina si hay o no bola en mano para el turno:
@@ -1522,6 +1565,9 @@ class VentanaVideo(QMainWindow):
     def abrir_preprocesamiento(self):
         self.ventanaPrepro.show()
 
+    def abrir_parametros_simulacion(self):
+        self.ventanaParametrosSimulacion.show()
+
     #aplica los preprocesamientos que el usuario determine:
     def aplicar_preprocesamientos(self, image):
         global aplicarBlur,aplicarBrillo,aplicarContraste,aplicarHist,mostrarFrameRaws
@@ -1776,9 +1822,9 @@ class VentanaVideo(QMainWindow):
                         
                         
                         if(self.calculandoTiro == False):
-                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal)
+                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes)
                             SingletonRespuesta.delete_instance()
-                            self.hiloCalculoTiro = miHilo()
+                            self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes)
                             self.hiloCalculoTiro.start()
                             self.calculandoTiro = True
 
@@ -2029,7 +2075,9 @@ class VentanaVideo(QMainWindow):
     
     #transforma una velocidad de 0 a 320 a un valor de 0 a 100
     def convertir_velocidad(self, velocidad):
-        convertido = (velocidad/453.01)*100        
+        global limite_velocidad
+        factor = limite_velocidad * 1.4156
+        convertido = (velocidad/factor)*100        
         return round(convertido,1)
 
     def graficar_trayectorias(self):
@@ -2278,8 +2326,9 @@ if __name__ == "__main__":
     ventanaProyeccion = VentanaProyeccion()
     ventanaParametros = ControlWindow()
     ventanaPreprocesamiento = PreprocesamientoWindow()
+    ventanaParametrosSimulacion = ParametrosSimulacionWindow()
     hiloProyeccion = HiloProyeccion(bloqueo, ventanaProyeccion)
-    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion, ventanaPreprocesamiento)
+    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion, ventanaPreprocesamiento, ventanaParametrosSimulacion)
 
     ventana.show()
     ventana.controlWindow.show()
