@@ -98,8 +98,8 @@ d_circles = None
 alpha = 0.0
 
 distancia_railes = 54
-distancia_troneras_esquinas = 52
-distancia_troneras_medias = 30
+distancia_troneras_esquinas = 51
+distancia_troneras_medias = 29
 limite_velocidad = 320
 friccion_bolas = 0.9
 friccion_railes = 0.5

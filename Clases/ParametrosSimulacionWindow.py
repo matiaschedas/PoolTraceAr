@@ -20,9 +20,9 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.setWindowTitle("Parametros Simulacion Fisica")
         self.setGeometry(100, 100, 500, 300)
 
-        self.distRailes = 54
-        self.distTronerasEsquinas = 52
-        self.distTronerasMedias = 30
+        self.distRailes = 1
+        self.distTronerasEsquinas = 1
+        self.distTronerasMedias = 1
         self.limiteVelocidad = 320
         self.friccionBolas = 0.9
         self.friccionRailes = 0.5
@@ -75,9 +75,11 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.friccionBolas_text.setText(str(self.friccionBolas))
         self.friccionRailes_text.setText(str(self.friccionRailes))
 
-        self.distRailes_slider.setRange(54,154)
-        self.distTronerasEsquinas_slider.setRange(52,152)
-        self.distTronerasMedias_slider.setRange(30,130)
+        self.distRailes_slider.setRange(1,154)
+        self.distTronerasEsquinas_slider.setRange(1,152)
+        self.distTronerasEsquinas_slider.setDisabled(True)
+        self.distTronerasMedias_slider.setRange(1,130)
+        self.distTronerasMedias_slider.setDisabled(True)
         self.limiteVelocidad_slider.setRange(10,400)
         self.friccionBolas_slider.setRange(1,10)
         self.friccionRailes_slider.setRange(1,10)
@@ -135,9 +137,17 @@ class ParametrosSimulacionWindow(QMainWindow):
         
     def onDistRailesSliderChange(self, value):
         self.distRailes = value
+        self.distTronerasEsquinas = value - 3
+        self.distTronerasMedias = value - 22
+        self.distTronerasMediasChanged.emit(self.distTronerasMedias)
+        self.distTronerasEsquinasChanged.emit(self.distTronerasEsquinas)
         self.distRailesChanged.emit(self.distRailes)
+        self.distTronerasMedias_slider.setValue(self.distTronerasMedias)
+        self.distTronerasEsquinas_slider.setValue(self.distTronerasEsquinas)
         # Actualizar el cuadro de texto correspondiente
         self.distRailes_text.setText(str(self.distRailes))
+        self.distTronerasEsquinas_text.setText(str(self.distTronerasEsquinas))
+        self.distTronerasMedias_text.setText(str(self.distTronerasMedias))
 
     def onDistTronerasEsquinasSliderChange(self, value):
         self.distTronerasEsquinas = value
@@ -175,18 +185,10 @@ class ParametrosSimulacionWindow(QMainWindow):
             self.distRailes_slider.setValue(self.distRailes)
 
     def onDistTronerasEsquinasTextChange(self, text):
-         if text:
-            self.distTronerasEsquinas = int(text)
-            self.distTronerasEsquinasChanged.emit(self.distTronerasEsquinas)
-            # Actualizar el slider correspondiente
-            self.distTronerasEsquinas_slider.setValue(self.distTronerasEsquinas)
+        self.distTronerasEsquinas_text.setText(str(self.distTronerasEsquinas))
     
     def onDistTronerasMediasTextChange(self, text):
-         if text:
-            self.distTronerasMedias = int(text)
-            self.distTronerasMediasChanged.emit(self.distTronerasMedias)
-            # Actualizar el slider correspondiente
-            self.distTronerasMedias_slider.setValue(self.distTronerasMedias)
+        self.distTronerasMedias_text.setText(str(self.distTronerasMedias))
 
     def onLimiteVelocidadTextChange(self, text):
         if text:
