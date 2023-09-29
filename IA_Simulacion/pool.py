@@ -443,10 +443,16 @@ class PoolEnv:
     #al crear las bolas tener en cuenta que la IA siempre mete las lisas
     def create_ball(self, etiqueta, coordenada, etiquetaDeSeleccionada, embocarNegra, contadorSolidas, contadorRayadas, agregarSpace):
         global trayectoriaBlanca,trayectorias
-        intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+        if self.default == True:
+            intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+        else:
+            intertia = pm.moment_for_circle(BALL_MASS, 0, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
         ball_body = pm.Body(BALL_MASS, intertia)
         ball_body.position = coordenada
-        ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+        if self.default == True:
+            ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+        else:
+            ball = pm.Circle(ball_body, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
         ball.elasticity = BALL_ELASTICITY
         if self.default == True:
             ball.friction = BALL_FRICTION
@@ -548,10 +554,11 @@ class PoolEnv:
             positions, cantLisas, cantRayadas = self.setear_bolas()
             return
         positions = []
-        #self.num_balls = 15
         for i in range(self.num_balls):
-            #if(i%2==0):
-                intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+                if self.default == True:
+                    intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+                else:
+                    intertia = pm.moment_for_circle(BALL_MASS, 0, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
                 ball_body = pm.Body(BALL_MASS, intertia)
 
                 # initialize ball at random position
@@ -563,13 +570,18 @@ class PoolEnv:
                     ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
 
                 # if overlap with another ball, choose a different location
+                if self.default == True:
+                    auxRadio = BALL_RADIUS
+                else:
+                    auxRadio = int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER)
+                
                 while 1:
                     for pos in positions:
-                        if (
-                            distance_between_two_points(ball_body.position, pos)
-                            < BALL_RADIUS * 2
-                        ):
-                            break
+                            if (
+                                distance_between_two_points(ball_body.position, pos)
+                                < auxRadio * 2
+                            ):
+                                break
                     else:
                         break
                     if self.num_balls < 2:
@@ -580,8 +592,10 @@ class PoolEnv:
                         ), random.randint(
                             RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2
                         )
-
-                ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+                if self.default == True:
+                    ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+                else:
+                    ball = pm.Circle(ball_body, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
                 ball.elasticity = BALL_ELASTICITY
                 ball.friction = BALL_FRICTION
                 ball.collision_type = 1
@@ -1214,10 +1228,16 @@ class PoolEnv:
                 cuerpo_existe = any(shape.body == self.balls[i].body for shape in self.space.shapes)
                 if(cuerpo_existe):
                     self.space.remove(self.balls[i].body, self.balls[i])
-            intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+            if self.default == True:
+                intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+            else:
+                intertia = pm.moment_for_circle(BALL_MASS, 0, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
             ball_body = pm.Body(BALL_MASS, intertia)
             ball_body.position = balls_attrs[i]["position"]
-            ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+            if self.default == True:
+                ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+            else:
+                ball = pm.Circle(ball_body, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
             ball.elasticity = BALL_ELASTICITY
             ball.friction = BALL_FRICTION
             ball.collision_type = balls_attrs[i]["collision_type"]

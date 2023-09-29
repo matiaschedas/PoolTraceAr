@@ -103,7 +103,8 @@ distancia_troneras_medias = -21
 limite_velocidad = 320
 friccion_bolas = 0.9
 friccion_railes = 0.5
-ancho_alto_mesa = 100
+tam_bolas_simulacion = 12
+ancho_alto_mesa = 1000
 
 
 def iniciar_GPU():
@@ -660,6 +661,7 @@ class VentanaVideo(QMainWindow):
         self.ventanaParametrosSimulacion.friccionRailesChanged.connect(self.setFriccionRailes)
         self.ventanaParametrosSimulacion.friccionBolasChanged.connect(self.setFriccionBolas)
         self.ventanaParametrosSimulacion.anchoAltoMesaChanged.connect(self.setAnchoAltoMesa)
+        self.ventanaParametrosSimulacion.tambBolasChanged.connect(self.setTamBolasSimulacion)
         
 
         self.ventanaPrepro.blurChecked.connect(self.aplicarBlur)
@@ -887,6 +889,9 @@ class VentanaVideo(QMainWindow):
     def setAnchoAltoMesa(self, value):
         global ancho_alto_mesa
         ancho_alto_mesa = value
+    def setTamBolasSimulacion(self, value):
+        global tam_bolas_simulacion
+        tam_bolas_simulacion = value
     #endregion
 
     def ver_frame(self):
@@ -1826,9 +1831,9 @@ class VentanaVideo(QMainWindow):
                         
                         
                         if(self.calculandoTiro == False):
-                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_alto_mesa)
+                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_alto_mesa,tam_bolas_simulacion)
                             SingletonRespuesta.delete_instance()
-                            self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_alto_mesa)
+                            self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_alto_mesa,tam_bolas_simulacion)
                             self.hiloCalculoTiro.start()
                             self.calculandoTiro = True
 

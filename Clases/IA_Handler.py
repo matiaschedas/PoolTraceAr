@@ -26,7 +26,7 @@ class IA_Handler ():
         self.genetic2 = Genetic2()
 
 
-    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_alto_mesa):
+    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_alto_mesa, tam_bolas_simulacion):
         singleton = SingletonCompartida()
         if(singleton.embocarNegra == False):
             pocket = """POCKET_LOCATION = (
@@ -76,6 +76,7 @@ class IA_Handler ():
         #friccion normal de los railes: 0.5
         #limite de velocidad normal: int(320 * ZOOM_MULTIPLIER)
         #ancho alto 
+        #tam bolas por defecto: BALL_RADIUS = int(12 * ZOOM_MULTIPLIER)
         rail_distance = "RAIL_DISTANCE = int("+str(rail_distance)+"* ZOOM_MULTIPLIER)"
         side_pocket_dist = "SIDE_POCKET_DIST = int("+str(side_pocket_dist)+"* ZOOM_MULTIPLIER)"
         corner_pocket_dist = "CORNER_POCKET_DIST = int("+str(corner_pocket_dist)+"* ZOOM_MULTIPLIER)"
@@ -90,6 +91,7 @@ class IA_Handler ():
         ancho = ancho_alto_mesa
         alto = (int)(ancho/2)
         anchoAlto = "WIDTH, HEIGHT = "+str(ancho)+","+ str(alto)
+        tamBolas = "BALL_RADIUS = int("+str(tam_bolas_simulacion)+"* ZOOM_MULTIPLIER)"
 
         with open(template_dir, 'r') as archivoTemplate:
             contenidoTemplate = archivoTemplate.read()
@@ -103,6 +105,7 @@ class IA_Handler ():
         contenidoTemplateModificado = contenidoTemplateModificado.replace("BALL_FRICTION = None",friccion_bola)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("VELOCITY_LIMIT = None", limite_velocidad)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("WIDTH, HEIGHT = 1000, 500", anchoAlto)
+        contenidoTemplateModificado = contenidoTemplateModificado.replace("BALL_RADIUS = int(12 * ZOOM_MULTIPLIER)",tamBolas)
         with open(config_dir, 'w') as archivoConfig:
             archivoConfig.write(contenidoTemplateModificado)
 
