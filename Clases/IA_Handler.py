@@ -26,7 +26,7 @@ class IA_Handler ():
         self.genetic2 = Genetic2()
 
 
-    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes):
+    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_alto_mesa):
         singleton = SingletonCompartida()
         if(singleton.embocarNegra == False):
             pocket = """POCKET_LOCATION = (
@@ -75,6 +75,7 @@ class IA_Handler ():
         #friccion normal de las bolas: 0.9
         #friccion normal de los railes: 0.5
         #limite de velocidad normal: int(320 * ZOOM_MULTIPLIER)
+        #ancho alto 
         rail_distance = "RAIL_DISTANCE = int("+str(rail_distance)+"* ZOOM_MULTIPLIER)"
         side_pocket_dist = "SIDE_POCKET_DIST = int("+str(side_pocket_dist)+"* ZOOM_MULTIPLIER)"
         corner_pocket_dist = "CORNER_POCKET_DIST = int("+str(corner_pocket_dist)+"* ZOOM_MULTIPLIER)"
@@ -84,7 +85,11 @@ class IA_Handler ():
         friccion_railes = "RAIL_FRICTION = "+str(friccion_railes)
         if singleton.bolaEnMano == True:
             bola_en_mano = "BOLA_EN_MANO = True"
-        
+        if(ancho_alto_mesa%2 != 0):
+            ancho_alto_mesa+=1
+        ancho = ancho_alto_mesa
+        alto = (int)(ancho/2)
+        anchoAlto = "WIDTH, HEIGHT = "+str(ancho)+","+ str(alto)
 
         with open(template_dir, 'r') as archivoTemplate:
             contenidoTemplate = archivoTemplate.read()
@@ -97,6 +102,7 @@ class IA_Handler ():
         contenidoTemplateModificado = contenidoTemplateModificado.replace("RAIL_FRICTION = None", friccion_railes)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("BALL_FRICTION = None",friccion_bola)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("VELOCITY_LIMIT = None", limite_velocidad)
+        contenidoTemplateModificado = contenidoTemplateModificado.replace("WIDTH, HEIGHT = 1000, 500", anchoAlto)
         with open(config_dir, 'w') as archivoConfig:
             archivoConfig.write(contenidoTemplateModificado)
 

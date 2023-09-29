@@ -4,7 +4,8 @@ import numpy as np
 FPS = 500
 ZOOM_MULTIPLIER = 1  # change screen size, can boost fps
 TOTAL_FOUL_TIMES = 25  # amount of fouls before end the game
-WIDTH, HEIGHT = 1000, 500 #default: 1000,500
+#default: 1000,500
+WIDTH, HEIGHT = 1000, 500
 
 NUM_BALLS = 16  # number of balls generated on table (16 is a normal game)
 TRAINING = True  # training or playing (fast dt)

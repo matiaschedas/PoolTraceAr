@@ -97,13 +97,13 @@ d_frame = None
 d_circles = None
 alpha = 0.0
 
-distancia_railes = 54
-distancia_troneras_esquinas = 51
-distancia_troneras_medias = 29
+distancia_railes = 1
+distancia_troneras_esquinas = -2
+distancia_troneras_medias = -21
 limite_velocidad = 320
 friccion_bolas = 0.9
 friccion_railes = 0.5
-
+ancho_alto_mesa = 100
 
 
 def iniciar_GPU():
@@ -659,6 +659,7 @@ class VentanaVideo(QMainWindow):
         self.ventanaParametrosSimulacion.limiteVelocidadChanged.connect(self.setLimiteVelocidad)
         self.ventanaParametrosSimulacion.friccionRailesChanged.connect(self.setFriccionRailes)
         self.ventanaParametrosSimulacion.friccionBolasChanged.connect(self.setFriccionBolas)
+        self.ventanaParametrosSimulacion.anchoAltoMesaChanged.connect(self.setAnchoAltoMesa)
         
 
         self.ventanaPrepro.blurChecked.connect(self.aplicarBlur)
@@ -883,6 +884,9 @@ class VentanaVideo(QMainWindow):
     def setFriccionBolas(self, value):
         global friccion_bolas
         friccion_bolas= value
+    def setAnchoAltoMesa(self, value):
+        global ancho_alto_mesa
+        ancho_alto_mesa = value
     #endregion
 
     def ver_frame(self):
@@ -1822,16 +1826,16 @@ class VentanaVideo(QMainWindow):
                         
                         
                         if(self.calculandoTiro == False):
-                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes)
+                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_alto_mesa)
                             SingletonRespuesta.delete_instance()
-                            self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes)
+                            self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_alto_mesa)
                             self.hiloCalculoTiro.start()
                             self.calculandoTiro = True
 
                         self.hiloCalculoTiro.join(timeout=0.01)
 
                         if  self.hiloCalculoTiro.is_alive():
-                            #aca se puede poner un spin en la interfaz:
+                            #aca se puede poner un spin en la interfaz:6
                             print("Calculando tiro...")
                         else:
                             self.calculandoTiro = False 

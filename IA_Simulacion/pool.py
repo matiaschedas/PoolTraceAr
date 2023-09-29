@@ -60,8 +60,7 @@ class PoolEnv:
         self.total_steps = 0
         self.running = True
 
-        self.width = WIDTH * ZOOM_MULTIPLIER
-        self.height = HEIGHT * ZOOM_MULTIPLIER
+        
         self.training = training
         self.num_balls = num_balls
         self.reward_by_steps = reward_by_steps
@@ -89,6 +88,12 @@ class PoolEnv:
         if(self.singleton.listaApareada is not None):
             self.default = False    
             self.bola_en_mano = self.singleton.bolaEnMano
+        if(self.default == False):
+            self.width = self.singleton.ancho_mesa * ZOOM_MULTIPLIER
+            self.height = self.singleton.alto_mesa * ZOOM_MULTIPLIER
+        else:
+            self.width = WIDTH * ZOOM_MULTIPLIER
+            self.height = HEIGHT * ZOOM_MULTIPLIER
         self.reiniciar_globales()
         if self.graficar == False:
             self.draw_screen = False
@@ -108,12 +113,21 @@ class PoolEnv:
         self.reward_range = np.array([-1, 1])
         self.action_space = spaces.Box(low=-1, high=1, shape=(2,))
         if self.observation_type == "image":
-            self.observation_space = spaces.Box(
-                low=0,
-                high=255,
-                shape=(3, IMAGE_HEIGHT, IMAGE_WIDTH),
-                dtype=np.uint8,
-            )
+            if self.default == False:
+                image_height = int(IMAGE_WIDTH * (self.singleton.alto_mesa / self.singleton.ancho_mesa))
+                self.observation_space = spaces.Box(
+                    low=0,
+                    high=255,
+                    shape=(3, image_height, IMAGE_WIDTH),
+                    dtype=np.uint8,
+                )
+            else:
+                self.observation_space = spaces.Box(
+                    low=0,
+                    high=255,
+                    shape=(3, IMAGE_HEIGHT, IMAGE_WIDTH),
+                    dtype=np.uint8,
+                )
         else:
             # ball_x, ball_y, ball_type(pocketed, solid, strips, 8-ball, cue-ball) x 16 balls
             self.table_info = np.concatenate(
@@ -210,75 +224,76 @@ class PoolEnv:
             rail_distance = int(self.singleton.distancia_railes*ZOOM_MULTIPLIER)
             rail_location = (
                                 np.array(
-                                    [rail_distance, WIDTH - rail_distance, rail_distance, HEIGHT - rail_distance]
+                                    [rail_distance, self.singleton.ancho_mesa - rail_distance, rail_distance, self.singleton.alto_mesa - rail_distance]
                                 )
                                 * ZOOM_MULTIPLIER
                             ).astype(int)
+            print("Alto de mesa segun singleton-----------------" + str(self.singleton.alto_mesa))
             rail_poly = [
                             [
                                 [0, CORNER_RAIL_OFFSET],
                                 [rail_location[0], rail_location[2] + CORNER_RAIL_OFFSET],
                                 [rail_location[0], rail_location[3] - CORNER_RAIL_OFFSET],
-                                [0, int(HEIGHT * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET],
+                                [0, int(self.singleton.alto_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET],
                             ],  # left
                             [
                                 [CORNER_RAIL_OFFSET, 0],
-                                [int(WIDTH * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2, 0],
+                                [int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2, 0],
                                 [
-                                    int(WIDTH * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
                                     rail_location[2],
                                 ],
                                 [rail_location[0] + CORNER_RAIL_OFFSET, rail_location[2]],
                             ],  # top 1
                             [
-                                [int(WIDTH * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2, 0],
-                                [int(WIDTH * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET, 0],
+                                [int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2, 0],
+                                [int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET, 0],
                                 [rail_location[1] - CORNER_RAIL_OFFSET, rail_location[2]],
                                 [
-                                    int(WIDTH * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
                                     rail_location[2],
                                 ],
                             ],  # top 2
                             [
                                 [rail_location[1], rail_location[2] + CORNER_RAIL_OFFSET],
-                                [int(WIDTH * ZOOM_MULTIPLIER), CORNER_RAIL_OFFSET],
+                                [int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER), CORNER_RAIL_OFFSET],
                                 [
-                                    int(WIDTH * ZOOM_MULTIPLIER),
-                                    int(HEIGHT * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER),
+                                    int(self.singleton.alto_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
                                 ],
                                 [rail_location[1], rail_location[3] - CORNER_RAIL_OFFSET],
                             ],  # right
                             [
                                 [rail_location[0] + CORNER_RAIL_OFFSET, rail_location[3]],
                                 [
-                                    int(WIDTH * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
                                     rail_location[3],
                                 ],
                                 [
-                                    int(WIDTH * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2,
-                                    int(HEIGHT * ZOOM_MULTIPLIER),
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2,
+                                    int(self.singleton.alto_mesa * ZOOM_MULTIPLIER),
                                 ],
-                                [CORNER_RAIL_OFFSET, int(HEIGHT * ZOOM_MULTIPLIER)],
+                                [CORNER_RAIL_OFFSET, int(self.singleton.alto_mesa * ZOOM_MULTIPLIER)],
                             ],  # bottom 1
                             [
                                 [
-                                    int(WIDTH * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
                                     rail_location[3],
                                 ],
                                 [rail_location[1] - CORNER_RAIL_OFFSET, rail_location[3]],
                                 [
-                                    int(WIDTH * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
-                                    int(HEIGHT * ZOOM_MULTIPLIER),
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
+                                    int(self.singleton.alto_mesa * ZOOM_MULTIPLIER),
                                 ],
                                 [
-                                    int(WIDTH * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2,
-                                    int(HEIGHT * ZOOM_MULTIPLIER),
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2,
+                                    int(self.singleton.alto_mesa * ZOOM_MULTIPLIER),
                                 ],
                             ],  # bottom 2
                         ]
             
-            for rail_poly in rail_poly:
-                rail = pm.Poly(static_body, rail_poly)
+            for rail_poly_item in rail_poly:
+                rail = pm.Poly(static_body, rail_poly_item)
                 rail.color = pg.Color(TABLE_SIDE_COLOR)
                 rail.collision_type = 3
                 rail.elasticity = RAIL_ELASTICITY
@@ -317,11 +332,11 @@ class PoolEnv:
                     np.array(
                         [
                         (corner_pocket_dist, corner_pocket_dist),
-                        (WIDTH // 2, side_pocket_dist),
-                        (WIDTH - corner_pocket_dist, corner_pocket_dist),
-                        (corner_pocket_dist, HEIGHT - corner_pocket_dist),
-                        (WIDTH // 2, HEIGHT - side_pocket_dist),
-                        (WIDTH - corner_pocket_dist, HEIGHT - corner_pocket_dist),
+                        (self.singleton.ancho_mesa // 2, side_pocket_dist),
+                        (self.singleton.ancho_mesa - corner_pocket_dist, corner_pocket_dist),
+                        (corner_pocket_dist, self.singleton.alto_mesa - corner_pocket_dist),
+                        (self.singleton.ancho_mesa // 2, self.singleton.alto_mesa - side_pocket_dist),
+                        (self.singleton.ancho_mesa - corner_pocket_dist, self.singleton.alto_mesa - corner_pocket_dist),
                         ]
                     )
                     * ZOOM_MULTIPLIER
@@ -393,8 +408,8 @@ class PoolEnv:
             transformadaY = (y*self.alto_ratio)+CORNER_POCKET_DIST
         else:
             rail_distance = int(self.singleton.distancia_railes*ZOOM_MULTIPLIER)
-            self.ancho_ratio = (WIDTH-(rail_distance*2))/ancho
-            self.alto_ratio = (HEIGHT-(rail_distance*2))/alto
+            self.ancho_ratio = (self.singleton.ancho_mesa-(rail_distance*2))/ancho
+            self.alto_ratio = (self.singleton.alto_mesa-(rail_distance*2))/alto
             x,y = punto
             corner_pocket_dist =  int(self.singleton.distancia_troneras_esquinas*ZOOM_MULTIPLIER)
             transformadaX = (x*self.ancho_ratio)+corner_pocket_dist
@@ -703,8 +718,12 @@ class PoolEnv:
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
             trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
             if primerContactoCoordenada is None:
-                if ball.body.position.x > (WIDTH/2):
-                    primerContactoCoordenada = 1
+                if(self.default == False):
+                    if ball.body.position.x > (self.singleton.ancho_mesa/2):
+                        primerContactoCoordenada = 1
+                else:
+                    if ball.body.position.x > (WIDTH/2):
+                        primerContactoCoordenada = 1
 
         elif( trayectorias is not None ):
             index = self.balls_copy.index(ball)
@@ -747,7 +766,14 @@ class PoolEnv:
     def process_observation(self):
         if self.observation_type == "image":
             img = pg.surfarray.pixels3d(self.screen)
-            img = cv2.resize(img, (IMAGE_WIDTH, IMAGE_HEIGHT))
+            image_height = IMAGE_HEIGHT
+            
+            if(self.default == False):
+                print(image_height)
+                image_height = int(IMAGE_WIDTH * (self.singleton.alto_mesa / self.singleton.ancho_mesa) )
+                img = cv2.resize(img, (IMAGE_WIDTH, image_height))
+            else:
+                img = cv2.resize(img, (IMAGE_WIDTH, IMAGE_HEIGHT))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = cv2.rotate(img, cv2.cv2.ROTATE_90_COUNTERCLOCKWISE)
             img = cv2.flip(img, 0)
@@ -755,11 +781,19 @@ class PoolEnv:
             # cv2.imshow("", cv2.resize(img, (300, 300)))
             # if cv2.waitKey(1) == ord("q"):
             #    os._exit(0)
-            return img.reshape(3, IMAGE_HEIGHT, IMAGE_WIDTH)
+            if(self.default == False):
+                return img.reshape(3, int(IMAGE_WIDTH * (self.singleton.alto_mesa / self.singleton.ancho_mesa) ), IMAGE_WIDTH)
+            else:
+                return img.reshape(3, IMAGE_HEIGHT, image_height)
+            # return (img.reshape(3, IMAGE_HEIGHT, IMAGE_WIDTH) if (self.default) else img.reshape(3, IMAGE_HEIGHT, image_height))
         elif self.observation_type == "vector":
             # observation_number: pocketed 0, solid 1, strips 2, 8-ball 3, cue-ball 4
             width_multiplier = (IMAGE_WIDTH / (self.width)) / IMAGE_WIDTH
-            height_multiplier = (IMAGE_HEIGHT / (self.height)) / IMAGE_HEIGHT
+            if(self.default == False):
+                image_height = int(IMAGE_WIDTH * (self.singleton.alto_mesa / self.singleton.ancho_mesa) )
+                height_multiplier = (image_height / (self.height)) / image_height
+            else: 
+                height_multiplier = (IMAGE_HEIGHT / (self.height)) / IMAGE_HEIGHT
             obs = np.array(
                 [
                     np.array(
@@ -840,9 +874,14 @@ class PoolEnv:
         if BOLA_EN_MANO == False:
             return reward
         if primerContactoCoordenada is not None and primerContactoCoordenada != 1:
-            if primerContactoCoordenada.body.position[0] < (WIDTH/2):
-                self.bola_en_mano_error = True
-                self.reward = 0
+            if(self.default == False):
+                if primerContactoCoordenada.body.position[0] < (self.singleton.ancho_mesa/2):
+                    self.bola_en_mano_error = True
+                    self.reward = 0
+            else: 
+                if primerContactoCoordenada.body.position[0] < (WIDTH/2):
+                    self.bola_en_mano_error = True
+                    self.reward = 0
         print(self.process_reward())
         return reward
 

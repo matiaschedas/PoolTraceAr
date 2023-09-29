@@ -13,6 +13,7 @@ class ParametrosSimulacionWindow(QMainWindow):
     friccionBolasChanged = pyqtSignal(float)
     friccionRailesChanged = pyqtSignal(float)
     limiteVelocidadChanged = pyqtSignal(int)
+    anchoAltoMesaChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -21,11 +22,12 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.setGeometry(100, 100, 500, 300)
 
         self.distRailes = 1
-        self.distTronerasEsquinas = 1
-        self.distTronerasMedias = 1
+        self.distTronerasEsquinas = -2
+        self.distTronerasMedias = -21
         self.limiteVelocidad = 320
         self.friccionBolas = 0.9
         self.friccionRailes = 0.5
+        self.anchoAltoMesa = 1000
 
         icon_path = os.path.join(script_dir.replace("Clases", "images"), "config.png")
         icon = QIcon(icon_path)
@@ -42,12 +44,18 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.limiteVelocidad_label = QLabel("Limite de velocidad")
         self.friccionBolas_label = QLabel("Friccion de bolas")
         self.friccionRailes_label = QLabel("Friccion de railes")
+        self.anchoAltoMesa_label = QLabel("Ancho - Alto - Mesa")
+        self.anchoCmMesa_label = QLabel("Ancho(cm)")
+        self.altoCmMesa_label = QLabel("Alto(cm)")
+
         self.distRailes_slider = QSlider(Qt.Horizontal)
         self.distTronerasEsquinas_slider = QSlider(Qt.Horizontal)
         self.distTronerasMedias_slider = QSlider(Qt.Horizontal)
         self.limiteVelocidad_slider = QSlider(Qt.Horizontal)
         self.friccionBolas_slider = QSlider(Qt.Horizontal)
         self.friccionRailes_slider = QSlider(Qt.Horizontal)
+        self.anchoAltoMesa_slider = QSlider(Qt.Horizontal)
+
         self.distRailes_text = QLineEdit()
         self.distRailes_text.setValidator(QIntValidator())
         self.distTronerasEsquinas_text = QLineEdit()
@@ -60,6 +68,13 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.friccionBolas_text.setValidator(QDoubleValidator())
         self.friccionRailes_text = QLineEdit()
         self.friccionRailes_text.setValidator(QDoubleValidator())
+        self.anchoAltoMesa_text = QLineEdit()
+        self.anchoAltoMesa_text.setValidator(QIntValidator())
+
+        self.altoCmMesa_text = QLineEdit()
+        self.anchoCmMesa_text = QLineEdit()
+        self.anchoCmMesa_text.setDisabled(True)
+        self.altoCmMesa_text.setDisabled(True)
 
         self.distRailes_text.setFixedWidth(30)
         self.distTronerasEsquinas_text.setFixedWidth(30)
@@ -67,6 +82,9 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.limiteVelocidad_text.setFixedWidth(30)
         self.friccionBolas_text.setFixedWidth(30)
         self.friccionRailes_text.setFixedWidth(30)
+        self.anchoAltoMesa_text.setFixedWidth(30)
+        self.anchoCmMesa_text.setFixedWidth(30)
+        self.altoCmMesa_text.setFixedWidth(30)
 
         self.distRailes_text.setText(str(self.distRailes))  
         self.distTronerasEsquinas_text.setText(str(self.distTronerasEsquinas))    
@@ -74,6 +92,9 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.limiteVelocidad_text.setText(str(self.limiteVelocidad))
         self.friccionBolas_text.setText(str(self.friccionBolas))
         self.friccionRailes_text.setText(str(self.friccionRailes))
+        self.anchoAltoMesa_text.setText(str(self.anchoAltoMesa))
+        self.anchoCmMesa_text.setText("200")
+        self.altoCmMesa_text.setText("100")
 
         self.distRailes_slider.setRange(1,154)
         self.distTronerasEsquinas_slider.setRange(1,152)
@@ -83,6 +104,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.limiteVelocidad_slider.setRange(10,400)
         self.friccionBolas_slider.setRange(1,10)
         self.friccionRailes_slider.setRange(1,10)
+        self.anchoAltoMesa_slider.setRange(100,1000)
 
         self.distRailes_slider.setValue(self.distRailes)
         self.distTronerasEsquinas_slider.setValue(self.distTronerasEsquinas)
@@ -90,7 +112,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.limiteVelocidad_slider.setValue(self.limiteVelocidad)
         self.friccionBolas_slider.setValue(int(self.friccionBolas * 10))
         self.friccionRailes_slider.setValue(int(self.friccionRailes * 10))
-
+        self.anchoAltoMesa_slider.setValue(self.anchoAltoMesa)
 
         self.distRailes_slider.valueChanged.connect(self.onDistRailesSliderChange)
         self.distTronerasEsquinas_slider.valueChanged.connect(self.onDistTronerasEsquinasSliderChange)
@@ -98,6 +120,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.limiteVelocidad_slider.valueChanged.connect(self.onLimiteVelocidadSliderChange)
         self.friccionBolas_slider.valueChanged.connect(self.onFriccionBolasSliderChange)
         self.friccionRailes_slider.valueChanged.connect(self.onFriccionRailesSliderChange)
+        self.anchoAltoMesa_slider.valueChanged.connect(self.onAltoAnchoMesaSliderChange)
 
         self.distRailes_text.textChanged.connect(self.onDistRailesTextChange)
         self.distTronerasEsquinas_text.textChanged.connect(self.onDistTronerasEsquinasTextChange)
@@ -105,6 +128,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.limiteVelocidad_text.textChanged.connect(self.onLimiteVelocidadTextChange)
         self.friccionBolas_text.textChanged.connect(self.onFriccionBolasTextChange)
         self.friccionRailes_text.textChanged.connect(self.onFriccionRailesTextChange)
+        self.anchoAltoMesa_text.textChanged.connect(self.onAltoAnchoMesaTextChange)
 
         layout.addWidget(self.distRailes_label, 0, 0)
         layout.addWidget(self.distRailes_slider, 0, 1)
@@ -129,6 +153,16 @@ class ParametrosSimulacionWindow(QMainWindow):
         layout.addWidget(self.friccionRailes_label, 5, 0)
         layout.addWidget(self.friccionRailes_slider, 5, 1)
         layout.addWidget(self.friccionRailes_text, 5, 2)
+        
+        layout.addWidget(self.anchoAltoMesa_label, 6, 0)
+        layout.addWidget(self.anchoAltoMesa_slider, 6, 1)
+        layout.addWidget(self.anchoAltoMesa_text, 6, 2)
+
+        layout.addWidget(self.anchoCmMesa_label, 7, 0)
+        layout.addWidget(self.anchoCmMesa_text, 7, 1)
+        layout.addWidget(self.altoCmMesa_label, 8, 0)
+        layout.addWidget(self.altoCmMesa_text, 8, 1)
+
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -177,12 +211,35 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.friccionRailes_text.setText(str(self.friccionRailes))
         self.friccionRailesChanged.emit(self.friccionRailes)
 
+    def onAltoAnchoMesaSliderChange(self, value):
+        self.anchoAltoMesa = value
+        self.anchoAltoMesaChanged.emit(self.anchoAltoMesa)
+        self.anchoAltoMesa_text.setText(str(self.anchoAltoMesa))
+        self.recalcularAnchoYAltoEnCm()
+
+    def recalcularAnchoYAltoEnCm(self):
+        #regla de 3 para calcular en cm
+        anchoFixeado = self.anchoAltoMesa
+        if(anchoFixeado%2!=0):
+            anchoFixeado+=1
+        ancho = (int)(anchoFixeado*200/1000)
+        self.anchoCmMesa_text.setText(str(ancho))
+        self.altoCmMesa_text.setText(str(ancho/2))
+
     def onDistRailesTextChange(self, text):    
         if text:
             self.distRailes = int(text)
             self.distRailesChanged.emit(self.distRailes)
             # Actualizar el slider correspondiente
             self.distRailes_slider.setValue(self.distRailes)
+
+    def onAltoAnchoMesaTextChange(self, text):
+        if text:
+            self.anchoAltoMesa = int(text)
+            self.anchoAltoMesaChanged.emit(self.anchoAltoMesa)            
+            self.anchoAltoMesa_slider.setValue(self.anchoAltoMesa)
+            self.recalcularAnchoYAltoEnCm()
+        
 
     def onDistTronerasEsquinasTextChange(self, text):
         self.distTronerasEsquinas_text.setText(str(self.distTronerasEsquinas))
