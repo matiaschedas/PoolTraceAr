@@ -5,3 +5,4 @@ pypiwin32
 pyautogui
 pywin32
 screeninfo
+tensorflow-cpu==2.12

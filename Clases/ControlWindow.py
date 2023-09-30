@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIntValidator, QIcon
+from PyQt5.QtGui import QIntValidator, QIcon, QDoubleValidator
 from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSlider, QLineEdit, QLabel, QGridLayout, QPushButton, QCheckBox, QComboBox, QApplication
 import cv2
 import os
@@ -28,8 +28,11 @@ def obtener_numeros_monitores_conectados():
 
 
 class ControlWindow(QMainWindow):
+    anguloChanged = pyqtSignal(float)
+    aspectRatioChanged = pyqtSignal(float)
     dpChanged = pyqtSignal(int)
     minDistChanged = pyqtSignal(int)
+    radioTroneraChanged = pyqtSignal(int)
     cannyThresholdChanged = pyqtSignal(int)
     votesThresholdChanged = pyqtSignal(int)
     minRadiusChanged = pyqtSignal(int)
@@ -38,6 +41,7 @@ class ControlWindow(QMainWindow):
     botonProyectar = None
     botonConfigurarROI = None
     botonPreprocesamientos = None
+    botonParametrosSimulacion = None
     comboCamaras = None
 
     def __init__(self, parent=None):
@@ -54,7 +58,9 @@ class ControlWindow(QMainWindow):
         self.minRadius = 14
         self.maxRadius = 16
         self.maxCircles = 100
-
+        self.angulo = 0
+        self.aspect_ratio = 2
+        self.radio_tronera = 20        
         
         icon_path = os.path.join(script_dir.replace("Clases", "images"), "config.png")
         icon = QIcon(icon_path)
@@ -170,6 +176,49 @@ class ControlWindow(QMainWindow):
         layout.addWidget(self.maxCircles_slider, 6, 1)
         layout.addWidget(self.maxCircles_text, 6, 2)
 
+        angulo_label = QLabel("Ángulo de cámara")
+        self.angulo_slider = QSlider(Qt.Horizontal)
+        self.angulo_slider.setRange(-150, 150)
+        self.angulo_slider.setValue(int(self.angulo * 10))
+        self.angulo_slider.valueChanged.connect(
+            self.onanguloSliderChange)
+        self.angulo_text = QLineEdit()
+        self.angulo_text.setValidator(QDoubleValidator())
+        self.angulo_text.setText(str(self.angulo))
+        self.angulo_text.textChanged.connect(
+            self.onanguloTextChange)
+        self.angulo_text.setFixedWidth(30)
+        layout.addWidget(angulo_label, 7, 0)
+        layout.addWidget(self.angulo_slider, 7, 1)
+        layout.addWidget(self.angulo_text, 7, 2)
+
+        radio_tronera_label = QLabel("Radio Tronera")
+        self.radio_tronera_slider = QSlider(Qt.Horizontal)
+        self.radio_tronera_slider.setRange(1, 60)
+        self.radio_tronera_slider.setValue(self.radio_tronera)
+        self.radio_tronera_slider.valueChanged.connect(self.onRadioTroneraSliderChange)
+        self.radio_tronera_text = QLineEdit()
+        self.radio_tronera_text.setValidator(QIntValidator())
+        self.radio_tronera_text.setText(str(self.radio_tronera))
+        self.radio_tronera_text.textChanged.connect(self.onRadioTroneraTextChange)
+        self.radio_tronera_text.setFixedWidth(30)
+        layout.addWidget(radio_tronera_label, 8, 0)
+        layout.addWidget(self.radio_tronera_slider, 8, 1)
+        layout.addWidget(self.radio_tronera_text, 8, 2)
+        
+        aspect_ratio_label = QLabel("Relacion de aspecto")
+        self.aspect_ratio_slider = QSlider(Qt.Horizontal)
+        self.aspect_ratio_slider.setRange(180, 500)
+        self.aspect_ratio_slider.setValue(int(self.aspect_ratio * 100))
+        self.aspect_ratio_slider.valueChanged.connect(self.AspectRatioSliderChange)
+        self.aspect_ratio_text = QLineEdit()
+        self.aspect_ratio_text.setValidator(QDoubleValidator())
+        self.aspect_ratio_text.setText(str(self.aspect_ratio))
+        self.aspect_ratio_text.textChanged.connect(self.OnAspectRatioTextChange)
+        self.aspect_ratio_text.setFixedWidth(30)
+        layout.addWidget(aspect_ratio_label, 9, 0)
+        layout.addWidget(self.aspect_ratio_slider, 9, 1)
+        layout.addWidget(self.aspect_ratio_text, 9, 2)
 
         webcams = obtener_webcams()
         monitores = obtener_numeros_monitores_conectados()
@@ -183,22 +232,29 @@ class ControlWindow(QMainWindow):
         self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
         self.botonConfigurarROI = self.crear_boton("Configurar ROI", 1290, 125, 100, 30)
         self.botonPreprocesamientos = self.crear_boton("Preprocesamientos", 1290, 125, 100, 30)
+        self.botonParametrosSimulacion = self.crear_boton("Parametros Simulacion", 1290, 125, 100, 30)
         self.botonGuardarPreset = self.crear_boton("Guardar Preset", 1290,125,100,30)
         self.botonCargarPreset = self.crear_boton("Cargar Preset", 1290,125,100, 30)
         self.botonSetearIDS = self.crear_boton("Setear IDS", 1290,125,100,30)
 
+        pos = 10
+        layout.addWidget(self.labelCamara,pos,0)
+        layout.addWidget(self.labelNombrePreset,pos,3)
+        pos = pos + 1 
+        layout.addWidget(self.textNombrePreset,pos,3)
+        layout.addWidget(self.comboCamaras,pos,0)
+        layout.addWidget(self.botonSetearIDS,pos,1)
 
-        layout.addWidget(self.labelCamara,7,0)
-        layout.addWidget(self.labelNombrePreset,7,3)
-        layout.addWidget(self.textNombrePreset,8,3)
-        layout.addWidget(self.comboCamaras,8,0)
-        layout.addWidget(self.botonSetearIDS,8,1)
-        layout.addWidget(self.botonProyectar, 9, 0)
-        layout.addWidget(self.comboMonitores, 10, 0)
-        layout.addWidget(self.botonConfigurarROI, 9, 1)
-        layout.addWidget(self.botonPreprocesamientos, 9, 2)
-        layout.addWidget(self.botonGuardarPreset,9,3)
-        layout.addWidget(self.botonCargarPreset,10,3)
+        pos = pos + 1 
+        layout.addWidget(self.botonProyectar, pos, 0)
+        layout.addWidget(self.botonConfigurarROI, pos, 1)
+        layout.addWidget(self.botonPreprocesamientos, pos, 2)
+        layout.addWidget(self.botonGuardarPreset,pos,3)
+        
+        pos = pos + 1 
+        layout.addWidget(self.comboMonitores, pos, 0) 
+        layout.addWidget(self.botonParametrosSimulacion, pos,2)       
+        layout.addWidget(self.botonCargarPreset,pos,3)
 
 
         widget = QWidget()
@@ -206,6 +262,7 @@ class ControlWindow(QMainWindow):
         self.setCentralWidget(widget)
         
     
+
     def obtenerComboCamaras(self):
         return self.comboCamaras
     
@@ -213,7 +270,7 @@ class ControlWindow(QMainWindow):
         return self.comboMonitores
     
     def obtenerBotones(self):
-        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonSetearIDS
+        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonSetearIDS, self.botonParametrosSimulacion
 
     def crear_boton(self, texto, x, y, ancho, alto):
         boton = QPushButton(texto, self)
@@ -243,6 +300,16 @@ class ControlWindow(QMainWindow):
         # Actualizar el cuadro de texto correspondiente
         self.dp_text.setText(str(self.dp))
 
+    def onanguloSliderChange(self, value):
+        self.angulo = value / 10.0  # Dividir por 10.0 para obtener el valor decimal
+        self.angulo_text.setText(str(self.angulo))
+        self.anguloChanged.emit(self.angulo)
+
+    def AspectRatioSliderChange(self, value):
+        self.aspect_ratio = value / 100.0  # Dividir por 10.0 para obtener el valor decimal
+        self.aspect_ratio_text.setText(str(self.aspect_ratio))
+        self.aspectRatioChanged.emit(self.aspect_ratio)
+
     def onDpTextChange(self, text):
         if text:
             self.dp = int(text)
@@ -262,6 +329,21 @@ class ControlWindow(QMainWindow):
             self.minDistChanged.emit(self.minDist)
             # Actualizar el slider correspondiente
             self.minDist_slider.setValue(self.minDist)
+
+    def onanguloTextChange(self, text):
+        try:
+            self.angulo = float(text)  # Dividir por 10 para obtener el valor decimal
+            self.angulo_slider.setValue(int(self.angulo * 10))
+        except ValueError:
+            pass
+
+    def OnAspectRatioTextChange(self, text):
+        try:
+            self.aspect_ratio = float(text)  # Dividir por 10 para obtener el valor decimal
+            self.aspect_ratio_slider.setValue(int(self.aspect_ratio * 100))
+        except ValueError:
+            pass
+    
 
     def onCannyThresholdSliderChange(self, value):
         self.cannyThreshold = value
@@ -308,23 +390,36 @@ class ControlWindow(QMainWindow):
                 self.minRadius_slider.setValue(self.minRadius)
 
     def onMaxRadiusSliderChange(self, value):
-        self.maxRadius = value
+        if value>self.minRadius:
+            self.maxRadius = value
         self.maxRadiusChanged.emit(self.maxRadius)
         # Actualizar el cuadro de texto correspondiente
         self.maxRadius_text.setText(str(self.maxRadius))
 
     def onMaxRadiusTextChange(self, text):
         if text:
-            self.maxRadius = int(text)
-            self.maxRadiusChanged.emit(self.maxRadius)
-            # Actualizar el slider correspondiente
-            self.maxRadius_slider.setValue(self.maxRadius)
-            # Validar que maxRadius sea mayor que minRadius
-            if self.maxRadius <= self.minRadius:
-                self.maxRadius = self.minRadius + 1
-                self.maxRadius_text.setText(str(self.maxRadius))
-                self.maxRadius_slider.setValue(self.maxRadius)
+            if int(text) > self.minRadius:
+                 self.maxRadius = int(text)
+                 self.maxRadiusChanged.emit(self.maxRadius)
+                 self.maxRadius_slider.setValue(self.maxRadius)
+                 self.maxRadius_text.setText(str(self.maxRadius))
+                 self.radioTroneraChanged.emit(self.radio_tronera)
 
+
+    def onRadioTroneraSliderChange(self):
+        value = self.radio_tronera_slider.value()
+        self.radio_tronera = value
+        self.radio_tronera_text.setText(str(value))
+        self.radioTroneraChanged.emit(self.radio_tronera)
+
+    def onRadioTroneraTextChange(self):
+        text = self.radio_tronera_text.text()
+        if text.isdigit():
+            value = int(text)
+            if 1 <= value <= 50:
+                self.radio_tronera = value
+                self.radio_tronera_slider.setValue(value)
+                
     def onMaxCirclesSliderChange(self, value):
         self.maxCircles = value
         self.maxCirclesChanged.emit(self.maxCircles)
@@ -338,7 +433,9 @@ class ControlWindow(QMainWindow):
             # Actualizar el slider correspondiente
             self.maxCircles_slider.setValue(self.maxCircles)
 
-    def actualizarParametros(self, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles):
+    def actualizarParametros(self, dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles,angulo, radioTronera):
+        self.angulo = angulo
+        self.radio_tronera = radioTronera
         self.dp = dp
         self.minDist = minDist
         self.cannyThreshold = cannyThreshold
@@ -371,11 +468,11 @@ class ControlWindow(QMainWindow):
         self.minDist_slider.setValue(self.minDist)
     
     
-# def main():
-#     app = QApplication(sys.argv)
-#     window = ControlWindow()
-#     window.show()
-#     sys.exit(app.exec_())
+def main():
+    app = QApplication(sys.argv)
+    window = ControlWindow()
+    window.show()
+    sys.exit(app.exec_())
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
