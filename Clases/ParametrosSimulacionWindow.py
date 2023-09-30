@@ -321,7 +321,41 @@ class ParametrosSimulacionWindow(QMainWindow):
             self.friccionRailes_slider.setValue(int(self.friccionRailes * 10))
         except ValueError:
             pass
+    def actualizarParametros(self, distRailes, distTronerasEsquinas, distTronerasMedias, limiteVelocidad, friccionBolas, friccionRailes, tamBolas, anchoAltoMesa):
+        self.distRailes = distRailes
+        self.distTronerasEsquinas = distTronerasEsquinas
+        self.distTronerasMedias = distTronerasMedias
+        self.limiteVelocidad = limiteVelocidad
+        self.friccionBolas = friccionBolas
+        self.friccionRailes = friccionRailes
+        self.tamBolas = tamBolas
+        self.anchoAltoMesa = anchoAltoMesa
+        self.actualizarSliderTextBox()
 
+    def actualizarSliderTextBox(self):
+        self.distRailes_text.setText(str(self.distRailes))
+        self.distRailes_slider.setValue(self.distRailes)
+
+        self.distTronerasEsquinas_text.setText(str(self.distTronerasEsquinas))
+        self.distTronerasEsquinas_slider.setValue(self.distTronerasEsquinas)
+
+        self.distTronerasMedias_text.setText(str(self.distTronerasEsquinas))
+        self.distTronerasMedias_slider.setValue(self.distTronerasMedias)
+
+        self.limiteVelocidad_text.setText(str(self.limiteVelocidad))
+        self.limiteVelocidad_slider.setValue(self.limiteVelocidad)
+
+        self.friccionBolas_text.setText(str(self.friccionBolas))
+        self.friccionBolas_slider.setValue(int(self.friccionBolas*10))
+
+        self.friccionRailes_text.setText(str(self.friccionRailes))
+        self.friccionRailes_slider.setValue(int(self.friccionRailes*10))
+
+        self.tamBolas_text.setText(str(self.tamBolas))
+        self.tamBolas_slider.setValue(self.tamBolas)
+
+        self.anchoAltoMesa_text.setText(str(self.anchoAltoMesa))
+        self.anchoAltoMesa_slider.setValue(self.anchoAltoMesa)
 
 def main():
     app = QApplication(sys.argv)

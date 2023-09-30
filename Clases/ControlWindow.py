@@ -443,6 +443,7 @@ class ControlWindow(QMainWindow):
         self.minRadius = minRadius
         self.maxRadius = maxRadius
         self.maxCircles = maxCircles
+
         self.actualizarSliderTextBox()
 
     def actualizarSliderTextBox(self):

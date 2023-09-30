@@ -728,7 +728,7 @@ class VentanaVideo(QMainWindow):
     
     #guardar presets de configuraciones:
     def guardar_preset(self):
-        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias, limite_velocidad, friccion_bolas, friccion_railes, tam_bolas_simulacion, ancho_alto_mesa
         nombreArchivo = self.controlWindow.textNombrePreset.text()
         valido = self.es_nombre_archivo_valido(nombreArchivo)
         if valido:
@@ -769,19 +769,29 @@ class VentanaVideo(QMainWindow):
                 "tronera5":self.troneras[4],
                 "tronera6":self.troneras[5],
                 "angulo": anguloRotar,
-                "radioTroneras": self.radioTronera
+                "radioTroneras": self.radioTronera,
+                "distanciaRailes": distancia_railes,
+                "distanciaTronerasEsquinas": distancia_troneras_esquinas,
+                "distanciaTronerasMedias": distancia_troneras_medias,
+                "limiteVelocidad": limite_velocidad,
+                "friccionBolas": friccion_bolas,
+                "friccionRailes": friccion_railes,
+                "tamBolasSimulacion": tam_bolas_simulacion,
+                "anchoAltoMesa": ancho_alto_mesa
             }
             with open(path, "w") as archivo:
                 json.dump(datos, archivo)
 
     #cargar presets de configuraciones:
     def cargar_preset(self):
-        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_alto_mesa
         campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles', 
                   'coordPunto1', 'coordPunto2','coordPunto3','coordPunto4','coordPunto5','coordPunto6',
                   'coordPunto7','coordPunto8','coordPunto9','coordPunto10','coordPunto11','coordPunto12',
                   'XIROI','YIROI','XDROI','YDROI','tronera1','tronera2','tronera3','tronera4','tronera5','tronera6',
-                  'angulo','radioTroneras']
+                  'angulo','radioTroneras', 'distanciaRailes','distanciaTronerasEsquinas','distanciaTronerasMedias',
+                   'limiteVelocidad','friccionBolas','friccionRailes','tamBolasSimulacion','anchoAltoMesa']
+        
         valido = False
         file_dialog = QFileDialog()
 
@@ -789,7 +799,7 @@ class VentanaVideo(QMainWindow):
         options |= QFileDialog.DontUseNativeDialog
 
         file_path, _ = file_dialog.getOpenFileName(None, "Seleccionar archivo", "", "Todos los archivos (*.*)", options=options)
-            
+ 
         if file_path:
             print("Archivo seleccionado:", file_path)
             _, extension = os.path.splitext(file_path)
@@ -837,9 +847,18 @@ class VentanaVideo(QMainWindow):
             self.troneras[5]=data["tronera6"]
             anguloRotar = data["angulo"]
             self.radioTronera = data["radioTroneras"]
+            distancia_railes = data["distanciaRailes"]
+            distancia_troneras_esquinas = data["distanciaTronerasEsquinas"]
+            distancia_troneras_medias = data["distanciaTronerasMedias"]
+            limite_velocidad = data["limiteVelocidad"]
+            friccion_bolas = data["friccionBolas"]
+            friccion_railes = data["friccionRailes"]
+            tam_bolas_simulacion = data["tamBolasSimulacion"]
+            ancho_alto_mesa = data["anchoAltoMesa"]
 
             self.controlWindow.actualizarParametros(
             dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar,self.radioTronera)
+            self.ventanaParametrosSimulacion.actualizarParametros(distancia_railes, distancia_troneras_esquinas,distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_alto_mesa)
 
     # region cambios para preprocesamiento de imagen:     
     def onAlphaChanged(self, value):
@@ -2249,37 +2268,41 @@ class VentanaVideo(QMainWindow):
         return lisas > 7
     
     def selecciono_negra(self, listaEtiquetada, seleccionada):
-        x,y,_ = seleccionada
-        etiquetaSeleccionada = ""
-        for (x1,y1,r1), _, etiqueta in listaEtiquetada:
-            x1 = x1 + self.XIROI
-            y1 = y1 + self.YIROI
-            if (x1 == x and y1 == y):
-               etiquetaSeleccionada = etiqueta
-               break
-        if etiquetaSeleccionada == "Negra":
-            return True
+        if seleccionada is not None:
+            x,y,_ = seleccionada
+            etiquetaSeleccionada = ""
+            for (x1,y1,r1), _, etiqueta in listaEtiquetada:
+                x1 = x1 + self.XIROI
+                y1 = y1 + self.YIROI
+                if (x1 == x and y1 == y):
+                    etiquetaSeleccionada = etiqueta
+                break
+            if etiquetaSeleccionada == "Negra":
+                return True
+            return False
         return False
 
         
     def seleccion_de_negra_incorrecto(self, listaEtiquetada, seleccionada):
-       x,y,_ = seleccionada
-       etiquetaSeleccionada = ""
-       lisas = 0
-       rayadas = 0 
-       for (x1,y1,r1), _, etiqueta in listaEtiquetada:
-           x1 = x1 + self.XIROI
-           y1 = y1 + self.YIROI
-           if etiqueta == "Lisa":
-               lisas = lisas +1
-           elif etiqueta == "Rayada":
-               rayadas = rayadas +1 
-           if (x1 == x and y1 == y):
-               etiquetaSeleccionada = etiqueta
-       if etiquetaSeleccionada != "Negra":
-           return False
-       if rayadas != 0 and lisas != 0:
-            return True
+       if seleccionada is not None:
+            x,y,_ = seleccionada
+            etiquetaSeleccionada = ""
+            lisas = 0
+            rayadas = 0 
+            for (x1,y1,r1), _, etiqueta in listaEtiquetada:
+                x1 = x1 + self.XIROI
+                y1 = y1 + self.YIROI
+                if etiqueta == "Lisa":
+                    lisas = lisas +1
+                elif etiqueta == "Rayada":
+                    rayadas = rayadas +1 
+                if (x1 == x and y1 == y):
+                    etiquetaSeleccionada = etiqueta
+            if etiquetaSeleccionada != "Negra":
+                return False
+            if rayadas != 0 and lisas != 0:
+                    return True
+       return False
            
            
 
