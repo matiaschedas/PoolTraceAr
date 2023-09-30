@@ -29,6 +29,7 @@ def obtener_numeros_monitores_conectados():
 
 class ControlWindow(QMainWindow):
     anguloChanged = pyqtSignal(float)
+    aspectRatioChanged = pyqtSignal(float)
     dpChanged = pyqtSignal(int)
     minDistChanged = pyqtSignal(int)
     radioTroneraChanged = pyqtSignal(int)
@@ -40,6 +41,7 @@ class ControlWindow(QMainWindow):
     botonProyectar = None
     botonConfigurarROI = None
     botonPreprocesamientos = None
+    botonParametrosSimulacion = None
     comboCamaras = None
 
     def __init__(self, parent=None):
@@ -57,6 +59,7 @@ class ControlWindow(QMainWindow):
         self.maxRadius = 16
         self.maxCircles = 100
         self.angulo = 0
+        self.aspect_ratio = 2
         self.radio_tronera = 20        
         
         icon_path = os.path.join(script_dir.replace("Clases", "images"), "config.png")
@@ -202,6 +205,20 @@ class ControlWindow(QMainWindow):
         layout.addWidget(radio_tronera_label, 8, 0)
         layout.addWidget(self.radio_tronera_slider, 8, 1)
         layout.addWidget(self.radio_tronera_text, 8, 2)
+        
+        aspect_ratio_label = QLabel("Relacion de aspecto")
+        self.aspect_ratio_slider = QSlider(Qt.Horizontal)
+        self.aspect_ratio_slider.setRange(180, 500)
+        self.aspect_ratio_slider.setValue(int(self.aspect_ratio * 100))
+        self.aspect_ratio_slider.valueChanged.connect(self.AspectRatioSliderChange)
+        self.aspect_ratio_text = QLineEdit()
+        self.aspect_ratio_text.setValidator(QDoubleValidator())
+        self.aspect_ratio_text.setText(str(self.aspect_ratio))
+        self.aspect_ratio_text.textChanged.connect(self.OnAspectRatioTextChange)
+        self.aspect_ratio_text.setFixedWidth(30)
+        layout.addWidget(aspect_ratio_label, 9, 0)
+        layout.addWidget(self.aspect_ratio_slider, 9, 1)
+        layout.addWidget(self.aspect_ratio_text, 9, 2)
 
         webcams = obtener_webcams()
         monitores = obtener_numeros_monitores_conectados()
@@ -215,22 +232,29 @@ class ControlWindow(QMainWindow):
         self.botonProyectar = self.crear_boton("Proyectar", 1290, 125, 100, 30)
         self.botonConfigurarROI = self.crear_boton("Configurar ROI", 1290, 125, 100, 30)
         self.botonPreprocesamientos = self.crear_boton("Preprocesamientos", 1290, 125, 100, 30)
+        self.botonParametrosSimulacion = self.crear_boton("Parametros Simulacion", 1290, 125, 100, 30)
         self.botonGuardarPreset = self.crear_boton("Guardar Preset", 1290,125,100,30)
         self.botonCargarPreset = self.crear_boton("Cargar Preset", 1290,125,100, 30)
         self.botonSetearIDS = self.crear_boton("Setear IDS", 1290,125,100,30)
 
+        pos = 10
+        layout.addWidget(self.labelCamara,pos,0)
+        layout.addWidget(self.labelNombrePreset,pos,3)
+        pos = pos + 1 
+        layout.addWidget(self.textNombrePreset,pos,3)
+        layout.addWidget(self.comboCamaras,pos,0)
+        layout.addWidget(self.botonSetearIDS,pos,1)
 
-        layout.addWidget(self.labelCamara,9,0)
-        layout.addWidget(self.labelNombrePreset,9,3)
-        layout.addWidget(self.textNombrePreset,10,3)
-        layout.addWidget(self.comboCamaras,10,0)
-        layout.addWidget(self.botonSetearIDS,10,1)
-        layout.addWidget(self.botonProyectar, 11, 0)
-        layout.addWidget(self.botonConfigurarROI, 11, 1)
-        layout.addWidget(self.comboMonitores, 12, 0)
-        layout.addWidget(self.botonPreprocesamientos, 11, 2)
-        layout.addWidget(self.botonGuardarPreset,11,3)
-        layout.addWidget(self.botonCargarPreset,12,3)
+        pos = pos + 1 
+        layout.addWidget(self.botonProyectar, pos, 0)
+        layout.addWidget(self.botonConfigurarROI, pos, 1)
+        layout.addWidget(self.botonPreprocesamientos, pos, 2)
+        layout.addWidget(self.botonGuardarPreset,pos,3)
+        
+        pos = pos + 1 
+        layout.addWidget(self.comboMonitores, pos, 0) 
+        layout.addWidget(self.botonParametrosSimulacion, pos,2)       
+        layout.addWidget(self.botonCargarPreset,pos,3)
 
 
         widget = QWidget()
@@ -246,7 +270,7 @@ class ControlWindow(QMainWindow):
         return self.comboMonitores
     
     def obtenerBotones(self):
-        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonSetearIDS
+        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonSetearIDS, self.botonParametrosSimulacion
 
     def crear_boton(self, texto, x, y, ancho, alto):
         boton = QPushButton(texto, self)
@@ -281,6 +305,11 @@ class ControlWindow(QMainWindow):
         self.angulo_text.setText(str(self.angulo))
         self.anguloChanged.emit(self.angulo)
 
+    def AspectRatioSliderChange(self, value):
+        self.aspect_ratio = value / 100.0  # Dividir por 10.0 para obtener el valor decimal
+        self.aspect_ratio_text.setText(str(self.aspect_ratio))
+        self.aspectRatioChanged.emit(self.aspect_ratio)
+
     def onDpTextChange(self, text):
         if text:
             self.dp = int(text)
@@ -305,6 +334,13 @@ class ControlWindow(QMainWindow):
         try:
             self.angulo = float(text)  # Dividir por 10 para obtener el valor decimal
             self.angulo_slider.setValue(int(self.angulo * 10))
+        except ValueError:
+            pass
+
+    def OnAspectRatioTextChange(self, text):
+        try:
+            self.aspect_ratio = float(text)  # Dividir por 10 para obtener el valor decimal
+            self.aspect_ratio_slider.setValue(int(self.aspect_ratio * 100))
         except ValueError:
             pass
     
@@ -432,11 +468,11 @@ class ControlWindow(QMainWindow):
         self.minDist_slider.setValue(self.minDist)
     
     
-# def main():
-#     app = QApplication(sys.argv)
-#     window = ControlWindow()
-#     window.show()
-#     sys.exit(app.exec_())
+def main():
+    app = QApplication(sys.argv)
+    window = ControlWindow()
+    window.show()
+    sys.exit(app.exec_())
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()

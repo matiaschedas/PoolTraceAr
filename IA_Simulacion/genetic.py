@@ -1,28 +1,34 @@
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.pool import PoolEnv
 
+import time
 import itertools
 import numpy as np
 import multiprocessing
-
+import math
 
 class Player:
-    def __init__(self, env: PoolEnv) -> None:
+    def __init__(self, env: PoolEnv, bola_en_mano=False) -> None:
         self.env = env
         self.reward = -1
         self.low = self.env.action_space.low[0]
         self.high = self.env.action_space.high[0]
+        self.bola_en_mano = bola_en_mano
         self.v = np.random.uniform(low=self.low, high=self.high, size=2)
+                   
 
-    def clone(self):
-        player = Player(self.env)
+        
+        
+
+    def clone(self, bola_en_mano=False):
+        player = Player(self.env, bola_en_mano=bola_en_mano)
         player.v = np.copy(self.v)
         return player
 
     def step(self):
         self.reward = self.env.step(self.v)[1]
 
-    def mutate(self, mu=1):
+    def mutate(self, mu=1, bola_en_mano=False):
         rand = np.random.uniform(0, 1)
         if rand < mu / 5:
             self.v = np.random.uniform(self.low, self.high, 2)
@@ -44,33 +50,33 @@ class GeneticAlgorithm:
         self.iterations = iterations
         self.max_iterations = iterations * 5
         self.training_type = training_type
-        self.best_player = Player(self.create_env())
+        self.best_player = Player(self.create_env(), bola_en_mano=self.attrs["bola_en_mano"])
         if self.training_type == "single":
             self.players = np.array([self.best_player])
             self.player_rewards = np.array([(self.best_player.reward + 1.001) ** 3])
     
 
     def create_env(self):
-        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"])
+        env = PoolEnv(training=True, draw_screen=False, num_balls=self.attrs["cantidad_bolas"],simulacion=True)
         env.apply_attrs(self.attrs)
         return env
 
-    def train(self, v=None, score_threshold=0.65):
+    def train(self, v=None, score_threshold=0.65,bola_en_mano=False):
         if v is not None:
             self.best_player.v = v
         for _ in range(self.iterations):
             if self.training_type == "single":
                 if self.best_player.env.score_tracking["pot_count"] > 6:
-                    player = self.best_player.clone()
+                    player = self.best_player.clone(bola_en_mano=bola_en_mano)
                 else:
                     player = np.random.choice(
                         a=self.players,
                         p=self.player_rewards / self.player_rewards.sum(),
                     ).clone()
             elif self.training_type == "mlp":
-                player = self.best_player.clone()
+                player = self.best_player.clone(bola_en_mano=bola_en_mano)
 
-            player.mutate()
+            player.mutate(bola_en_mano=bola_en_mano)
             attrs = player.env.get_attrs()
             player.step()
             player.env.apply_attrs(attrs)
@@ -110,7 +116,7 @@ class Trainer:
         results = []
         self.itr = 0
         self.best_v = None
-        with multiprocessing.Pool() as pooling:
+        with multiprocessing.Pool(processes=4) as pooling:
             for i in range(self.batch):
                 for result in pooling.imap_unordered(
                     self.mlp_get_player,
@@ -137,26 +143,36 @@ class Trainer:
     def mlp_get_player(self, x):
         attrs, iterations = x
         agent = GeneticAlgorithm(attrs,  iterations=iterations, training_type="mlp")
-        player, attrs = agent.train(self.best_v)
+        player, attrs = agent.train(self.best_v, bola_en_mano=attrs["bola_en_mano"])
         return list(player.v), player.reward, agent.i, attrs
 
 class Genetic():
     def iniciar(self):
         #original: 150, testear con otros valores y ver rendimiento
         iterations = 150
-        pool = PoolEnv(training=False)
+        
+        pool = PoolEnv(training=False, graficar=False)
         trainer = Trainer(iterations)
-        i =0
-        #while i == 0:
+        
         attrs = pool.get_attrs()
         best_player, attrs = trainer.mlp_train(attrs)
-
+        
         pool.apply_attrs(attrs)
-        done = pool.step(best_player)[2]
-        #i =  i + 1
+        respuesta = pool.step(best_player)[4]
+        
         pool.close()
         pool = None
         trainer = None
+        return respuesta
+    
+    def ver_simulacion(self, attrs, best_player):
+        pool = PoolEnv(training=False, graficar=True, simulacion=True)
+        pool.apply_attrs(attrs)
+        time.sleep(2)
+        respuesta = pool.step(best_player)[4]
+        pool.close()
+        pool = None
+        return respuesta
 
 if __name__ == "__main__":
     iterations = 150

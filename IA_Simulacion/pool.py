@@ -1,9 +1,11 @@
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.utils import *
 from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
+from IA_Simulacion.Respuesta import Respuesta
 
 import os
 import gym
+import math
 
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 os.environ["SDL_VIDEO_WINDOW_POS"] = "50, 200"
@@ -21,6 +23,7 @@ from copy import copy
 import pymunk.pygame_util as pygame_util
 
 primerContacto = None
+primerContactoCoordenada = None
 primerContactoCorrecto = False
 bolasEmbocadas = []
 bolasCorrectasEmbocadas = 0
@@ -46,21 +49,26 @@ class PoolEnv:
         reward_by_steps=REWARD_BY_STEPS,
         total_foul_times=TOTAL_FOUL_TIMES,
         observation_type=OBSERVATION_TYPE,
+        bola_en_mano=False,
+        graficar = True,
+        simulacion = False,
+        embocarNegra = False,
+        nroTronera = -1
     ):
         # initialize some constants
         self.episodes = 0
         self.total_steps = 0
         self.running = True
 
-        self.width = WIDTH * ZOOM_MULTIPLIER
-        self.height = HEIGHT * ZOOM_MULTIPLIER
+        
         self.training = training
         self.num_balls = num_balls
         self.reward_by_steps = reward_by_steps
         self.total_foul_times = total_foul_times
         self.observation_type = observation_type
         self.draw_screen = draw_screen or (observation_type == "image") or not training
-
+        self.graficar = graficar
+        self.simulacion = simulacion
         # initialize space
         self.space = pm.Space()
         self.space.gravity = (0, 0)
@@ -76,9 +84,28 @@ class PoolEnv:
         self.ancho_ratio = 0
         self.alto_ratio = 0
         self.singleton = SingletonCompartida()
+        self.bola_en_mano = bola_en_mano
         if(self.singleton.listaApareada is not None):
             self.default = False    
+            self.bola_en_mano = self.singleton.bolaEnMano
+        if(self.default == False):
+            self.width = self.singleton.ancho_mesa * ZOOM_MULTIPLIER
+            self.height = self.singleton.alto_mesa * ZOOM_MULTIPLIER
+        else:
+            self.width = WIDTH * ZOOM_MULTIPLIER
+            self.height = HEIGHT * ZOOM_MULTIPLIER
         self.reiniciar_globales()
+        if self.graficar == False:
+            self.draw_screen = False
+        self.attrs_respuesta = None
+        self.best_player_respuesta = None
+        self.embocarNegra = embocarNegra
+        self.nroTronera = nroTronera
+        if self.nroTronera is None:
+            self.nroTronera = -1
+        if self.singleton.nroTronera is not None:
+            self.nroTronera = self.singleton.nroTronera
+        self.bola_en_mano_error = False
 
         # gym environment
         self.spec = None
@@ -86,12 +113,21 @@ class PoolEnv:
         self.reward_range = np.array([-1, 1])
         self.action_space = spaces.Box(low=-1, high=1, shape=(2,))
         if self.observation_type == "image":
-            self.observation_space = spaces.Box(
-                low=0,
-                high=255,
-                shape=(3, IMAGE_HEIGHT, IMAGE_WIDTH),
-                dtype=np.uint8,
-            )
+            if self.default == False:
+                image_height = int(IMAGE_WIDTH * (self.singleton.alto_mesa / self.singleton.ancho_mesa))
+                self.observation_space = spaces.Box(
+                    low=0,
+                    high=255,
+                    shape=(3, image_height, IMAGE_WIDTH),
+                    dtype=np.uint8,
+                )
+            else:
+                self.observation_space = spaces.Box(
+                    low=0,
+                    high=255,
+                    shape=(3, IMAGE_HEIGHT, IMAGE_WIDTH),
+                    dtype=np.uint8,
+                )
         else:
             # ball_x, ball_y, ball_type(pocketed, solid, strips, 8-ball, cue-ball) x 16 balls
             self.table_info = np.concatenate(
@@ -128,11 +164,14 @@ class PoolEnv:
         self.pocket_collision_handler.begin = self.ball_pocketed
         self.rail_collision_handler = self.space.add_collision_handler(1, 3)
         self.rail_collision_handler.begin = self.rail_contacted
+        self.pocket_falso_collision_handler = self.space.add_collision_handler(1, 5)
+        self.pocket_falso_collision_handler.begin = self.ball_pocketed_falso
         self.reset()
     
     def reiniciar_globales(self):
-        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca
+        global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca, primerContactoCoordenada
         primerContacto = None
+        primerContactoCoordenada = None
         primerContactoCorrecto = False
         bolasEmbocadas = []
         bolasCorrectasEmbocadas = 0
@@ -169,24 +208,149 @@ class PoolEnv:
         """
         static_body = self.space.static_body
         self.rails = []
-        for rail_poly in RAIL_POLY:
-            rail = pm.Poly(static_body, rail_poly)
-            rail.color = pg.Color(TABLE_SIDE_COLOR)
-            rail.collision_type = 3
-            rail.elasticity = RAIL_ELASTICITY
-            rail.friction = RAIL_FRICTION
-            rail.filter = pm.ShapeFilter(categories=0b00001)
-            self.rails.append(rail)
+        if self.default == True:
+            for rail_poly in RAIL_POLY:
+                rail = pm.Poly(static_body, rail_poly)
+                rail.color = pg.Color(TABLE_SIDE_COLOR)
+                rail.collision_type = 3
+                rail.elasticity = RAIL_ELASTICITY
+                if self.default == True:  
+                    rail.friction = RAIL_FRICTION
+                else:
+                    rail.friction = self.singleton.friccion_railes
+                rail.filter = pm.ShapeFilter(categories=0b00001)
+                self.rails.append(rail)
+        else:
+            rail_distance = int(self.singleton.distancia_railes*ZOOM_MULTIPLIER)
+            rail_location = (
+                                np.array(
+                                    [rail_distance, self.singleton.ancho_mesa - rail_distance, rail_distance, self.singleton.alto_mesa - rail_distance]
+                                )
+                                * ZOOM_MULTIPLIER
+                            ).astype(int)
+            print("Alto de mesa segun singleton-----------------" + str(self.singleton.alto_mesa))
+            rail_poly = [
+                            [
+                                [0, CORNER_RAIL_OFFSET],
+                                [rail_location[0], rail_location[2] + CORNER_RAIL_OFFSET],
+                                [rail_location[0], rail_location[3] - CORNER_RAIL_OFFSET],
+                                [0, int(self.singleton.alto_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET],
+                            ],  # left
+                            [
+                                [CORNER_RAIL_OFFSET, 0],
+                                [int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2, 0],
+                                [
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
+                                    rail_location[2],
+                                ],
+                                [rail_location[0] + CORNER_RAIL_OFFSET, rail_location[2]],
+                            ],  # top 1
+                            [
+                                [int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2, 0],
+                                [int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET, 0],
+                                [rail_location[1] - CORNER_RAIL_OFFSET, rail_location[2]],
+                                [
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
+                                    rail_location[2],
+                                ],
+                            ],  # top 2
+                            [
+                                [rail_location[1], rail_location[2] + CORNER_RAIL_OFFSET],
+                                [int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER), CORNER_RAIL_OFFSET],
+                                [
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER),
+                                    int(self.singleton.alto_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
+                                ],
+                                [rail_location[1], rail_location[3] - CORNER_RAIL_OFFSET],
+                            ],  # right
+                            [
+                                [rail_location[0] + CORNER_RAIL_OFFSET, rail_location[3]],
+                                [
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
+                                    rail_location[3],
+                                ],
+                                [
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2,
+                                    int(self.singleton.alto_mesa * ZOOM_MULTIPLIER),
+                                ],
+                                [CORNER_RAIL_OFFSET, int(self.singleton.alto_mesa * ZOOM_MULTIPLIER)],
+                            ],  # bottom 1
+                            [
+                                [
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
+                                    rail_location[3],
+                                ],
+                                [rail_location[1] - CORNER_RAIL_OFFSET, rail_location[3]],
+                                [
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
+                                    int(self.singleton.alto_mesa * ZOOM_MULTIPLIER),
+                                ],
+                                [
+                                    int(self.singleton.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2,
+                                    int(self.singleton.alto_mesa * ZOOM_MULTIPLIER),
+                                ],
+                            ],  # bottom 2
+                        ]
+            
+            for rail_poly_item in rail_poly:
+                rail = pm.Poly(static_body, rail_poly_item)
+                rail.color = pg.Color(TABLE_SIDE_COLOR)
+                rail.collision_type = 3
+                rail.elasticity = RAIL_ELASTICITY
+                if self.default == True:  
+                    rail.friction = RAIL_FRICTION
+                else:
+                    rail.friction = self.singleton.friccion_railes
+                rail.filter = pm.ShapeFilter(categories=0b00001)
+                self.rails.append(rail)    
+            
 
         self.pockets = []
-        for pocket_loc in POCKET_LOCATION:
-            pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
-            pocket.color = pg.Color(BLACK)
-            pocket.collision_type = 2
-            pocket.elasticity = 0
-            pocket.friction = 0
-            pocket.filter = pm.ShapeFilter(categories=0b00010)
-            self.pockets.append(pocket)
+
+        if self.default == True:
+            for pocket_loc in POCKET_LOCATION_RESTO:
+                pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+                pocket.color = pg.Color(TABLE_SIDE_COLOR)
+                pocket.collision_type = 5
+                pocket.elasticity = 0
+                pocket.friction = 0
+                pocket.filter = pm.ShapeFilter(categories=0b00001)
+                self.pockets.append(pocket)
+
+            for pocket_loc in POCKET_LOCATION:
+                pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+                pocket.color = pg.Color(BLACK)
+                pocket.collision_type = 2
+                pocket.elasticity = 0
+                pocket.friction = 0
+                pocket.filter = pm.ShapeFilter(categories=0b00010)
+                self.pockets.append(pocket)
+        else:
+            side_pocket_dist = int(self.singleton.distancia_troneras_medias*ZOOM_MULTIPLIER)
+            corner_pocket_dist = int(self.singleton.distancia_troneras_esquinas*ZOOM_MULTIPLIER)
+            pocket_location = (
+                    np.array(
+                        [
+                        (corner_pocket_dist, corner_pocket_dist),
+                        (self.singleton.ancho_mesa // 2, side_pocket_dist),
+                        (self.singleton.ancho_mesa - corner_pocket_dist, corner_pocket_dist),
+                        (corner_pocket_dist, self.singleton.alto_mesa - corner_pocket_dist),
+                        (self.singleton.ancho_mesa // 2, self.singleton.alto_mesa - side_pocket_dist),
+                        (self.singleton.ancho_mesa - corner_pocket_dist, self.singleton.alto_mesa - corner_pocket_dist),
+                        ]
+                    )
+                    * ZOOM_MULTIPLIER
+                ).astype(int)
+            
+            for pocket_loc in pocket_location:
+                pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+                pocket.color = pg.Color(BLACK)
+                pocket.collision_type = 2
+                pocket.elasticity = 0
+                pocket.friction = 0
+                pocket.filter = pm.ShapeFilter(categories=0b00010)
+                self.pockets.append(pocket)
+
 
         self.space.add(*self.rails, *self.pockets)
 
@@ -204,62 +368,67 @@ class PoolEnv:
         self.num_balls = len(self.singleton.listaApareada)
         positions = []
 
-        if(self.singleton.etiquetaDeSeleccionada == "Negra"):
-            self.singleton.embocarNegra = True
         
         contadorLisas = 0
         contadorRayadas = 8
         for i, bola in enumerate(self.singleton.listaApareada):
             (x,y,r), _, etiqueta = bola
-            if(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada=="Lisa" ):
+            if (self.singleton.mesaAbierta == True):
                 contadorLisas = contadorLisas + 1
-            elif (etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Lisa"):
-                contadorRayadas = contadorRayadas + 1
-            elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
-                contadorRayadas = contadorRayadas + 1
-            elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
-                contadorLisas = contadorLisas +1
-            elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Negra"):
-                contadorRayadas = contadorRayadas +1
-            elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Negra"):
-                contadorRayadas = contadorRayadas +1
+                #No se puede elegir embocar la negra si tengo Mesa abierta
+                self.singleton.embocarNegra = False
+            else:
+                if(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada=="Lisa" ):
+                    contadorLisas = contadorLisas + 1
+                elif (etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Lisa"):
+                    contadorRayadas = contadorRayadas + 1
+                elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
+                    contadorRayadas = contadorRayadas + 1
+                elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Rayada"):
+                    contadorLisas = contadorLisas +1
+                elif(etiqueta == "Lisa" and self.singleton.etiquetaDeSeleccionada == "Negra"):
+                    contadorRayadas = contadorRayadas +1
+                elif(etiqueta == "Rayada" and self.singleton.etiquetaDeSeleccionada == "Negra"):
+                    contadorRayadas = contadorRayadas +1
             x, y = self.transformar_coordenadas((x,y),self.singleton.ancho, self.singleton.alto)
             position = self.create_ball(etiqueta,(x,y),self.singleton.etiquetaDeSeleccionada,self.singleton.embocarNegra,contadorLisas,contadorRayadas,True)
             positions.append(position)
         
-        # faltanLisas = 7 - contadorLisas 
-        # faltanRayadas = 7 - contadorRayadas
-        # if(faltanLisas>0):
-        #     for i in range(faltanLisas):
-        #         nro = contadorLisas + 1 
-        #         x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
-        #         position = self.create_ball("Lisa", (x,y), self.singleton.etiquetaDeSeleccionada, self.singleton.embocarNegra, nro, -1, False)
-        #         # self.pocket_tracking["potted_balls"].append(nro)
-        #         # self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
-
-        # if(faltanRayadas>0):
-        #     for i in range(faltanRayadas):
-        #         nro = contadorRayadas + 1
-        #         x,y = random.randint(RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
-        #         position = self.create_ball("Rayada", (x,y), self.singleton.etiquetaDeSeleccionada, self.singleton.embocarNegra, -1, nro, False)
-        #         # self.pocket_tracking["potted_balls"].append(nro)
-        #         # self.pocket_tracking["pocket_tracking"]["total_potted_balls"] += 1
-        #self.balls = sorted(self.balls, key=self.get_number_key)
         return positions, contadorLisas, contadorRayadas
     
     def get_number_key(self, bola):
         return bola.number
             
     def transformar_coordenadas(self, punto, ancho, alto):
-        self.ancho_ratio = (WIDTH-(RAIL_DISTANCE*2))/ancho
-        self.alto_ratio = (HEIGHT-(RAIL_DISTANCE*2))/alto
-        x,y = punto
-        return (x*self.ancho_ratio)+CORNER_POCKET_DIST, (y*self.alto_ratio)+CORNER_POCKET_DIST
+        if self.default==True:
+            self.ancho_ratio = (WIDTH-(RAIL_DISTANCE*2))/ancho
+            self.alto_ratio = (HEIGHT-(RAIL_DISTANCE*2))/alto
+            x,y = punto
+            transformadaX = (x*self.ancho_ratio)+CORNER_POCKET_DIST
+            transformadaY = (y*self.alto_ratio)+CORNER_POCKET_DIST
+        else:
+            rail_distance = int(self.singleton.distancia_railes*ZOOM_MULTIPLIER)
+            self.ancho_ratio = (self.singleton.ancho_mesa-(rail_distance*2))/ancho
+            self.alto_ratio = (self.singleton.alto_mesa-(rail_distance*2))/alto
+            x,y = punto
+            corner_pocket_dist =  int(self.singleton.distancia_troneras_esquinas*ZOOM_MULTIPLIER)
+            transformadaX = (x*self.ancho_ratio)+corner_pocket_dist
+            transformadaY = (y*self.alto_ratio)+corner_pocket_dist
+        return transformadaX, transformadaY
     
     def destransformar_coordenadas(self, punto):
         x,y = punto
-        if(self.ancho_ratio != 0 and self.alto_ratio != 0):
-            return ((x-CORNER_POCKET_DIST)/self.ancho_ratio, (y-CORNER_POCKET_DIST)/self.alto_ratio)
+        if self.default == True:
+            if(self.ancho_ratio != 0 and self.alto_ratio != 0):
+                destransformadaX = (x-CORNER_POCKET_DIST)/self.ancho_ratio
+                destransformadaY = (y-CORNER_POCKET_DIST)/self.alto_ratio
+                return (destransformadaX, destransformadaY)
+        else:
+            if(self.ancho_ratio != 0 and self.alto_ratio != 0):
+                corner_pocket_dist = int(self.singleton.distancia_troneras_esquinas*ZOOM_MULTIPLIER)
+                destransformadaX = (x-corner_pocket_dist)/self.ancho_ratio
+                destransformadaY = (y-corner_pocket_dist)/self.alto_ratio
+                return (destransformadaX, destransformadaY)
         return (0,0)
     
     def obtenerEtiquetaSeleccionada(self, listaApareada, bolaSeleccionada):
@@ -274,70 +443,99 @@ class PoolEnv:
     #al crear las bolas tener en cuenta que la IA siempre mete las lisas
     def create_ball(self, etiqueta, coordenada, etiquetaDeSeleccionada, embocarNegra, contadorSolidas, contadorRayadas, agregarSpace):
         global trayectoriaBlanca,trayectorias
-        intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+        if self.default == True:
+            intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+        else:
+            intertia = pm.moment_for_circle(BALL_MASS, 0, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
         ball_body = pm.Body(BALL_MASS, intertia)
         ball_body.position = coordenada
-        ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+        if self.default == True:
+            ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+        else:
+            ball = pm.Circle(ball_body, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
         ball.elasticity = BALL_ELASTICITY
-        ball.friction = BALL_FRICTION
+        if self.default == True:
+            ball.friction = BALL_FRICTION
+        else:
+            ball.friction = self.singleton.friccion_bolas
         ball.collision_type = 1
         ball.filter = pm.ShapeFilter(categories=0b00100)
         ball.userData = etiqueta
-
-        if embocarNegra==False:
+        
+        if self.singleton.mesaAbierta == True:
             if etiqueta == "Blanca":
-                self.cue_ball = ball
-                ball.observation_number = 4
-                ball.color = pg.Color(WHITE)
-                ball.number = 0
-                trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
-            
+                    self.cue_ball = ball
+                    ball.observation_number = 4
+                    ball.color = pg.Color(WHITE)
+                    ball.number = 0
+                    trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
+
             if etiqueta == "Negra":
                 ball.color = pg.Color(BLACK)
                 ball.observation_number = 3
                 ball.filter = pm.ShapeFilter(categories=0b10000)
                 ball.number = 8
-                
 
-            if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Lisa":
+            if etiqueta == "Rayada" or etiqueta == "Lisa":
                 ball.color = pg.Color(SOLIDS_COLOR)
                 ball.observation_number = 1
                 ball.filter = pm.ShapeFilter(categories=0b01000)
                 ball.number = contadorSolidas
 
-            if etiqueta=="Rayada" and etiquetaDeSeleccionada=="Lisa":
-                ball.color = pg.Color(STRIPS_COLOR)
-                ball.observation_number = 2
-                ball.number = contadorRayadas
-            
-            if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Rayada":
-                ball.color = pg.Color(STRIPS_COLOR)
-                ball.observation_number = 2
-                ball.number = contadorRayadas
-            
-            if etiqueta=="Rayada" and etiquetaDeSeleccionada=="Rayada":
-                ball.color = pg.Color(SOLIDS_COLOR)
-                ball.observation_number = 1
-                ball.filter = pm.ShapeFilter(categories=0b01000)
-                ball.number = contadorSolidas
         else:
-            if etiqueta == "Blanca":
-                self.cue_ball = ball
-                ball.observation_number = 4
-                ball.color = pg.Color(WHITE)
-                ball.number = 0
-                trayectoriaBlanca.append(self.destransformar_coordenadas(ball_body.position))
+            if embocarNegra==False:
+                if etiqueta == "Blanca":
+                    self.cue_ball = ball
+                    ball.observation_number = 4
+                    ball.color = pg.Color(WHITE)
+                    ball.number = 0
+                    trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
+                
+                if etiqueta == "Negra":
+                    ball.color = pg.Color(BLACK)
+                    ball.observation_number = 3
+                    ball.filter = pm.ShapeFilter(categories=0b10000)
+                    ball.number = 8
 
-            if etiqueta == "Negra":
-                ball.color = pg.Color(BLACK)
-                ball.observation_number = 3
-                ball.filter = pm.ShapeFilter(categories=0b10000)
-                ball.number = 8
+                if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Lisa":
+                    ball.color = pg.Color(SOLIDS_COLOR)
+                    ball.observation_number = 1
+                    ball.filter = pm.ShapeFilter(categories=0b01000)
+                    ball.number = contadorSolidas
 
-            if etiqueta=="Rayada" or etiqueta=="Lisa":
-                ball.color = pg.Color(STRIPS_COLOR)
-                ball.observation_number = 2
-                ball.number = contadorRayadas
+                if etiqueta=="Rayada" and etiquetaDeSeleccionada=="Lisa":
+                    ball.color = pg.Color(STRIPS_COLOR)
+                    ball.observation_number = 2
+                    ball.number = contadorRayadas
+                
+                if etiqueta=="Lisa" and etiquetaDeSeleccionada=="Rayada":
+                    ball.color = pg.Color(STRIPS_COLOR)
+                    ball.observation_number = 2
+                    ball.number = contadorRayadas
+                
+                if etiqueta=="Rayada" and etiquetaDeSeleccionada=="Rayada":
+                    ball.color = pg.Color(SOLIDS_COLOR)
+                    ball.observation_number = 1
+                    ball.filter = pm.ShapeFilter(categories=0b01000)
+                    ball.number = contadorSolidas
+            else:
+                if etiqueta == "Blanca":
+                    self.cue_ball = ball
+                    ball.observation_number = 4
+                    ball.color = pg.Color(WHITE)
+                    ball.number = 0
+                    trayectoriaBlanca.append(self.destransformar_coordenadas(ball_body.position))
+
+                if etiqueta == "Negra":
+                    ball.color = pg.Color(BLACK)
+                    ball.observation_number = 3
+                    ball.filter = pm.ShapeFilter(categories=0b10000)
+                    ball.number = 8
+
+                if etiqueta=="Rayada" or etiqueta=="Lisa":
+                    ball.color = pg.Color(STRIPS_COLOR)
+                    ball.observation_number = 2
+                    ball.number = contadorRayadas
         #Respetar el orden del codigo
         if etiqueta != 'Blanca':
             trayectorias[len(self.balls)].append(self.destransformar_coordenadas(ball.body.position))
@@ -356,10 +554,11 @@ class PoolEnv:
             positions, cantLisas, cantRayadas = self.setear_bolas()
             return
         positions = []
-        #self.num_balls = 15
         for i in range(self.num_balls):
-            #if(i%2==0):
-                intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+                if self.default == True:
+                    intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+                else:
+                    intertia = pm.moment_for_circle(BALL_MASS, 0, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
                 ball_body = pm.Body(BALL_MASS, intertia)
 
                 # initialize ball at random position
@@ -371,13 +570,18 @@ class PoolEnv:
                     ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
 
                 # if overlap with another ball, choose a different location
+                if self.default == True:
+                    auxRadio = BALL_RADIUS
+                else:
+                    auxRadio = int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER)
+                
                 while 1:
                     for pos in positions:
-                        if (
-                            distance_between_two_points(ball_body.position, pos)
-                            < BALL_RADIUS * 2
-                        ):
-                            break
+                            if (
+                                distance_between_two_points(ball_body.position, pos)
+                                < auxRadio * 2
+                            ):
+                                break
                     else:
                         break
                     if self.num_balls < 2:
@@ -388,8 +592,10 @@ class PoolEnv:
                         ), random.randint(
                             RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2
                         )
-
-                ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+                if self.default == True:
+                    ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+                else:
+                    ball = pm.Circle(ball_body, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
                 ball.elasticity = BALL_ELASTICITY
                 ball.friction = BALL_FRICTION
                 ball.collision_type = 1
@@ -424,18 +630,22 @@ class PoolEnv:
     def ball_contacted(self, arbiter, space, data):
         global trayectoriaBlanca, trayectorias
         # count bank/carrom shot collisions
-        global primerContacto, cantidadRebotesBlanca
+        global primerContacto, cantidadRebotesBlanca, primerContactoCoordenada
         ball_shape_1, ball_shape_2 = arbiter.shapes
+
         if(ball_shape_1.userData == "Blanca" or ball_shape_2.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
-        
 
         if(ball_shape_1.userData=="Blanca" and primerContacto == None):
             primerContacto = ball_shape_2
-    
+        if ball_shape_1.userData=="Blanca" and primerContactoCoordenada == None:
+            primerContactoCoordenada = ball_shape_2.copy()
+            
         elif (ball_shape_2.userData == "Blanca" and primerContacto == None):
             primerContacto = ball_shape_1 
-        
+        if ball_shape_2.userData == "Blanca"  and primerContactoCoordenada == None:
+            primerContactoCoordenada = ball_shape_1.copy()
+
         if( trayectorias is not None ):
             if(ball_shape_1.userData == 'Blanca' ):
                 trayectoriaBlanca.append(self.destransformar_coordenadas(ball_shape_1.body.position))
@@ -464,7 +674,20 @@ class PoolEnv:
                 data["pocket_tracking"]["first_contacted_ball"] = other_ball
         return True
 
-    
+    def ball_pocketed_falso(self, arbiter, space, data):
+        global bolasEmbocadas, trayectorias, trayectoriaBlanca
+        ball, pocket = arbiter.shapes
+        bolasEmbocadas.append(ball.copy())
+
+        try:
+            data["balls"].remove(ball)
+        except ValueError:
+            pass
+        space.remove(ball, ball.body)
+        return False
+
+        
+
     def ball_pocketed(self, arbiter, space, data):
         global bolasEmbocadas, trayectorias, trayectoriaBlanca
         # arbiter: [ball, pocket]
@@ -502,12 +725,20 @@ class PoolEnv:
 
     
     def rail_contacted(self, arbiter, space, data):
-        global cantidadRebotesBlanca, trayectorias, trayectoriaBlanca
+        global cantidadRebotesBlanca, trayectorias, trayectoriaBlanca, bolasEmbocadas, primerContactoCoordenada
         ball, rail = arbiter.shapes
-        # count bank/carrom shot collisions
+  
         if(ball.userData == "Blanca"):
             cantidadRebotesBlanca = cantidadRebotesBlanca + 1
             trayectoriaBlanca.append(self.destransformar_coordenadas(ball.body.position))
+            if primerContactoCoordenada is None:
+                if(self.default == False):
+                    if ball.body.position.x > (self.singleton.ancho_mesa/2):
+                        primerContactoCoordenada = 1
+                else:
+                    if ball.body.position.x > (WIDTH/2):
+                        primerContactoCoordenada = 1
+
         elif( trayectorias is not None ):
             index = self.balls_copy.index(ball)
             trayectorias[index].append(self.destransformar_coordenadas(ball.body.position))
@@ -523,28 +754,40 @@ class PoolEnv:
         return True
 
     def redraw_screen(self):
-        self.screen.fill(pg.Color(TABLE_COLOR))
-        self.space.debug_draw(self.draw_options)
-
-        pg.display.flip()
-        self.clock.tick(FPS)
+        if self.draw_screen:
+            self.screen.fill(pg.Color(TABLE_COLOR))
+            self.space.debug_draw(self.draw_options)
+            pg.display.flip()
+            self.clock.tick(FPS)
 
     def process_events(self):
-        for event in pg.event.get():
-            if (
-                event.type == pg.QUIT
-                or event.type == pg.KEYDOWN
-                and event.key == pg.K_q
-            ):
-                self.running = False
+        if self.draw_screen == True:
+            for event in pg.event.get():
+                if (
+                    event.type == pg.QUIT
+                    or event.type == pg.KEYDOWN
+                    and event.key == pg.K_q
+                ):
+                    self.running = False
 
     def process_action(self, action):
-        return (np.array(action) * VELOCITY_LIMIT).tolist()
+        if self.default == True:
+            velocidades = (np.array(action) * VELOCITY_LIMIT).tolist()
+        else:
+            velocidades = (np.array(action) * int(self.singleton.limite_velocidad * ZOOM_MULTIPLIER)).tolist()
+        return velocidades
 
     def process_observation(self):
         if self.observation_type == "image":
             img = pg.surfarray.pixels3d(self.screen)
-            img = cv2.resize(img, (IMAGE_WIDTH, IMAGE_HEIGHT))
+            image_height = IMAGE_HEIGHT
+            
+            if(self.default == False):
+                print(image_height)
+                image_height = int(IMAGE_WIDTH * (self.singleton.alto_mesa / self.singleton.ancho_mesa) )
+                img = cv2.resize(img, (IMAGE_WIDTH, image_height))
+            else:
+                img = cv2.resize(img, (IMAGE_WIDTH, IMAGE_HEIGHT))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = cv2.rotate(img, cv2.cv2.ROTATE_90_COUNTERCLOCKWISE)
             img = cv2.flip(img, 0)
@@ -552,11 +795,19 @@ class PoolEnv:
             # cv2.imshow("", cv2.resize(img, (300, 300)))
             # if cv2.waitKey(1) == ord("q"):
             #    os._exit(0)
-            return img.reshape(3, IMAGE_HEIGHT, IMAGE_WIDTH)
+            if(self.default == False):
+                return img.reshape(3, int(IMAGE_WIDTH * (self.singleton.alto_mesa / self.singleton.ancho_mesa) ), IMAGE_WIDTH)
+            else:
+                return img.reshape(3, IMAGE_HEIGHT, image_height)
+            # return (img.reshape(3, IMAGE_HEIGHT, IMAGE_WIDTH) if (self.default) else img.reshape(3, IMAGE_HEIGHT, image_height))
         elif self.observation_type == "vector":
             # observation_number: pocketed 0, solid 1, strips 2, 8-ball 3, cue-ball 4
             width_multiplier = (IMAGE_WIDTH / (self.width)) / IMAGE_WIDTH
-            height_multiplier = (IMAGE_HEIGHT / (self.height)) / IMAGE_HEIGHT
+            if(self.default == False):
+                image_height = int(IMAGE_WIDTH * (self.singleton.alto_mesa / self.singleton.ancho_mesa) )
+                height_multiplier = (image_height / (self.height)) / image_height
+            else: 
+                height_multiplier = (IMAGE_HEIGHT / (self.height)) / IMAGE_HEIGHT
             obs = np.array(
                 [
                     np.array(
@@ -629,12 +880,29 @@ class PoolEnv:
         else:
             primerContactoCorrecto = False
             tiroValido = False
-        singletonRespuesta = SingletonRespuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca)
+        return Respuesta(primerContactoCorrecto, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente, velocidadXBlanca, velocidadYBlanca, cantidadRebotesBlanca, tiroValido, trayectorias ,trayectoriaBlanca, self.attrs_respuesta, self.best_player_respuesta)
 
+    def verificarBolaEnMano(self):
+        global primerContactoCoordenada
+        reward = 1
+        if BOLA_EN_MANO == False:
+            return reward
+        if primerContactoCoordenada is not None and primerContactoCoordenada != 1:
+            if(self.default == False):
+                if primerContactoCoordenada.body.position[0] < (self.singleton.ancho_mesa/2):
+                    self.bola_en_mano_error = True
+                    self.reward = 0
+            else: 
+                if primerContactoCoordenada.body.position[0] < (WIDTH/2):
+                    self.bola_en_mano_error = True
+                    self.reward = 0
+        print(self.process_reward())
+        return reward
 
 
     def step(self, action, *args, **kwargs):
         global velocidadXBlanca, velocidadYBlanca
+        self.best_player_respuesta = action
         # waiting for all balls to stop
         action = self.process_action(action)
         velocidadXBlanca = action[0]
@@ -721,7 +989,7 @@ class PoolEnv:
         # rewarding
         # if cue ball touch the rail first, subtract the reward
         self.reward -= 2 * self.pocket_tracking["rail_collision_count"]
-
+    
         fcb = self.pocket_tracking["first_contacted_ball"]
         if (
             fcb is not None
@@ -794,19 +1062,20 @@ class PoolEnv:
                 self.fps = 1 / (
                     (time.time() - self.starting_time) / (self.episode_steps + 1e-8)
                 )
-                if not self.reward_by_steps:
-                    pg.display.set_caption(
-                        f"FPS: {self.fps:.0f}   REWARD: {self.process_reward():.3f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int)}"
-                    )
-                else:
-                    pg.display.set_caption(
-                        f"FPS: {self.fps:.0f}   TOT_REWARD: {np.sum(self.episode_reward):.2f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int)}"
-                    )
-
-        if not self.training:
-            pg.display.set_caption(
-                f"FPS: {self.clock.get_fps():.0f}   REWARD: {self.process_reward():.3f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int).tolist()}"
-            )
+                if self.draw_screen:
+                    if not self.reward_by_steps:
+                        pg.display.set_caption(
+                            f"FPS: {self.fps:.0f}   REWARD: {self.process_reward():.3f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int)}"
+                        )
+                    else:
+                        pg.display.set_caption(
+                            f"FPS: {self.fps:.0f}   TOT_REWARD: {np.sum(self.episode_reward):.2f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int)}"
+                        )
+        if self.draw_screen:
+            if not self.training:
+                pg.display.set_caption(
+                    f"FPS: {self.clock.get_fps():.0f}   REWARD: {self.process_reward():.3f}   POTTED_BALLS: {self.pocket_tracking['total_potted_balls']}   STEPS: {self.episode_steps}   TOTAL_STEPS: {self.total_steps}   EPISODES: {self.episodes}   ACTION: {np.array(action, dtype=int).tolist()}"
+                )
 
         # prepare observation
         if self.draw_screen:
@@ -829,9 +1098,14 @@ class PoolEnv:
                 RAIL_DISTANCE * 2, self.width - RAIL_DISTANCE * 2
             ), random.randint(RAIL_DISTANCE * 2, self.height - RAIL_DISTANCE * 2)
             self.cue_ball.body.activate()
+        
+        rw = self.verificarBolaEnMano()
 
-        self.setear_respuesta()
-        return self.process_observation(), self.process_reward(), done, info
+        if(self.simulacion != True):
+            respuesta = self.setear_respuesta()
+            return self.process_observation(), self.process_reward(), done, info, respuesta
+        else: 
+             return self.process_observation(), self.process_reward(), done, info, None
 
     def cantidad_para_embocar(self):
         cant = 0
@@ -900,6 +1174,8 @@ class PoolEnv:
         self.pocket_collision_handler.data["balls"] = self.balls
         self.pocket_collision_handler.data["pocket_tracking"] = self.pocket_tracking
         self.rail_collision_handler.data["pocket_tracking"] = self.pocket_tracking
+        self.pocket_falso_collision_handler.data["balls"]=self.balls
+        self.pocket_falso_collision_handler.data["pocket_tracking"]=self.pocket_tracking
 
         if self.draw_screen:
             self.process_events()
@@ -928,10 +1204,13 @@ class PoolEnv:
             "starting_time": copy(self.starting_time),
             "score_tracking": copy(self.score_tracking),
             "pocket_tracking": copy(self.pocket_tracking),
-            "cantidad_bolas": len(self.balls)
+            "cantidad_bolas": len(self.balls),
+            "bola_en_mano": self.bola_en_mano,
+            "nroTronera": self.singleton.nroTronera
         }
 
     def apply_attrs(self, attrs):
+        self.attrs_respuesta = attrs
         balls_attrs = attrs["balls_attrs"]
         self.reward = attrs["reward"]
         self.episodes = attrs["episodes"]
@@ -949,10 +1228,16 @@ class PoolEnv:
                 cuerpo_existe = any(shape.body == self.balls[i].body for shape in self.space.shapes)
                 if(cuerpo_existe):
                     self.space.remove(self.balls[i].body, self.balls[i])
-            intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+            if self.default == True:
+                intertia = pm.moment_for_circle(BALL_MASS, 0, BALL_RADIUS, offset=(0, 0))
+            else:
+                intertia = pm.moment_for_circle(BALL_MASS, 0, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
             ball_body = pm.Body(BALL_MASS, intertia)
             ball_body.position = balls_attrs[i]["position"]
-            ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+            if self.default == True:
+                ball = pm.Circle(ball_body, BALL_RADIUS, offset=(0, 0))
+            else:
+                ball = pm.Circle(ball_body, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
             ball.elasticity = BALL_ELASTICITY
             ball.friction = BALL_FRICTION
             ball.collision_type = balls_attrs[i]["collision_type"]
@@ -983,6 +1268,8 @@ class PoolEnv:
         self.pocket_collision_handler.data["balls"] = self.balls
         self.pocket_collision_handler.data["pocket_tracking"] = self.pocket_tracking
         self.rail_collision_handler.data["pocket_tracking"] = self.pocket_tracking
+        self.pocket_falso_collision_handler.data["balls"] = self.balls
+        self.pocket_falso_collision_handler.data["pocket_tracking"] = self.pocket_tracking
 
     def run(self, model=None):
         observation = self.reset()
