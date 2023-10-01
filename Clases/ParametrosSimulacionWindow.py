@@ -118,9 +118,9 @@ class ParametrosSimulacionWindow(QMainWindow):
 
 
         self.distRailes_slider.setRange(1,154)
-        self.distTronerasEsquinas_slider.setRange(1,152)
+        self.distTronerasEsquinas_slider.setRange(-2,152)
         self.distTronerasEsquinas_slider.setDisabled(True)
-        self.distTronerasMedias_slider.setRange(1,130)
+        self.distTronerasMedias_slider.setRange(-21,130)
         self.distTronerasMedias_slider.setDisabled(True)
         self.limiteVelocidad_slider.setRange(10,400)
         self.friccionBolas_slider.setRange(1,10)

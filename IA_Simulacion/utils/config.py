@@ -12,7 +12,7 @@ TRAINING = True  # training or playing (fast dt)
 DRAW_SCREEN = False  # draw screen (will not affect if using image observation or not training)
 REWARD_BY_STEPS = True  # whether calculate reward based on steps or episodes
 OBSERVATION_TYPE = "none" # choose between ["none, "vector", "image"]
-VELOCITY_LIMIT = int(320* ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
+VELOCITY_LIMIT = int(277* ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
 
 # dimension of image observation if used
 IMAGE_WIDTH = 120
@@ -24,16 +24,16 @@ BALL_MASS = 10
 BALL_FRICTION = 0.9
 BALL_ELASTICITY = 0.95
 BALL_DAMPING_THRESHOLD = 9
-BALL_RADIUS = int(10* ZOOM_MULTIPLIER)
+BALL_RADIUS = int(16* ZOOM_MULTIPLIER)
 
 
 # ======== POCKETS ========#
 if ZOOM_MULTIPLIER < 1:
-    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(1* ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(1* ZOOM_MULTIPLIER)
 else:
-    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(1* ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(1* ZOOM_MULTIPLIER)
 POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
