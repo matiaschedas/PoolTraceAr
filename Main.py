@@ -1285,10 +1285,7 @@ class VentanaVideo(QMainWindow):
                 self.deseleccionar_bola()
 
     def resaltar_bola_seleccionada(self):
-        self.progressBar.setValue(0)
-        self.contadorProgressBar = 0 
-        self.valorProgressBar = 0
-
+        self.reiniciarProgressBar()
         global resaltarBola
         SingletonCompartida.delete_instance()
         if self.bolaSeleccionada is not None:
@@ -2349,6 +2346,11 @@ class VentanaVideo(QMainWindow):
         text = f"<p style='color: red; font-size: 20px'> {text} </p>"
         self.textBrowser.setText(text)
     
+    def reiniciarProgressBar(self):
+        self.progressBar.setValue(0)
+        self.contadorProgressBar = 0 
+        self.valorProgressBar = 0
+
     def avanzarProgressBar(self, valorMaximo):
         if  self.valorProgressBar == valorMaximo:
             return
