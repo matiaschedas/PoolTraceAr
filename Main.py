@@ -104,7 +104,8 @@ limite_velocidad = 320
 friccion_bolas = 0.9
 friccion_railes = 0.5
 tam_bolas_simulacion = 12
-ancho_alto_mesa = 1000
+ancho_mesa = 1000
+alto_mesa = 500
 
 
 def iniciar_GPU():
@@ -660,7 +661,8 @@ class VentanaVideo(QMainWindow):
         self.ventanaParametrosSimulacion.limiteVelocidadChanged.connect(self.setLimiteVelocidad)
         self.ventanaParametrosSimulacion.friccionRailesChanged.connect(self.setFriccionRailes)
         self.ventanaParametrosSimulacion.friccionBolasChanged.connect(self.setFriccionBolas)
-        self.ventanaParametrosSimulacion.anchoAltoMesaChanged.connect(self.setAnchoAltoMesa)
+        self.ventanaParametrosSimulacion.anchoMesaChanged.connect(self.setAnchoMesa)
+        self.ventanaParametrosSimulacion.altoMesaChanged.connect(self.setAltoMesa)
         self.ventanaParametrosSimulacion.tambBolasChanged.connect(self.setTamBolasSimulacion)
         
 
@@ -728,7 +730,7 @@ class VentanaVideo(QMainWindow):
     
     #guardar presets de configuraciones:
     def guardar_preset(self):
-        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias, limite_velocidad, friccion_bolas, friccion_railes, tam_bolas_simulacion, ancho_alto_mesa
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias, limite_velocidad, friccion_bolas, friccion_railes, tam_bolas_simulacion, ancho_mesa, alto_mesa
         nombreArchivo = self.controlWindow.textNombrePreset.text()
         valido = self.es_nombre_archivo_valido(nombreArchivo)
         if valido:
@@ -777,20 +779,21 @@ class VentanaVideo(QMainWindow):
                 "friccionBolas": friccion_bolas,
                 "friccionRailes": friccion_railes,
                 "tamBolasSimulacion": tam_bolas_simulacion,
-                "anchoAltoMesa": ancho_alto_mesa
+                "anchoAltoMesa": ancho_mesa,
+                "altoMesa": alto_mesa
             }
             with open(path, "w") as archivo:
                 json.dump(datos, archivo)
 
     #cargar presets de configuraciones:
     def cargar_preset(self):
-        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_alto_mesa
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_mesa,alto_mesa
         campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles', 
                   'coordPunto1', 'coordPunto2','coordPunto3','coordPunto4','coordPunto5','coordPunto6',
                   'coordPunto7','coordPunto8','coordPunto9','coordPunto10','coordPunto11','coordPunto12',
                   'XIROI','YIROI','XDROI','YDROI','tronera1','tronera2','tronera3','tronera4','tronera5','tronera6',
                   'angulo','radioTroneras', 'distanciaRailes','distanciaTronerasEsquinas','distanciaTronerasMedias',
-                   'limiteVelocidad','friccionBolas','friccionRailes','tamBolasSimulacion','anchoAltoMesa']
+                   'limiteVelocidad','friccionBolas','friccionRailes','tamBolasSimulacion','anchoAltoMesa', 'altoMesa']
         
         valido = False
         file_dialog = QFileDialog()
@@ -854,11 +857,12 @@ class VentanaVideo(QMainWindow):
             friccion_bolas = data["friccionBolas"]
             friccion_railes = data["friccionRailes"]
             tam_bolas_simulacion = data["tamBolasSimulacion"]
-            ancho_alto_mesa = data["anchoAltoMesa"]
+            ancho_mesa = data["anchoAltoMesa"]
+            alto_mesa = data["altoMesa"]
 
             self.controlWindow.actualizarParametros(
             dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar,self.radioTronera)
-            self.ventanaParametrosSimulacion.actualizarParametros(distancia_railes, distancia_troneras_esquinas,distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_alto_mesa)
+            self.ventanaParametrosSimulacion.actualizarParametros(distancia_railes, distancia_troneras_esquinas,distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_mesa, alto_mesa)
 
     # region cambios para preprocesamiento de imagen:     
     def onAlphaChanged(self, value):
@@ -905,9 +909,12 @@ class VentanaVideo(QMainWindow):
     def setFriccionBolas(self, value):
         global friccion_bolas
         friccion_bolas= value
-    def setAnchoAltoMesa(self, value):
-        global ancho_alto_mesa
-        ancho_alto_mesa = value
+    def setAnchoMesa(self, value):
+        global ancho_mesa
+        ancho_mesa = value
+    def setAltoMesa(self, value):
+        global alto_mesa
+        alto_mesa = value
     def setTamBolasSimulacion(self, value):
         global tam_bolas_simulacion
         tam_bolas_simulacion = value
@@ -1850,9 +1857,9 @@ class VentanaVideo(QMainWindow):
                         
                         
                         if(self.calculandoTiro == False):
-                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_alto_mesa,tam_bolas_simulacion)
+                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_mesa,tam_bolas_simulacion, alto_mesa)
                             SingletonRespuesta.delete_instance()
-                            self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_alto_mesa,tam_bolas_simulacion)
+                            self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
                             self.hiloCalculoTiro.start()
                             self.calculandoTiro = True
 
