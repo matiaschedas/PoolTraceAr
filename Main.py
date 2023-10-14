@@ -786,7 +786,7 @@ class VentanaVideo(QMainWindow):
                 json.dump(datos, archivo)
 
     #cargar presets de configuraciones:
-    def cargar_preset(self):
+    def cargar_preset(self, path=None):
         global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_mesa,alto_mesa
         campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles', 
                   'coordPunto1', 'coordPunto2','coordPunto3','coordPunto4','coordPunto5','coordPunto6',
@@ -796,12 +796,15 @@ class VentanaVideo(QMainWindow):
                    'limiteVelocidad','friccionBolas','friccionRailes','tamBolasSimulacion','anchoAltoMesa', 'altoMesa']
         
         valido = False
-        file_dialog = QFileDialog()
+        if path is False:
+            file_dialog = QFileDialog()
 
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
 
-        file_path, _ = file_dialog.getOpenFileName(None, "Seleccionar archivo", "", "Todos los archivos (*.*)", options=options)
+            file_path, _ = file_dialog.getOpenFileName(None, "Seleccionar archivo", "", "Todos los archivos (*.*)", options=options)
+        else:
+            file_path = path
  
         if file_path:
             print("Archivo seleccionado:", file_path)
@@ -864,6 +867,17 @@ class VentanaVideo(QMainWindow):
             dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar,self.radioTronera)
             self.ventanaParametrosSimulacion.actualizarParametros(distancia_railes, distancia_troneras_esquinas,distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_mesa, alto_mesa)
 
+    def aplicar_preset_default(self, nombreArchivo=""):
+        if nombreArchivo == "":
+            nombreArchivo = "Default.json"
+        carpeta = Path(script_dir + '/presets/')
+        if not carpeta.exists():
+        # Creamos la carpeta
+            carpeta.mkdir(parents=True, exist_ok=True)
+        path = script_dir + "\\presets\\" + nombreArchivo
+        if (os.path.exists(path)):
+            self.cargar_preset(path)
+    
     # region cambios para preprocesamiento de imagen:     
     def onAlphaChanged(self, value):
         global Alpha
@@ -1087,6 +1101,11 @@ class VentanaVideo(QMainWindow):
         self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
         
         self.hiloProyeccion.actualizar_proporcion_interfaz(ResolucionY,ResolucionX)
+        if self.isMaximized():
+            self.aplicar_preset_default(nombreArchivo="DefaultMaximizado.json")
+        else:
+            self.aplicar_preset_default()
+        
 
     #cambia la webcam a la que selecciono el usuario:
     def cambio_camara(self, index):
@@ -1101,8 +1120,10 @@ class VentanaVideo(QMainWindow):
             self.fps = self.cap.get(cv2.CAP_PROP_FPS)
             ret, self.frame = self.cap.read()
             s_img = cv2.imread(script_dir + '\\images\\PoolTraceAr.png', cv2.IMREAD_UNCHANGED)
-           
-            
+            if self.isMaximized():
+                self.aplicar_preset_default(nombreArchivo="DefaultMaximizado.json")
+            else:
+                self.aplicar_preset_default()
 
         except Exception as ex:
             self.frame = None
@@ -2339,6 +2360,7 @@ def levantar_configuracion():
         data = json.load(f)
     computo = data["computo"]
     print(f"computo: {computo}")
+
 
 #deprecated:
 class Bola:
