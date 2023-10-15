@@ -174,6 +174,10 @@ class Genetic():
         pool = None
         return respuesta
 
+    def ver_mesa(self):
+        pool = PoolEnv(training=False, graficar=True, simulacion=True, verMesa=True)
+        pool.ver_mesa()
+
 if __name__ == "__main__":
     iterations = 150
     pool = PoolEnv(training=False)

@@ -126,9 +126,9 @@ class ParametrosSimulacionWindow(QMainWindow):
 
         self.distRailes_slider.setRange(1,154)
         self.distTronerasEsquinas_slider.setRange(-2,152)
-        self.distTronerasEsquinas_slider.setDisabled(True)
+        self.distTronerasEsquinas_slider.setDisabled(False)
         self.distTronerasMedias_slider.setRange(-21,130)
-        self.distTronerasMedias_slider.setDisabled(True)
+        self.distTronerasMedias_slider.setDisabled(False)
         self.limiteVelocidad_slider.setRange(10,400)
         self.friccionBolas_slider.setRange(1,10)
         self.friccionRailes_slider.setRange(1,10)
@@ -165,6 +165,8 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.anchoMesa_text.textChanged.connect(self.onAnchoMesaTextChange)
         self.tamBolas_text.textChanged.connect(self.onTamBolasTextChange)
         self.altoMesa_text.textChanged.connect(self.onAltoMesaTextChange)
+        
+        self.ver_mesa_button = QPushButton("Ver mesa", self)
 
         layout.addWidget(self.distRailes_label, 0, 0)
         layout.addWidget(self.distRailes_slider, 0, 1)
@@ -212,10 +214,15 @@ class ParametrosSimulacionWindow(QMainWindow):
         layout.addWidget(self.relacionBolaAncho_label, 12 ,0)
         layout.addWidget(self.relacionBolaAncho_text, 12 ,1)
 
+        layout.addWidget(self.ver_mesa_button, 13,2)
+
 
         widget = QWidget()
         widget.setLayout(layout)
         self.setCentralWidget(widget)
+    
+    def obtenerBotonVerMesa(self):
+        return self.ver_mesa_button
 
     def actualizarAnchoAltoMesa(self):
         ancho = self.anchoMesa

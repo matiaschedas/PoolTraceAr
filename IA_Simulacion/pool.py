@@ -21,6 +21,8 @@ from gym import spaces
 from gym.utils import seeding
 from copy import copy
 import pymunk.pygame_util as pygame_util
+import keyboard
+import sys
 
 primerContacto = None
 primerContactoCoordenada = None
@@ -53,8 +55,10 @@ class PoolEnv:
         graficar = True,
         simulacion = False,
         embocarNegra = False,
-        nroTronera = -1
+        nroTronera = -1,
+        verMesa = False
     ):
+        self.verMesa = verMesa
         # initialize some constants
         self.episodes = 0
         self.total_steps = 0
@@ -167,6 +171,18 @@ class PoolEnv:
         self.pocket_falso_collision_handler = self.space.add_collision_handler(1, 5)
         self.pocket_falso_collision_handler.begin = self.ball_pocketed_falso
         self.reset()
+
+    def ver_mesa(self):
+        flag = True
+        while flag == True:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    # Si se cierra la ventana, sal del bucle de juego
+                    flag = False
+                    pg.quit()
+                    break
+            else:
+                self.render()
     
     def reiniciar_globales(self):
         global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca, primerContactoCoordenada

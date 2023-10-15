@@ -24,25 +24,23 @@ class IA_Handler ():
     def __init__(self):
         self.genetic = Genetic()
         self.genetic2 = Genetic2()
-
-
-    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa):
+    
+    def setearConfig(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa):
         singleton = SingletonCompartida()
-        if(singleton.embocarNegra == False):
-            pocket = """POCKET_LOCATION = (
-                    np.array(
-                        [
-                        (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                        (WIDTH // 2, SIDE_POCKET_DIST),
-                        (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                        (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                        (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
-                        (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                        ]
-                    )
-                    * ZOOM_MULTIPLIER
-                ).astype(int)"""
-            pocket_resto = "POCKET_LOCATION_RESTO = []"
+        pocket = """POCKET_LOCATION = (
+                np.array(
+                    [
+                    (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (WIDTH // 2, SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    ]
+                )
+                * ZOOM_MULTIPLIER
+            ).astype(int)"""
+        pocket_resto = "POCKET_LOCATION_RESTO = []"
             
         if(singleton.embocarNegra == True):
             pocket = """POCKET_LOCATION = (
@@ -111,6 +109,11 @@ class IA_Handler ():
         with open(config_dir, 'w') as archivoConfig:
             archivoConfig.write(contenidoTemplateModificado)
 
+
+    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa):
+        self.setearConfig(rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa)
+        singleton = SingletonCompartida()
+
         response = None
 
         if singleton.bolaEnMano == True:
@@ -123,6 +126,11 @@ class IA_Handler ():
     
     def verSimulacion(self, attrs, best_player):
         self.genetic.ver_simulacion(attrs,best_player)
+        self.genetic = None
+
+    def verMesa(self, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa):
+        self.setearConfig(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
+        self.genetic.ver_mesa()
         self.genetic = None
 
    

@@ -33,11 +33,16 @@ class miHilo(threading.Thread):
                 self.respuesta  = ia.invocarIA(self.rail_distance, self.side_pocket_dist, self.corner_pocket_dist, self.limite_velocidad, self.friccion_bola, self.friccion_railes, self.ancho_mesa,self.tam_bolas_simulacion, self.alto_mesa)
                 ia = None                
                 self.tiroSeleccionado = 2
+
     def VerSimulacion(self,attrs, best_player):
         print("inicia hilo simulacion")
         with self.lock:
             ia = IA_Handler()
             ia.verSimulacion(attrs,best_player)
+
+    def VerMesa(self, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa):
+        ia = IA_Handler()
+        self.respuesta  = ia.verMesa(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
     
 
 

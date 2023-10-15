@@ -465,6 +465,8 @@ class VentanaVideo(QMainWindow):
         self.setWindowTitle("PoolTraceAR")
         self.ventanaPrepro = ventanaPreprocesamiento
         self.ventanaParametrosSimulacion = ventanaParametrosSimulacion
+        self.boton_ver_mesa = self.ventanaParametrosSimulacion.obtenerBotonVerMesa()
+        self.boton_ver_mesa.clicked.connect(self.verMesa)
         self.controlWindow = ventanaParametros
         self.controlWindow.dpChanged.connect(self.onDpChanged)
         self.controlWindow.minDistChanged.connect(self.onMinDistChanged)
@@ -692,6 +694,13 @@ class VentanaVideo(QMainWindow):
         inicioHilos()
         self.initCameras()
 
+    def verMesa(self):
+        #singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (10,10,10), self.obtener_tam_ROI(), self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_mesa,tam_bolas_simulacion, alto_mesa)
+        self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
+        self.hiloCalculoTiro.VerMesa(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
+        # self.hiloCalculoTiro.join(timeout=0.01)
+        # if  self.hiloCalculoTiro.is_alive():
+        #     print("Simulando tiro...")
 
     def tiro_final(self):
         estado_actual = self.checkTiroFinal.isChecked()
@@ -1120,6 +1129,7 @@ class VentanaVideo(QMainWindow):
             self.fps = self.cap.get(cv2.CAP_PROP_FPS)
             ret, self.frame = self.cap.read()
             s_img = cv2.imread(script_dir + '\\images\\PoolTraceAr.png', cv2.IMREAD_UNCHANGED)
+
             if self.isMaximized():
                 self.aplicar_preset_default(nombreArchivo="DefaultMaximizado.json")
             else:

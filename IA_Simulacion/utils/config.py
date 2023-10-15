@@ -5,7 +5,7 @@ FPS = 500
 ZOOM_MULTIPLIER = 1  # change screen size, can boost fps
 TOTAL_FOUL_TIMES = 25  # amount of fouls before end the game
 #default: 1000,500
-WIDTH, HEIGHT = 568,268
+WIDTH, HEIGHT = 1000,500
 
 NUM_BALLS = 16  # number of balls generated on table (16 is a normal game)
 TRAINING = True  # training or playing (fast dt)
@@ -29,26 +29,26 @@ BALL_RADIUS = int(12* ZOOM_MULTIPLIER)
 
 # ======== POCKETS ========#
 if ZOOM_MULTIPLIER < 1:
-    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(-3* ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(16* ZOOM_MULTIPLIER)
 else:
-    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(-3* ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(16* ZOOM_MULTIPLIER)
 POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
-                    np.array(
-                        [
-                        (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                        (WIDTH // 2, SIDE_POCKET_DIST),
-                        (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                        (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                        (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
-                        (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                        ]
-                    )
-                    * ZOOM_MULTIPLIER
-                ).astype(int)
+                np.array(
+                    [
+                    (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (WIDTH // 2, SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    ]
+                )
+                * ZOOM_MULTIPLIER
+            ).astype(int)
 
 POCKET_LOCATION_RESTO = []
 
@@ -91,7 +91,7 @@ HANGING_BALL_LOCATION = (
 RAIL_FRICTION = 0.5
 RAIL_ELASTICITY = 0.8
 #Cambia el tamaño de la mesa
-RAIL_DISTANCE = int(1* ZOOM_MULTIPLIER)
+RAIL_DISTANCE = int(19* ZOOM_MULTIPLIER)
 SIDE_RAIL_OFFSET = int(11.7 * ZOOM_MULTIPLIER)
 SIDE_RAIL_OFFSET_2 = int(15 * ZOOM_MULTIPLIER)
 CORNER_RAIL_OFFSET = int(31.7 * ZOOM_MULTIPLIER)
