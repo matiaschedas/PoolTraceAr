@@ -24,31 +24,31 @@ BALL_MASS = 10
 BALL_FRICTION = 0.9
 BALL_ELASTICITY = 0.95
 BALL_DAMPING_THRESHOLD = 9
-BALL_RADIUS = int(16* ZOOM_MULTIPLIER)
+BALL_RADIUS = int(22* ZOOM_MULTIPLIER)
 
 
 # ======== POCKETS ========#
 if ZOOM_MULTIPLIER < 1:
-    SIDE_POCKET_DIST = int(1* ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(1* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
 else:
-    SIDE_POCKET_DIST = int(1* ZOOM_MULTIPLIER)
-    CORNER_POCKET_DIST = int(1* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
+    CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
 POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
-                    np.array(
-                        [
-                        (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                        (WIDTH // 2, SIDE_POCKET_DIST),
-                        (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                        (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                        (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
-                        (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                        ]
-                    )
-                    * ZOOM_MULTIPLIER
-                ).astype(int)
+                np.array(
+                    [
+                    (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (WIDTH // 2, SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    ]
+                )
+                * ZOOM_MULTIPLIER
+            ).astype(int)
 
 POCKET_LOCATION_RESTO = []
 
