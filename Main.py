@@ -8,7 +8,7 @@ import re
 import datetime
 import asyncio
 import time
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter, QFileDialog, QDesktopWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QComboBox, QPushButton, QCheckBox, QGridLayout, QWidget, QLineEdit, QVBoxLayout, QSplitter, QFileDialog, QDesktopWidget, QTextBrowser, QProgressBar
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QWindow, QScreen, QGuiApplication
 from PyQt5.QtCore import Qt, QTimer, QEvent
 from HiloEtiquetador import ListaApareadaConEtiquetas, variable_compartida_lock
@@ -35,9 +35,7 @@ from Clases.IA_Handler import IA_Handler
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
 
-
 from HiloCalculoTiro import miHilo
-
 
 screen_width, screen_height = pyautogui.size()
 
@@ -52,8 +50,8 @@ radios       = [(4, 5), (5, 6), (6, 7), (7, 8),
           (8, 9), (9, 10), (10, 11), (11, 12),(12,13),(13,14),(14,15),(15,16),(16,17),(17,18),(18,19),(19,20),(20,21),(21,22),(22,23)]
 radioMin = 4
 radioMax = 16
-tamPanelBotones = 70
-Param1 = 50
+tamPanelBotones = 140
+Param1 = 50 
 Param2 = 50
 cerrarProyeccion = False
 proyectando = False
@@ -456,6 +454,9 @@ class VentanaVideo(QMainWindow):
         self.respuesta_hiloTiro = None
         self.repitiendo_simulacion = False
         self.bolaSeleccionada = None
+        self.contadorProgressBar = 0
+        self.valorMaxProgressBar = 0
+        self.valorProgressBar = 0
 
 
         self.hiloProyeccion = hiloProyeccion
@@ -569,8 +570,6 @@ class VentanaVideo(QMainWindow):
         self.botonROI.clicked.connect(self.crear_ROI)
         self.botonPreprocesamientos.clicked.connect(self.abrir_preprocesamiento)
         self.botonParametrosSimulacion.clicked.connect(self.abrir_parametros_simulacion)
-
-
         self.labelBolaEnMano = self.crear_label("Bola en mano: ", 5, 820, 100, 25)
         self.label2Tiros = self.crear_label("2 Tiros: ", 5,820,100,25)
         self.labelMesaAbierta = self.crear_label("Mesa abierta: ", 5, 820, 100, 25)
@@ -587,18 +586,19 @@ class VentanaVideo(QMainWindow):
         self.botonVerSimulacion = self.crear_boton("Ver Simulacion", 1290, 125, 100, 30)
         self.botonVerSimulacion.setEnabled = False
         self.botonVerSimulacion.clicked.connect(self.ver_simulacion)
-
         self.labelTiroFinal = self.crear_label("Tiro Final: ", 5, 820, 100, 25)
         self.checkTiroFinal = self.crear_checkbox(80, 820, 50, 30)
         self.checkTiroFinal.stateChanged.connect(self.tiro_final)
         self.comboTroneraTiroFinal=self.crear_combobox(self.troneras_labels,80,820,40,30,0)
         self.comboTroneraTiroFinal.currentIndexChanged.connect(self.cambio_tronera_tiro_final)
         self.comboTroneraTiroFinal.adjustSize()
+        self.textBrowser = QTextBrowser(self)
+        self.textBrowser.setAcceptRichText(True)        
+        self.progressBar = QProgressBar(self)
+        self.progressBar.setValue(0)
 
         self.botonGuardarPreset.clicked.connect(self.guardar_preset)
         self.botonCargarPreset.clicked.connect(self.cargar_preset)
-        # endregion
-
         # Crear el widget principal y asignarle un layout vertical
         widgetPrincipal = QWidget()
         layoutPrincipal = QVBoxLayout()
@@ -609,14 +609,13 @@ class VentanaVideo(QMainWindow):
         self.widget1 = QWidget()
         self.layout1 = QGridLayout(self.widget1)
         self.layout1.setContentsMargins(0, 0, 0, 0)
-        self.layout1.setSpacing(0)  # Opcional: eliminar el espacio entre los widgets
+        self.layout1.setSpacing(5)  # Opcional: eliminar el espacio entre los widgets
 
         # Crear el widget2 y asignarle el layout2
         self.widget2 = QWidget()
         self.layout2 = QGridLayout(self.widget2)
-        self.layout2.setContentsMargins(0, 0, 0, 0)
+        self.layout2.setContentsMargins(5, 0, 5, 5)
         self.widget2.setFixedHeight(tamPanelBotones)
-
         self.fpsText.setMaximumWidth(50)
         self.botonConfiguracion.setMaximumWidth(100)  # Ancho fijo
         self.layout2.setSpacing(0)
@@ -627,7 +626,7 @@ class VentanaVideo(QMainWindow):
 
         # Agregar los widgets al layout1 y layout2 con sus respectivas posiciones
         self.layout1.addWidget(self.label, 0, 0, 1, 1, alignment=Qt.AlignTop | Qt.AlignLeft)
-        self.layout2.addWidget(self.botonConfiguracion, 1, 0)
+        self.layout2.addWidget(self.botonConfiguracion, 0, 0)
         self.layout2.addWidget(self.labelBolaEnMano, 2, 0)
         self.layout2.addWidget(self.label2Tiros,2,1)
         self.layout2.addWidget(self.labelMesaAbierta, 2 ,2)
@@ -636,15 +635,18 @@ class VentanaVideo(QMainWindow):
         self.layout2.addWidget(self.check2Tiros,3,1)
         self.layout2.addWidget(self.checkMesaAbierta, 3, 2)
         self.layout2.addWidget(self.checkTrayectorias,3,3)
-        self.layout2.addWidget(self.botonVerSimulacion,3,4)
-        self.layout2.addWidget(self.labelTiroFinal, 1,5)
-        self.layout2.addWidget(self.checkTiroFinal, 2, 5)
-        self.layout2.addWidget(self.comboTroneraTiroFinal, 3,5)
+        self.layout2.addWidget(self.labelTiroFinal, 2, 4)
+        self.layout2.addWidget(self.checkTiroFinal, 3, 4)
+        self.layout2.addWidget(self.comboTroneraTiroFinal, 3, 5)
+        self.layout2.addWidget(self.progressBar, 4, 0, 1, 5)
+        self.layout2.addWidget(self.botonVerSimulacion, 4, 5, 2, 2)
+        self.layout2.addWidget(self.textBrowser, 5, 0, 2, 5)
+
         self.comboTroneraTiroFinal.hide()
 
         # Agregar el contador de FPS con alineación a la esquina inferior derecha
-        self.layout2.addWidget(self.labelFps, 3, 9)
-        self.layout2.addWidget(self.fpsText, 3, 10, Qt.AlignBottom | Qt.AlignRight)
+        self.layout2.addWidget(self.labelFps, 2, 6)
+        self.layout2.addWidget(self.fpsText, 3, 6)
 
         self.setCentralWidget(widgetPrincipal)
         
@@ -667,8 +669,6 @@ class VentanaVideo(QMainWindow):
         self.ventanaPrepro.blurChecked.connect(self.aplicarBlur)
         self.ventanaPrepro.contrastChecked.connect(self.aplicarContraste)
         self.ventanaPrepro.histChecked.connect(self.aplicarHist)
-
-        
 
         self.resize_timer = QTimer()
         self.resize_timer.setSingleShot(True)
@@ -707,6 +707,7 @@ class VentanaVideo(QMainWindow):
     def cambio_tronera_tiro_final(self):
         self.troneraTiroFinal=self.comboTroneraTiroFinal.currentIndex()+1
         print("Tronera seleccionada para tiro final: "+str(self.troneraTiroFinal))
+        self.printUI("Tronera seleccionada para tiro final: "+str(self.troneraTiroFinal))
     
     def initCameras(self):
         self.cambio_camara(self.current_camera_index)  # Llamar al método para mostrar la primera cámara
@@ -728,7 +729,7 @@ class VentanaVideo(QMainWindow):
     
     #guardar presets de configuraciones:
     def guardar_preset(self):
-        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias, limite_velocidad, friccion_bolas, friccion_railes, tam_bolas_simulacion, ancho_alto_mesa
         nombreArchivo = self.controlWindow.textNombrePreset.text()
         valido = self.es_nombre_archivo_valido(nombreArchivo)
         if valido:
@@ -769,19 +770,29 @@ class VentanaVideo(QMainWindow):
                 "tronera5":self.troneras[4],
                 "tronera6":self.troneras[5],
                 "angulo": anguloRotar,
-                "radioTroneras": self.radioTronera
+                "radioTroneras": self.radioTronera,
+                "distanciaRailes": distancia_railes,
+                "distanciaTronerasEsquinas": distancia_troneras_esquinas,
+                "distanciaTronerasMedias": distancia_troneras_medias,
+                "limiteVelocidad": limite_velocidad,
+                "friccionBolas": friccion_bolas,
+                "friccionRailes": friccion_railes,
+                "tamBolasSimulacion": tam_bolas_simulacion,
+                "anchoAltoMesa": ancho_alto_mesa
             }
             with open(path, "w") as archivo:
                 json.dump(datos, archivo)
 
     #cargar presets de configuraciones:
     def cargar_preset(self):
-        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar
+        global dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar, distancia_railes, distancia_troneras_esquinas, distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_alto_mesa
         campos = ['dp','minDist','cannyThreshold','votesThreshold','minRadius','maxRadius','maxCircles', 
                   'coordPunto1', 'coordPunto2','coordPunto3','coordPunto4','coordPunto5','coordPunto6',
                   'coordPunto7','coordPunto8','coordPunto9','coordPunto10','coordPunto11','coordPunto12',
                   'XIROI','YIROI','XDROI','YDROI','tronera1','tronera2','tronera3','tronera4','tronera5','tronera6',
-                  'angulo','radioTroneras']
+                  'angulo','radioTroneras', 'distanciaRailes','distanciaTronerasEsquinas','distanciaTronerasMedias',
+                   'limiteVelocidad','friccionBolas','friccionRailes','tamBolasSimulacion','anchoAltoMesa']
+        
         valido = False
         file_dialog = QFileDialog()
 
@@ -789,7 +800,7 @@ class VentanaVideo(QMainWindow):
         options |= QFileDialog.DontUseNativeDialog
 
         file_path, _ = file_dialog.getOpenFileName(None, "Seleccionar archivo", "", "Todos los archivos (*.*)", options=options)
-            
+ 
         if file_path:
             print("Archivo seleccionado:", file_path)
             _, extension = os.path.splitext(file_path)
@@ -837,9 +848,18 @@ class VentanaVideo(QMainWindow):
             self.troneras[5]=data["tronera6"]
             anguloRotar = data["angulo"]
             self.radioTronera = data["radioTroneras"]
+            distancia_railes = data["distanciaRailes"]
+            distancia_troneras_esquinas = data["distanciaTronerasEsquinas"]
+            distancia_troneras_medias = data["distanciaTronerasMedias"]
+            limite_velocidad = data["limiteVelocidad"]
+            friccion_bolas = data["friccionBolas"]
+            friccion_railes = data["friccionRailes"]
+            tam_bolas_simulacion = data["tamBolasSimulacion"]
+            ancho_alto_mesa = data["anchoAltoMesa"]
 
             self.controlWindow.actualizarParametros(
             dp, minDist, cannyThreshold, votesThreshold, minRadius, maxRadius, maxCircles, anguloRotar,self.radioTronera)
+            self.ventanaParametrosSimulacion.actualizarParametros(distancia_railes, distancia_troneras_esquinas,distancia_troneras_medias,limite_velocidad,friccion_bolas,friccion_railes,tam_bolas_simulacion,ancho_alto_mesa)
 
     # region cambios para preprocesamiento de imagen:     
     def onAlphaChanged(self, value):
@@ -1133,6 +1153,7 @@ class VentanaVideo(QMainWindow):
     #en base al checkbox determina si hay o no bola en mano para el turno:
     def bola_en_mano(self):
         estado_actual = self.checkBolaEnMano.isChecked()
+
         if estado_actual == True:
             self.BolaEnMano = True
             print("Hay bola en mano")
@@ -1264,6 +1285,7 @@ class VentanaVideo(QMainWindow):
                 self.deseleccionar_bola()
 
     def resaltar_bola_seleccionada(self):
+        self.reiniciarProgressBar()
         global resaltarBola
         SingletonCompartida.delete_instance()
         if self.bolaSeleccionada is not None:
@@ -1705,9 +1727,6 @@ class VentanaVideo(QMainWindow):
                     pathOutput = script_dir + "\\Capturas\\Bolas\\" 
                     cv2.imwrite(pathCaptura, roi)
                     ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
-                    
-                
-
 
                 #se manda un hilo a etiquetar cada bola de las imagenes generadas:
                 if self.etiquetando == False:
@@ -1721,6 +1740,8 @@ class VentanaVideo(QMainWindow):
                 if  self.hiloEtiquetador.is_alive():
                     #aca se puede poner un spin en la interfaz:
                     print("etiquetando...")
+                    self.printUI("Ejecutando IA...")
+                    self.avanzarProgressBar(30)
                 else:
                     print("fin de etiquetado")
                     self.etiquetar = False
@@ -1734,6 +1755,7 @@ class VentanaVideo(QMainWindow):
                 if(self.calculandoTiro == False):
                     if(self.checkTiroFinal.isChecked() and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==False):
                         print("Error, no selecciono la bola negra para el tiro final")
+                        self.printUIError("Seleccione la bola negra para el tiro final")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1741,6 +1763,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif(self.checkTiroFinal.isChecked() == False and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True):
                         print("Error, selecciono la bola negra pero no indico la tronera")
+                        self.printUIError("Seleccione la tronera")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1748,6 +1771,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
                         print("Error, las bolas cambiaron de posicion.")
+                        self.printUIError("Error, las bolas cambiaron de posicion.")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1755,6 +1779,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif( self.selecciono_la_blanca(self.listaEtiquetada)):
                         print ("Error, se selecciono la bola blanca para embocar")
+                        self.printUIError("Error, se selecciono la bola blanca para embocar")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1762,6 +1787,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif( self.existe_la_negra(self.listaEtiquetada)==False):
                         print("El jugador anterior emboco la bola negra, fin del partido")
+                        self.printUI("El jugador anterior emboco la bola negra, fin del partido")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1769,6 +1795,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif(self.solo_una_blanca(self.listaEtiquetada)==False):
                         print("Error, hay mas de una bola blanca en la mesa")
+                        self.printUIError("Error, hay mas de una bola blanca en la mesa")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1776,6 +1803,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif(self.solo_una_negra(self.listaEtiquetada)==False):
                         print("Error, hay mas de una bola 8 en la mesa")
+                        self.printUI("Error, hay mas de una bola 8 en la mesa")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1783,6 +1811,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif(self.maximo_rayadas_superado(self.listaEtiquetada)==True):
                         print("Error, hay mas de 7 bolas rayadas en la mesa")
+                        self.printUIError("Error, hay mas de 7 bolas rayadas en la mesa")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1790,6 +1819,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif(self.maximo_lisas_superado(self.listaEtiquetada)==True):
                         print("Error, hay mas de 7 bolas lisas en la mesa")
+                        self.printUIError("Error, hay mas de 7 bolas lisas en la mesa")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1797,6 +1827,7 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif(self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True and self.hayMesaAbierta == True):
                         print("Error, no se puede seleccionar la negra cuando hay mesa abierta")
+                        self.printUIError("Error, no se puede seleccionar la negra cuando hay mesa abierta")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
@@ -1804,11 +1835,13 @@ class VentanaVideo(QMainWindow):
                         self.repetirSimulacion = False
                     elif(self.seleccion_de_negra_incorrecto(self.listaEtiquetada, self.bolaSeleccionada)==True):
                         print("Error, se selecciono la negra pero no es la ultima bola")
+                        self.printUIError("Error, se selecciono la negra pero no es la ultima bola")
                         self.deseleccionar_bola()
                         self.listaEtiquetada.clear()
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                    self.progressBar.setValue(100)
 
                 if(self.listaEtiquetada is not None):
                     if self.bolaBlanca is not None:
@@ -1842,6 +1875,8 @@ class VentanaVideo(QMainWindow):
                         if  self.hiloCalculoTiro.is_alive():
                             #aca se puede poner un spin en la interfaz:6
                             print("Calculando tiro...")
+                            self.printUI("Calculando tiro...")
+                            self.avanzarProgressBar(95)
                         else:
                             self.calculandoTiro = False 
                             
@@ -1857,13 +1892,15 @@ class VentanaVideo(QMainWindow):
                             self.best_player =  self.respuesta_hiloTiro.best_player
                             SingletonRespuesta.delete_instance()
                             print("fin calculo de trayectorias")
+                            self.printUI("Calculo de trayectorias finalizado")
+                             
+                            # for i in range(0, 5):
+                            self.progressBar.setValue(100)
+
                             self.listaEtiquetada = None
-                           
                             with variable_compartida_lock:
                                 ListaApareadaConEtiquetas.clear()         
                            
-
-                                
                             # self.IA = IA_Handler()
                             # self.IA.invocarIA()
         
@@ -1909,6 +1946,7 @@ class VentanaVideo(QMainWindow):
                     if  self.hiloCalculoTiro.is_alive():
                         #aca se puede poner un spin en la interfaz:
                         print("Simulando tiro...")
+                        self.printUI("Simulando tiro...")
                     else:
                         self.repitiendo_simulacion = False 
                 
@@ -2249,37 +2287,41 @@ class VentanaVideo(QMainWindow):
         return lisas > 7
     
     def selecciono_negra(self, listaEtiquetada, seleccionada):
-        x,y,_ = seleccionada
-        etiquetaSeleccionada = ""
-        for (x1,y1,r1), _, etiqueta in listaEtiquetada:
-            x1 = x1 + self.XIROI
-            y1 = y1 + self.YIROI
-            if (x1 == x and y1 == y):
-               etiquetaSeleccionada = etiqueta
-               break
-        if etiquetaSeleccionada == "Negra":
-            return True
+        if seleccionada is not None:
+            x,y,_ = seleccionada
+            etiquetaSeleccionada = ""
+            for (x1,y1,r1), _, etiqueta in listaEtiquetada:
+                x1 = x1 + self.XIROI
+                y1 = y1 + self.YIROI
+                if (x1 == x and y1 == y):
+                    etiquetaSeleccionada = etiqueta
+                break
+            if etiquetaSeleccionada == "Negra":
+                return True
+            return False
         return False
 
         
     def seleccion_de_negra_incorrecto(self, listaEtiquetada, seleccionada):
-       x,y,_ = seleccionada
-       etiquetaSeleccionada = ""
-       lisas = 0
-       rayadas = 0 
-       for (x1,y1,r1), _, etiqueta in listaEtiquetada:
-           x1 = x1 + self.XIROI
-           y1 = y1 + self.YIROI
-           if etiqueta == "Lisa":
-               lisas = lisas +1
-           elif etiqueta == "Rayada":
-               rayadas = rayadas +1 
-           if (x1 == x and y1 == y):
-               etiquetaSeleccionada = etiqueta
-       if etiquetaSeleccionada != "Negra":
-           return False
-       if rayadas != 0 and lisas != 0:
-            return True
+       if seleccionada is not None:
+            x,y,_ = seleccionada
+            etiquetaSeleccionada = ""
+            lisas = 0
+            rayadas = 0 
+            for (x1,y1,r1), _, etiqueta in listaEtiquetada:
+                x1 = x1 + self.XIROI
+                y1 = y1 + self.YIROI
+                if etiqueta == "Lisa":
+                    lisas = lisas +1
+                elif etiqueta == "Rayada":
+                    rayadas = rayadas +1 
+                if (x1 == x and y1 == y):
+                    etiquetaSeleccionada = etiqueta
+            if etiquetaSeleccionada != "Negra":
+                return False
+            if rayadas != 0 and lisas != 0:
+                    return True
+       return False
            
            
 
@@ -2296,7 +2338,29 @@ class VentanaVideo(QMainWindow):
         alto = max(d2,d4)
         return ancho, alto 
 
+    def printUI(self, text):
+        text = f"<p style='color: green; font-size: 20px'> {text} </p>"
+        self.textBrowser.setText(text)
+    
+    def printUIError(self, text):
+        text = f"<p style='color: red; font-size: 20px'> {text} </p>"
+        self.textBrowser.setText(text)
+    
+    def reiniciarProgressBar(self):
+        self.progressBar.setValue(0)
+        self.contadorProgressBar = 0 
+        self.valorProgressBar = 0
+
+    def avanzarProgressBar(self, valorMaximo):
+        if  self.valorProgressBar == valorMaximo:
+            return
         
+        self.contadorProgressBar += 1
+        if (self.contadorProgressBar % 2 == 0):
+            return
+    
+        self.valorProgressBar += 1
+        self.progressBar.setValue(self.valorProgressBar)
 
 resXProy = 1920
 resYProy = 1080
