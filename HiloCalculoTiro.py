@@ -40,9 +40,9 @@ class miHilo(threading.Thread):
             ia = IA_Handler()
             ia.verSimulacion(attrs,best_player)
 
-    def VerMesa(self, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa):
+    def VerMesa(self):
         ia = IA_Handler()
-        self.respuesta  = ia.verMesa(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
+        self.respuesta  = ia.verMesa()
     
 
 

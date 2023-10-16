@@ -34,7 +34,7 @@ from Clases.Fisicas import Fisicas
 from Clases.IA_Handler import IA_Handler
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
-
+from IA_Simulacion.SingletonVerMesa import SingletonVerMesa
 
 from HiloCalculoTiro import miHilo
 
@@ -695,9 +695,9 @@ class VentanaVideo(QMainWindow):
         self.initCameras()
 
     def verMesa(self):
-        #singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (10,10,10), self.obtener_tam_ROI(), self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_mesa,tam_bolas_simulacion, alto_mesa)
-        self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
-        self.hiloCalculoTiro.VerMesa(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
+        singletonVerMesa = SingletonVerMesa(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_mesa,tam_bolas_simulacion, alto_mesa)
+        self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_mesa,tam_bolas_simulacion, alto_mesa)
+        self.hiloCalculoTiro.VerMesa()
         # self.hiloCalculoTiro.join(timeout=0.01)
         # if  self.hiloCalculoTiro.is_alive():
         #     print("Simulando tiro...")

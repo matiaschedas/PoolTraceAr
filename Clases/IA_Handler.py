@@ -128,8 +128,7 @@ class IA_Handler ():
         self.genetic.ver_simulacion(attrs,best_player)
         self.genetic = None
 
-    def verMesa(self, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa):
-        self.setearConfig(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa)
+    def verMesa(self):
         self.genetic.ver_mesa()
         self.genetic = None
 
