@@ -16,6 +16,7 @@ class ParametrosSimulacionWindow(QMainWindow):
     anchoMesaChanged = pyqtSignal(int)
     tambBolasChanged = pyqtSignal(int)
     altoMesaChanged = pyqtSignal(int)
+    radioTronerasChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -32,6 +33,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.anchoMesa = 1000
         self.tamBolas = 12
         self.altoMesa = 500
+        self.radioTroneras = 20
 
         icon_path = os.path.join(script_dir.replace("Clases", "images"), "config.png")
         icon = QIcon(icon_path)
@@ -55,6 +57,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.altoCmMesa_label = QLabel("Alto(cm)")
         self.relacionBolaAlto_label = QLabel("Alto(cant bolas)")
         self.relacionBolaAncho_label = QLabel("Ancho(cant bolas)")
+        self.radioTroneras_label = QLabel("Radio Troneras")
 
         self.distRailes_slider = QSlider(Qt.Horizontal)
         self.distTronerasEsquinas_slider = QSlider(Qt.Horizontal)
@@ -65,6 +68,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.tamBolas_slider = QSlider(Qt.Horizontal)
         self.anchoMesa_slider = QSlider(Qt.Horizontal)
         self.altoMesa_slider = QSlider(Qt.Horizontal)
+        self.radioTroneras_slider = QSlider(Qt.Horizontal)
 
         self.distRailes_text = QLineEdit()
         self.distRailes_text.setValidator(QIntValidator())
@@ -84,6 +88,8 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.anchoMesa_text.setValidator(QIntValidator())
         self.altoMesa_text = QLineEdit()
         self.altoMesa_text.setValidator(QIntValidator())
+        self.radioTroneras_text = QLineEdit()
+        self.radioTroneras_text.setValidator(QIntValidator())
 
         self.altoCmMesa_text = QLineEdit()
         self.anchoCmMesa_text = QLineEdit()
@@ -107,6 +113,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.relacionBolaAlto_text.setFixedWidth(30)
         self.relacionBolaAncho_text.setFixedWidth(30)
         self.altoMesa_text.setFixedWidth(30)
+        self.radioTroneras_text.setFixedWidth(30)
 
         self.distRailes_text.setText(str(self.distRailes))  
         self.distTronerasEsquinas_text.setText(str(self.distTronerasEsquinas))    
@@ -123,6 +130,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.relacionBolaAlto_text.setText("{:.1f}".format(relacionBolaAlto))
         self.relacionBolaAncho_text.setText("{:.1f}".format(relacionBolaAncho))
         self.altoMesa_text.setText(str(self.altoMesa))
+        self.radioTroneras_text.setText(str(self.radioTroneras))
 
         self.distRailes_slider.setRange(1,154)
         self.distTronerasEsquinas_slider.setRange(-2,152)
@@ -135,6 +143,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.anchoMesa_slider.setRange(250,1500)
         self.tamBolas_slider.setRange(5,35)
         self.altoMesa_slider.setRange(250,1500)
+        self.radioTroneras_slider.setRange(5,100)
 
         self.distRailes_slider.setValue(self.distRailes)
         self.distTronerasEsquinas_slider.setValue(self.distTronerasEsquinas)
@@ -145,6 +154,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.anchoMesa_slider.setValue(self.anchoMesa)
         self.tamBolas_slider.setValue(self.tamBolas)
         self.altoMesa_slider.setValue(self.altoMesa)
+        self.radioTroneras_slider.setValue(self.radioTroneras)
 
         self.distRailes_slider.valueChanged.connect(self.onDistRailesSliderChange)
         self.distTronerasEsquinas_slider.valueChanged.connect(self.onDistTronerasEsquinasSliderChange)
@@ -155,6 +165,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.anchoMesa_slider.valueChanged.connect(self.onAnchoMesaSliderChange)
         self.tamBolas_slider.valueChanged.connect(self.onTamBolasSliderChange)
         self.altoMesa_slider.valueChanged.connect(self.onAltoMesaSliderChange)
+        self.radioTroneras_slider.valueChanged.connect(self.onRadioTronerasSliderChange)
 
         self.distRailes_text.textChanged.connect(self.onDistRailesTextChange)
         self.distTronerasEsquinas_text.textChanged.connect(self.onDistTronerasEsquinasTextChange)
@@ -165,6 +176,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.anchoMesa_text.textChanged.connect(self.onAnchoMesaTextChange)
         self.tamBolas_text.textChanged.connect(self.onTamBolasTextChange)
         self.altoMesa_text.textChanged.connect(self.onAltoMesaTextChange)
+        self.radioTroneras_text.textChanged.connect(self.onRadioTronerasTextChange)
         
         self.ver_mesa_button = QPushButton("Ver mesa", self)
 
@@ -204,17 +216,21 @@ class ParametrosSimulacionWindow(QMainWindow):
         layout.addWidget(self.altoMesa_slider, 8, 1)
         layout.addWidget(self.altoMesa_text, 8, 2)
 
-        layout.addWidget(self.anchoCmMesa_label, 9, 0)
-        layout.addWidget(self.anchoCmMesa_text, 9, 1)
-        layout.addWidget(self.altoCmMesa_label, 10, 0)
-        layout.addWidget(self.altoCmMesa_text, 10, 1)
+        layout.addWidget(self.radioTroneras_label, 9, 0)
+        layout.addWidget(self.radioTroneras_slider, 9, 1)
+        layout.addWidget(self.radioTroneras_text, 9, 2)
 
-        layout.addWidget(self.relacionBolaAlto_label, 11,0)
-        layout.addWidget(self.relacionBolaAlto_text, 11,1)
-        layout.addWidget(self.relacionBolaAncho_label, 12 ,0)
-        layout.addWidget(self.relacionBolaAncho_text, 12 ,1)
+        layout.addWidget(self.anchoCmMesa_label, 10, 0)
+        layout.addWidget(self.anchoCmMesa_text, 10, 1)
+        layout.addWidget(self.altoCmMesa_label, 11, 0)
+        layout.addWidget(self.altoCmMesa_text, 11, 1)
 
-        layout.addWidget(self.ver_mesa_button, 13,2)
+        layout.addWidget(self.relacionBolaAlto_label, 12,0)
+        layout.addWidget(self.relacionBolaAlto_text, 12,1)
+        layout.addWidget(self.relacionBolaAncho_label, 13 ,0)
+        layout.addWidget(self.relacionBolaAncho_text, 13 ,1)
+
+        layout.addWidget(self.ver_mesa_button, 14,2)
 
 
         widget = QWidget()
@@ -235,6 +251,12 @@ class ParametrosSimulacionWindow(QMainWindow):
         alto = (int)(alto*200/1000) 
         self.anchoCmMesa_text.setText(str(ancho))
         self.altoCmMesa_text.setText(str(alto))
+
+    def onRadioTronerasSliderChange(self, value):
+        self.radioTroneras = value
+        self.radioTronerasChanged.emit(self.radioTroneras)
+        self.radioTroneras_slider.setValue(self.radioTroneras)
+        self.radioTroneras_text.setText(str(self.radioTroneras))
 
     def onAltoMesaSliderChange(self, value):
         self.altoMesa = value
@@ -305,6 +327,11 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.actualizarRelaciones()
         self.actualizarAnchoAltoMesa()
 
+    def onRadioTronerasTextChange(self, text):
+        if text:
+            self.radioTroneras = int(text)
+            self.radioTronerasChanged.emit(self.radioTroneras)
+            self.radioTroneras_slider.setValue(self.radioTroneras)
 
     def onAltoMesaTextChange(self, text):
         if text:
@@ -359,7 +386,7 @@ class ParametrosSimulacionWindow(QMainWindow):
             self.friccionRailes_slider.setValue(int(self.friccionRailes * 10))
         except ValueError:
             pass
-    def actualizarParametros(self, distRailes, distTronerasEsquinas, distTronerasMedias, limiteVelocidad, friccionBolas, friccionRailes, tamBolas, anchoMesa, altoMesa):
+    def actualizarParametros(self, distRailes, distTronerasEsquinas, distTronerasMedias, limiteVelocidad, friccionBolas, friccionRailes, tamBolas, anchoMesa, altoMesa, radioTroneras):
         self.distRailes = distRailes
         self.distTronerasEsquinas = distTronerasEsquinas
         self.distTronerasMedias = distTronerasMedias
@@ -369,6 +396,7 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.tamBolas = tamBolas
         self.anchoMesa = anchoMesa
         self.altoMesa = altoMesa
+        self.radioTroneras = radioTroneras
         self.actualizarSliderTextBox()
 
     def actualizarSliderTextBox(self):
@@ -398,6 +426,9 @@ class ParametrosSimulacionWindow(QMainWindow):
 
         self.altoMesa_text.setText(str(self.altoMesa))
         self.altoMesa_slider.setValue(self.altoMesa)
+
+        self.radioTroneras_text.setText(str(self.radioTroneras))
+        self.radioTroneras_slider.setValue(self.radioTroneras)
 
 def main():
     app = QApplication(sys.argv)

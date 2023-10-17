@@ -25,7 +25,7 @@ class IA_Handler ():
         self.genetic = Genetic()
         self.genetic2 = Genetic2()
     
-    def setearConfig(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa):
+    def setearConfig(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa, radio_troneras_ia):
         singleton = SingletonCompartida()
         pocket = """POCKET_LOCATION = (
                 np.array(
@@ -92,6 +92,7 @@ class IA_Handler ():
         alto = alto_mesa
         anchoAlto = "WIDTH, HEIGHT = "+str(ancho)+","+ str(alto)
         tamBolas = "BALL_RADIUS = int("+str(tam_bolas_simulacion)+"* ZOOM_MULTIPLIER)"
+        radio_troneras =  "POCKET_RADIUS = int("+str(radio_troneras_ia)+"* ZOOM_MULTIPLIER)"
 
         with open(template_dir, 'r') as archivoTemplate:
             contenidoTemplate = archivoTemplate.read()
@@ -106,12 +107,13 @@ class IA_Handler ():
         contenidoTemplateModificado = contenidoTemplateModificado.replace("VELOCITY_LIMIT = None", limite_velocidad)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("WIDTH, HEIGHT = 1000, 500", anchoAlto)
         contenidoTemplateModificado = contenidoTemplateModificado.replace("BALL_RADIUS = int(12 * ZOOM_MULTIPLIER)",tamBolas)
+        contenidoTemplateModificado = contenidoTemplateModificado.replace("POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)",radio_troneras)
         with open(config_dir, 'w') as archivoConfig:
             archivoConfig.write(contenidoTemplateModificado)
 
 
-    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa):
-        self.setearConfig(rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa)
+    def invocarIA(self, rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa, radio_troneras_ia):
+        self.setearConfig(rail_distance, side_pocket_dist, corner_pocket_dist, limite_velocidad, friccion_bola, friccion_railes, ancho_mesa, tam_bolas_simulacion, alto_mesa, radio_troneras_ia)
         singleton = SingletonCompartida()
 
         response = None
@@ -128,8 +130,8 @@ class IA_Handler ():
         self.genetic.ver_simulacion(attrs,best_player)
         self.genetic = None
 
-    def verMesa(self):
-        self.genetic.ver_mesa()
+    def verMesa(self, objetoVerMesa):
+        self.genetic.ver_mesa(objetoVerMesa)
         self.genetic = None
 
    

@@ -1,7 +1,6 @@
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.utils import *
 from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
-from IA_Simulacion.SingletonVerMesa import SingletonVerMesa
 from IA_Simulacion.Respuesta import Respuesta
 
 import os
@@ -56,7 +55,8 @@ class PoolEnv:
         graficar = True,
         simulacion = False,
         embocarNegra = False,
-        nroTronera = -1
+        nroTronera = -1,
+        objetoVerMesa = None
     ):
         # initialize some constants
         self.episodes = 0
@@ -81,7 +81,6 @@ class PoolEnv:
         self.space.sleep_time_threshold = 1e-8
 
 
-        
         self.default = True
         self.balls = []
         self.balls_copy = []
@@ -111,9 +110,9 @@ class PoolEnv:
             self.nroTronera = self.singleton.nroTronera
         self.bola_en_mano_error = False
 
-        self.singletonVerMesa = SingletonVerMesa()
+        self.objetoVerMesa = objetoVerMesa
         self.verMesa = False
-        if (self.singletonVerMesa.distancia_railes != None):
+        if self.objetoVerMesa != None:
             self.verMesa = True
 
         # gym environment
@@ -230,73 +229,73 @@ class PoolEnv:
         static_body = self.space.static_body
         self.rails = []
         if self.verMesa:
-            rail_distance = int(self.singletonVerMesa.distancia_railes*ZOOM_MULTIPLIER)
+            rail_distance = int(self.objetoVerMesa.distancia_railes*ZOOM_MULTIPLIER)
             rail_location = (
                                 np.array(
-                                    [rail_distance, self.singletonVerMesa.ancho_mesa - rail_distance, rail_distance, self.singletonVerMesa.alto_mesa - rail_distance]
+                                    [rail_distance, self.objetoVerMesa.ancho_mesa - rail_distance, rail_distance, self.objetoVerMesa.alto_mesa - rail_distance]
                                 )
                                 * ZOOM_MULTIPLIER
                             ).astype(int)
-            print("Alto de mesa segun singleton-----------------" + str(self.singletonVerMesa.alto_mesa))
+            print("Alto de mesa segun singleton-----------------" + str(self.objetoVerMesa.alto_mesa))
             rail_poly = [
                             [
                                 [0, CORNER_RAIL_OFFSET],
                                 [rail_location[0], rail_location[2] + CORNER_RAIL_OFFSET],
                                 [rail_location[0], rail_location[3] - CORNER_RAIL_OFFSET],
-                                [0, int(self.singletonVerMesa.alto_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET],
+                                [0, int(self.objetoVerMesa.alto_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET],
                             ],  # left
                             [
                                 [CORNER_RAIL_OFFSET, 0],
-                                [int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2, 0],
+                                [int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2, 0],
                                 [
-                                    int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
+                                    int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
                                     rail_location[2],
                                 ],
                                 [rail_location[0] + CORNER_RAIL_OFFSET, rail_location[2]],
                             ],  # top 1
                             [
-                                [int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2, 0],
-                                [int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET, 0],
+                                [int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2, 0],
+                                [int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET, 0],
                                 [rail_location[1] - CORNER_RAIL_OFFSET, rail_location[2]],
                                 [
-                                    int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
+                                    int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
                                     rail_location[2],
                                 ],
                             ],  # top 2
                             [
                                 [rail_location[1], rail_location[2] + CORNER_RAIL_OFFSET],
-                                [int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER), CORNER_RAIL_OFFSET],
+                                [int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER), CORNER_RAIL_OFFSET],
                                 [
-                                    int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER),
-                                    int(self.singletonVerMesa.alto_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
+                                    int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER),
+                                    int(self.objetoVerMesa.alto_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
                                 ],
                                 [rail_location[1], rail_location[3] - CORNER_RAIL_OFFSET],
                             ],  # right
                             [
                                 [rail_location[0] + CORNER_RAIL_OFFSET, rail_location[3]],
                                 [
-                                    int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
+                                    int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET - SIDE_RAIL_OFFSET_2,
                                     rail_location[3],
                                 ],
                                 [
-                                    int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2,
-                                    int(self.singletonVerMesa.alto_mesa * ZOOM_MULTIPLIER),
+                                    int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) - SIDE_RAIL_OFFSET_2,
+                                    int(self.objetoVerMesa.alto_mesa * ZOOM_MULTIPLIER),
                                 ],
-                                [CORNER_RAIL_OFFSET, int(self.singletonVerMesa.alto_mesa * ZOOM_MULTIPLIER)],
+                                [CORNER_RAIL_OFFSET, int(self.objetoVerMesa.alto_mesa * ZOOM_MULTIPLIER)],
                             ],  # bottom 1
                             [
                                 [
-                                    int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
+                                    int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET + SIDE_RAIL_OFFSET_2,
                                     rail_location[3],
                                 ],
                                 [rail_location[1] - CORNER_RAIL_OFFSET, rail_location[3]],
                                 [
-                                    int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
-                                    int(self.singletonVerMesa.alto_mesa * ZOOM_MULTIPLIER),
+                                    int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER) - CORNER_RAIL_OFFSET,
+                                    int(self.objetoVerMesa.alto_mesa * ZOOM_MULTIPLIER),
                                 ],
                                 [
-                                    int(self.singletonVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2,
-                                    int(self.singletonVerMesa.alto_mesa * ZOOM_MULTIPLIER),
+                                    int(self.objetoVerMesa.ancho_mesa * ZOOM_MULTIPLIER / 2) + SIDE_RAIL_OFFSET_2,
+                                    int(self.objetoVerMesa.alto_mesa * ZOOM_MULTIPLIER),
                                 ],
                             ],  # bottom 2
                         ]
@@ -309,7 +308,7 @@ class PoolEnv:
                 if self.default == True:  
                     rail.friction = RAIL_FRICTION
                 else:
-                    rail.friction = self.singletonVerMesa.friccion_railes
+                    rail.friction = self.objetoVerMesa.friccion_railes
                 rail.filter = pm.ShapeFilter(categories=0b00001)
                 self.rails.append(rail) 
         else:
@@ -413,24 +412,24 @@ class PoolEnv:
         self.pockets = []
 
         if self.verMesa:
-            side_pocket_dist = int(self.singletonVerMesa.distancia_troneras_medias*ZOOM_MULTIPLIER)
-            corner_pocket_dist = int(self.singletonVerMesa.distancia_troneras_esquinas*ZOOM_MULTIPLIER)
+            side_pocket_dist = int(self.objetoVerMesa.distancia_troneras_medias*ZOOM_MULTIPLIER)
+            corner_pocket_dist = int(self.objetoVerMesa.distancia_troneras_esquinas*ZOOM_MULTIPLIER)
             pocket_location = (
                     np.array(
                         [
                         (corner_pocket_dist, corner_pocket_dist),
-                        (self.singletonVerMesa.ancho_mesa // 2, side_pocket_dist),
-                        (self.singletonVerMesa.ancho_mesa - corner_pocket_dist, corner_pocket_dist),
-                        (corner_pocket_dist, self.singletonVerMesa.alto_mesa - corner_pocket_dist),
-                        (self.singletonVerMesa.ancho_mesa // 2, self.singletonVerMesa.alto_mesa - side_pocket_dist),
-                        (self.singletonVerMesa.ancho_mesa - corner_pocket_dist, self.singletonVerMesa.alto_mesa - corner_pocket_dist),
+                        (self.objetoVerMesa.ancho_mesa // 2, side_pocket_dist),
+                        (self.objetoVerMesa.ancho_mesa - corner_pocket_dist, corner_pocket_dist),
+                        (corner_pocket_dist, self.objetoVerMesa.alto_mesa - corner_pocket_dist),
+                        (self.objetoVerMesa.ancho_mesa // 2, self.objetoVerMesa.alto_mesa - side_pocket_dist),
+                        (self.objetoVerMesa.ancho_mesa - corner_pocket_dist, self.objetoVerMesa.alto_mesa - corner_pocket_dist),
                         ]
                     )
                     * ZOOM_MULTIPLIER
                 ).astype(int)
-            
+            pocket_radius = int(self.objetoVerMesa.radio_troneras_ia * ZOOM_MULTIPLIER)
             for pocket_loc in pocket_location:
-                pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+                pocket = pm.Circle(static_body, pocket_radius, pocket_loc.tolist())
                 pocket.color = pg.Color(BLACK)
                 pocket.collision_type = 2
                 pocket.elasticity = 0
@@ -457,6 +456,7 @@ class PoolEnv:
                     pocket.filter = pm.ShapeFilter(categories=0b00010)
                     self.pockets.append(pocket)
             else:
+                pocket_radius = int(self.singleton.radio_troneras_ia * ZOOM_MULTIPLIER)
                 side_pocket_dist = int(self.singleton.distancia_troneras_medias*ZOOM_MULTIPLIER)
                 corner_pocket_dist = int(self.singleton.distancia_troneras_esquinas*ZOOM_MULTIPLIER)
                 pocket_location = (
@@ -474,7 +474,7 @@ class PoolEnv:
                     ).astype(int)
                 
                 for pocket_loc in pocket_location:
-                    pocket = pm.Circle(static_body, POCKET_RADIUS, pocket_loc.tolist())
+                    pocket = pm.Circle(static_body, pocket_radius, pocket_loc.tolist())
                     pocket.color = pg.Color(BLACK)
                     pocket.collision_type = 2
                     pocket.elasticity = 0
@@ -687,8 +687,8 @@ class PoolEnv:
         
         positions = []
         if self.verMesa:
-            ball_radius = int(self.singletonVerMesa.tam_bolas_simulacion* ZOOM_MULTIPLIER)
-            rail_distance = int(self.singletonVerMesa.distancia_railes* ZOOM_MULTIPLIER)
+            ball_radius = int(self.objetoVerMesa.tam_bolas_simulacion* ZOOM_MULTIPLIER)
+            rail_distance = int(self.objetoVerMesa.distancia_railes* ZOOM_MULTIPLIER)
         else:
             ball_radius = BALL_MASS
             rail_distance = RAIL_DISTANCE
@@ -709,7 +709,7 @@ class PoolEnv:
 
                 # if overlap with another ball, choose a different location
                 if self.verMesa:
-                    auxRadio = int(self.singletonVerMesa.tam_bolas_simulacion * ZOOM_MULTIPLIER)
+                    auxRadio = int(self.objetoVerMesa.tam_bolas_simulacion * ZOOM_MULTIPLIER)
                 else:
                     if self.default == True:
                         auxRadio = BALL_RADIUS
@@ -1265,8 +1265,6 @@ class PoolEnv:
 
         self.add_table()
         self.add_balls()
-        if self.verMesa:
-            SingletonVerMesa.delete_instance()
 
         cant = self.cantidad_para_embocar()
         resto = 7 - cant
