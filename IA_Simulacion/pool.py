@@ -686,7 +686,7 @@ class PoolEnv:
             return
         
         positions = []
-        if self.ver_mesa:
+        if self.verMesa:
             ball_radius = int(self.singletonVerMesa.tam_bolas_simulacion* ZOOM_MULTIPLIER)
             rail_distance = int(self.singletonVerMesa.distancia_railes* ZOOM_MULTIPLIER)
         else:

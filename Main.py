@@ -34,7 +34,7 @@ from Clases.Fisicas import Fisicas
 from Clases.IA_Handler import IA_Handler
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
 from IA_Simulacion.SingletonRespuesta import SingletonRespuesta
-from IA_Simulacion.SingletonVerMesa import 
+from IA_Simulacion.SingletonVerMesa import SingletonVerMesa
 
 from HiloCalculoTiro import miHilo
 
@@ -220,7 +220,8 @@ class VentanaProyeccion(QMainWindow):
 
     #dibuja los circulos en la ventana de proyeccion:
     def dibujar_circulos(self, x, y, r, color, grosor,frameDestino):
-        cv2.circle(frameDestino, (x, y), r, color, grosor)
+        #cv2.circle(frameDestino, (x, y), r, color, grosor)
+        cv2.rectangle(frameDestino, (x-(r+15), y+(r+15)), (x+(r+15),y-(r+15)),color, grosor)
 
     def dibujar_ROI(self, puntoA, puntoB, color, grosor,frameDestino):
         cv2.rectangle(frameDestino, puntoA,
@@ -1094,8 +1095,7 @@ class VentanaVideo(QMainWindow):
             self.frame = cv2.resize(self.frame, (ResolucionX, ResolucionY), interpolation=cv2.INTER_LINEAR)
             # ventanaProyeccion.frame = cv2.resize(ventanaProyeccion.frame, (resYProy, resXProy), interpolation=cv2.INTER_LINEAR)
         self.XIROI, self.YIROI = 10, 10
-        self.XDROI, self.YDROI = ResolucionY - \
-            int(ResolucionY/2), ResolucionY-int(ResolucionY/2)
+        self.XDROI, self.YDROI = 20, 20
         radioElegido = self.encontrar_radio(resolucion_encontrada)
         radioMin = radioElegido[0]
         radioMax = radioElegido[1]

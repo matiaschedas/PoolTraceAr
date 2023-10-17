@@ -10,10 +10,10 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 
 class clasificadorTipoBola():
     def __init__(self):
-        self.img_height = 180
-        self.img_width = 180
+        self.img_height = 50
+        self.img_width = 50
         self.class_names=['Blanca', 'Lisa', 'Negra', 'Rayada']
-        self.model = tf.keras.models.load_model(script_dir + "\\classification-model\\v1.0\\")
+        self.model = tf.keras.models.load_model(script_dir + "\\classification-model\\v1.0\\", compile=False)
         self.id = 0
 
     def clasificar(self, img:Image, guardarHistorial):
