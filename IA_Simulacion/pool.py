@@ -179,14 +179,18 @@ class PoolEnv:
     def ver_mesa(self):
         flag = True
         while flag == True:
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    # Si se cierra la ventana, sal del bucle de juego
-                    flag = False
-                    pg.quit()
-                    break
-            else:
-                self.render()
+            try:
+                for event in pg.event.get():
+                    if event.type == pg.QUIT:
+                        # Si se cierra la ventana, sal del bucle de juego
+                        flag = False
+                        pg.quit()
+                        break
+                else:
+                    self.render()
+            except Exception as e:
+                print("Error en ver mesa: ", str(e))
+                flag = False
     
     def reiniciar_globales(self):
         global primerContacto, primerContactoCorrecto, bolasEmbocadas, bolasCorrectasEmbocadas, bolasIncorrectasEmbocadas, embocoLaNegraIncorrectamente,cantidadRebotesBlanca,velocidadXBlanca,velocidadYBlanca, trayectorias, trayectoriaBlanca, primerContactoCoordenada
