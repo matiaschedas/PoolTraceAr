@@ -436,11 +436,50 @@ class HiloProyeccion(threading.Thread):
         with self.bloqueo:
             self.detener = True
 
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout, QPushButton
+
+class VentanaContrasena(QWidget):
+    def __init__(self,ventanaControl):
+        super().__init__()
+        self.ventanaControl = ventanaControl
+        self.init_ui()
+        
+
+    def init_ui(self):
+        self.setWindowTitle('Ventana Principal')
+
+        layout = QVBoxLayout()
+
+        self.label_contraseña = QLabel('Contraseña:')
+        self.edit_contraseña = QLineEdit()
+        self.edit_contraseña.setEchoMode(QLineEdit.Password)
+
+        self.btn_ingresar = QPushButton('Ingresar')
+        self.btn_ingresar.clicked.connect(self.verificar_contrasena)
+
+        layout.addWidget(self.label_contraseña)
+        layout.addWidget(self.edit_contraseña)
+        layout.addWidget(self.btn_ingresar)
+
+        self.setLayout(layout)
+        
+
+    def verificar_contrasena(self):
+        contraseña_correcta = "miContraseña"  # Reemplaza con tu contraseña
+
+        if self.edit_contraseña.text() == contraseña_correcta:            
+            self.ventanaControl.show()
+            self.close()
+        else:
+            print("Contraseña incorrecta")
+
 
 class VentanaVideo(QMainWindow):
-    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow, ventanaParametrosSimulacion: ParametrosSimulacionWindow):
+    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow, ventanaParametrosSimulacion: ParametrosSimulacionWindow, ventanaContrasena: VentanaContrasena):
         super().__init__()
-        global script_dir 
+        global script_dir
+        self.ventanaContrasena = ventanaContrasena 
         self.circlesCopy = None
         self.roi = None
         self.hiloEtiquetador = None
@@ -1235,9 +1274,9 @@ class VentanaVideo(QMainWindow):
             ventanaProyeccion.close()
         
     #abre la ventana de configuracion de parametros:
-    def configurar(self):
-        self.controlWindow.show()
-
+    def configurar(self):        
+        self.ventanaContrasena.show()
+        
     def closeEvent(self, event):
         global cerrarProyeccion
         parar_de_actualizar(self)
@@ -2582,7 +2621,7 @@ class Bola:
         self.x = x
         self.y = y
         self.r = r
-  
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
@@ -2591,10 +2630,11 @@ if __name__ == "__main__":
         iniciar_GPU()
     ventanaProyeccion = VentanaProyeccion()
     ventanaParametros = ControlWindow()
+    ventanaContrasena = VentanaContrasena(ventanaParametros)
     ventanaPreprocesamiento = PreprocesamientoWindow()
     ventanaParametrosSimulacion = ParametrosSimulacionWindow()
     hiloProyeccion = HiloProyeccion(bloqueo, ventanaProyeccion)
-    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion, ventanaPreprocesamiento, ventanaParametrosSimulacion)
+    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion, ventanaPreprocesamiento, ventanaParametrosSimulacion,ventanaContrasena)
 
     ventana.show()
     ventana.controlWindow.show()
