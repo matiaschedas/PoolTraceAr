@@ -719,11 +719,12 @@ class VentanaVideo(QMainWindow):
         if event.key() == Qt.Key_Delete:
             if(self.corregirFrame):
                 if(self.bolaSeleccionadaCorreccion is not None):
-                    x,y,r = self.bolaSeleccionadaCorreccion
-                    indice = self.encontrar_indice_por_coordenadas(x ,y)
-                    if indice != -1:
-                        del self.circles[indice]
-                        self.bolaSeleccionadaCorreccion = None
+                    if (self.borrandoSeleccionada()==False):
+                        x,y,r = self.bolaSeleccionadaCorreccion
+                        indice = self.encontrar_indice_por_coordenadas(x ,y)
+                        if indice != -1:
+                            del self.circles[indice]
+                            self.bolaSeleccionadaCorreccion = None
             print("La tecla Supr fue presionada")
         elif event.key() == Qt.Key_Plus:
             if(self.corregirFrame):
@@ -733,6 +734,18 @@ class VentanaVideo(QMainWindow):
         elif event.key() == Qt.Key_Q:
             if(self.corregirFrame):
                 print("La tecla 'q' fue presionada")
+
+    def borrandoSeleccionada(self):
+        if self.bolaSeleccionada is None:
+            return False
+        xs,ys,rs = self.bolaSeleccionada
+        xs = xs - self.XIROI
+        ys = ys - self.YIROI
+        xsc, ysc, rsc = self.bolaSeleccionadaCorreccion
+        dist = math.sqrt((xs - xsc)**2 + (ys - ysc)**2)
+        if (dist <= rs):
+            return True
+        return False
 
     def verMesa(self):
         objetoVerMesa = VerMesa(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_mesa,tam_bolas_simulacion, alto_mesa, radio_troneras_IA)
@@ -744,7 +757,8 @@ class VentanaVideo(QMainWindow):
         #     print("Simulando tiro...")
     def botonCalcularTiroConfirmarPressed(self):
         if(self.botonCalcularTiroConfirmar.text()=="Confirmar"):
-            self.etiquetar=True
+            self.circles = self.eliminar_circulos_repetidos(self.circles)
+            self.etiquetar = True
             self.botonCalcularTiroConfirmar.setText("Calcular tiro")
             self.botonCalcularTiroConfirmar.setDisabled(True)
         else:
@@ -1933,14 +1947,14 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
-                    elif( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
-                        print("Error, las bolas cambiaron de posicion.")
-                        self.printUIError("Error, las bolas cambiaron de posicion.")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
+                    # elif( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
+                    #     print("Error, las bolas cambiaron de posicion.")
+                    #     self.printUIError("Error, las bolas cambiaron de posicion.")
+                    #     self.deseleccionar_bola()
+                    #     self.listaEtiquetada.clear()
+                    #     self.listaEtiquetada = None
+                    #     self.ultimaListaEtiquetada = None
+                    #     self.repetirSimulacion = False
                     elif( self.selecciono_la_blanca(self.listaEtiquetada)):
                         print ("Error, se selecciono la bola blanca para embocar")
                         self.printUIError("Error, se selecciono la bola blanca para embocar")
