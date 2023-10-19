@@ -1251,8 +1251,9 @@ class PoolEnv:
     def cantidad_para_embocar(self):
         cant = 0
         for ball in self.balls:
-            if ball.observation_number == 1:
-                cant = cant + 1   
+            if ball is not None:
+                if ball.observation_number == 1:
+                    cant = cant + 1   
         return cant
     
     def reset(self, *args, **kwargs):

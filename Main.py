@@ -29,7 +29,7 @@ from pathlib import Path
 import random
 import copy
 from IA_Simulacion.utils import config
-
+from PyQt5.QtCore import QObject, pyqtSignal, QThread
 from Clases.Fisicas import Fisicas
 from Clases.IA_Handler import IA_Handler
 from IA_Simulacion.SingletonCompartida import SingletonCompartida
@@ -178,6 +178,7 @@ class VentanaProyeccion(QMainWindow):
         self.setWindowTitle("Proyeccion")
         self.label = QLabel(self)
         global resXProy, resYProy
+        self.frame_lock = threading.Lock()
         self.png_image = cv2.imread(script_dir+"\\images\\PoolTraceAr.png", cv2.IMREAD_UNCHANGED)
         
         self.nroMonitor = display_monitor
@@ -220,77 +221,79 @@ class VentanaProyeccion(QMainWindow):
         self.frame = cv2.resize(self.frame, (resXProy, resYProy), interpolation=cv2.INTER_LINEAR)
         self.move(monitor.left() + 7, monitor.top())
 
-    #dibuja los circulos en la ventana de proyeccion:
-    def dibujar_circulos(self, x, y, r, color, grosor,frameDestino):
-        cv2.circle(frameDestino, (x, y), r, color, grosor)
-        cv2.rectangle(frameDestino, (x-(r+10), y+(r+10)), (x+(r+10),y-(r+10)),color, grosor)
+    def dibujar_circulos(self, x, y, r, color, grosor, frameDestino):
+        with self.frame_lock:
+            cv2.circle(frameDestino, (x, y), r, color, grosor)
+            cv2.rectangle(frameDestino, (x - (r + 10), y + (r + 10)), (x + (r + 10), y - (r + 10)), color, grosor)
 
-    def dibujar_ROI(self, puntoA, puntoB, color, grosor,frameDestino):
-        cv2.rectangle(frameDestino, puntoA,
-                              puntoB, color, grosor)
-    
-    def dibujar_trayectorias(self, trayectoriaBlanca, trayectorias, xiroi, yiroi, verTodasTrayectorias,frameDestino):
-        if(trayectoriaBlanca is not None):
-            for i in range(len(trayectoriaBlanca)):
-                if(i == len(trayectoriaBlanca) - 1):
-                    if isinstance(trayectoriaBlanca[i], tuple):  
-                        punto = int(trayectoriaBlanca[i][0]), int(trayectoriaBlanca[i][1])
+    def dibujar_ROI(self, puntoA, puntoB, color, grosor, frameDestino):
+        with self.frame_lock:
+            cv2.rectangle(frameDestino, puntoA,
+                          puntoB, color, grosor)
+
+    def dibujar_trayectorias(self, trayectoriaBlanca, trayectorias, xiroi, yiroi, verTodasTrayectorias, frameDestino):
+        with self.frame_lock:
+            if(trayectoriaBlanca is not None):
+                for i in range(len(trayectoriaBlanca)):
+                    if(i == len(trayectoriaBlanca) - 1):
+                        if isinstance(trayectoriaBlanca[i], tuple):  
+                            punto = int(trayectoriaBlanca[i][0]), int(trayectoriaBlanca[i][1])
+                        else:
+                            punto = trayectoriaBlanca[i].int_tuple
+                        x,y = punto
+                        x = x + xiroi
+                        y = y + yiroi
+                        cv2.circle(frameDestino, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
+                        break
+                    if isinstance(trayectoriaBlanca[i], tuple):
+                        puntoa = int(trayectoriaBlanca[i][0]), int(trayectoriaBlanca[i][1])
+                    else:    
+                        puntoa = trayectoriaBlanca[i].int_tuple
+                    if isinstance(trayectoriaBlanca[i+1], tuple):
+                        puntob = int(trayectoriaBlanca[i+1][0]), int(trayectoriaBlanca[i+1][1])
                     else:
-                        punto = trayectoriaBlanca[i].int_tuple
-                    x,y = punto
-                    x = x + xiroi
-                    y = y + yiroi
-                    cv2.circle(frameDestino, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
-                    break
-                if isinstance(trayectoriaBlanca[i], tuple):
-                    puntoa = int(trayectoriaBlanca[i][0]), int(trayectoriaBlanca[i][1])
-                else:    
-                    puntoa = trayectoriaBlanca[i].int_tuple
-                if isinstance(trayectoriaBlanca[i+1], tuple):
-                    puntob = int(trayectoriaBlanca[i+1][0]), int(trayectoriaBlanca[i+1][1])
-                else:
-                    puntob = trayectoriaBlanca[i+1].int_tuple
-                xa,ya = puntoa
-                xb,yb = puntob
-                xa = xa + xiroi
-                ya = ya + yiroi
-                xb = xb + xiroi
-                yb = yb + yiroi
-                if i == 0:
-                    cv2.line(frameDestino,(xa,ya) , (xb,yb), (255,0,0), 2)
-                else:
-                    cv2.line(frameDestino,(xa,ya) , (xb,yb), (0,255,0), 2)
-        if(verTodasTrayectorias):
-            if(trayectorias is not None):
-                for i in range(len(trayectorias)):
-                    listaBola = trayectorias[i] 
-                    if(len(listaBola)>0):
-                        for x in range(len(listaBola)):
-                            if(x == len(listaBola)-1):
+                        puntob = trayectoriaBlanca[i+1].int_tuple
+                    xa,ya = puntoa
+                    xb,yb = puntob
+                    xa = xa + xiroi
+                    ya = ya + yiroi
+                    xb = xb + xiroi
+                    yb = yb + yiroi
+                    if i == 0:
+                        cv2.line(frameDestino,(xa,ya) , (xb,yb), (255,0,0), 2)
+                    else:
+                        cv2.line(frameDestino,(xa,ya) , (xb,yb), (0,255,0), 2)
+            if(verTodasTrayectorias):
+                if(trayectorias is not None):
+                    for i in range(len(trayectorias)):
+                        listaBola = trayectorias[i] 
+                        if(len(listaBola)>0):
+                            for x in range(len(listaBola)):
+                                if(x == len(listaBola)-1):
+                                    if isinstance(listaBola[x], tuple):
+                                        punto = int(listaBola[x][0]), int(listaBola[x][1])
+                                    else:
+                                        punto = listaBola[x].int_tuple
+                                    x,y = punto
+                                    x = x + xiroi
+                                    y = y + yiroi
+                                    cv2.circle(frameDestino, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
+                                    break
                                 if isinstance(listaBola[x], tuple):
-                                    punto = int(listaBola[x][0]), int(listaBola[x][1])
+                                    puntoa = int(listaBola[x][0]), int(listaBola[x][1])
                                 else:
-                                    punto = listaBola[x].int_tuple
-                                x,y = punto
-                                x = x + xiroi
-                                y = y + yiroi
-                                cv2.circle(frameDestino, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
-                                break
-                            if isinstance(listaBola[x], tuple):
-                                puntoa = int(listaBola[x][0]), int(listaBola[x][1])
-                            else:
-                                puntoa = listaBola[x].int_tuple
-                            if isinstance(listaBola[x+1], tuple):
-                                puntob = int(listaBola[x+1][0]), int(listaBola[x+1][1])
-                            else:
-                                puntob = listaBola[x+1].int_tuple
-                            xa,ya = puntoa
-                            xb,yb = puntob
-                            xa = xa + xiroi
-                            ya = ya + yiroi
-                            xb = xb + xiroi
-                            yb = yb + yiroi
-                            cv2.line(frameDestino, (xa,ya),(xb,yb), (0,0,255), 2)
+                                    puntoa = listaBola[x].int_tuple
+                                if isinstance(listaBola[x+1], tuple):
+                                    puntob = int(listaBola[x+1][0]), int(listaBola[x+1][1])
+                                else:
+                                    puntob = listaBola[x+1].int_tuple
+                                xa,ya = puntoa
+                                xb,yb = puntob
+                                xa = xa + xiroi
+                                ya = ya + yiroi
+                                xb = xb + xiroi
+                                yb = yb + yiroi
+                                cv2.line(frameDestino, (xa,ya),(xb,yb), (0,0,255), 2)
         
         
     def resize_frame(self):
@@ -357,25 +360,29 @@ class VentanaProyeccion(QMainWindow):
 
     #limpia el frame para que no queden rastros de los circulos:
     def limpiar_circulos(self):
-        self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
-        color_fondo = (255, 255, 255)  # Color blanco en formato BGR
-        self.frame[:] = color_fondo
+        with self.frame_lock:
+            self.frame = np.zeros((resYProy, resXProy, 3), dtype=np.uint8)
+            color_fondo = (255, 255, 255)
+            self.frame[:] = color_fondo
 
 
 class HiloProyeccion(threading.Thread):
     def __init__(self, bloqueo, ventanaProyeccion: VentanaProyeccion):
         super().__init__()
-        self.detener = False
+        # Inicializa un bloqueo
         self.bloqueo = bloqueo
-        self.hora_inicio = datetime.now()
-        self.ventanaProyeccion = ventanaProyeccion        
-        self.actualizar_interfaz = False
+        self.detener = False
+        self.ventanaProyeccion = ventanaProyeccion
         self.circles = None
         self.height = None
         self.width = None
         self.trayectoriaBlanca = None
         self.trayectorias = None
         self.verTodasTrayectorias = False
+        self.xiroi = 0  # Agrega estas líneas para evitar errores
+        self.yiroi = 0
+        self.xdroi = 0
+        self.ydroi = 0
   
 
     def run(self):
@@ -413,24 +420,29 @@ class HiloProyeccion(threading.Thread):
                 print("Error en hilo de proyeccion: ", str(e))
 
     def actualizar_circles(self, circles):
-        self.circles = circles
-    
+        with self.bloqueo:
+            self.circles = circles
+
     def actualizar_trayectorias(self, trayectoriaBlanca, trayectorias):
-        self.trayectoriaBlanca = trayectoriaBlanca
-        self.trayectorias = trayectorias
+        with self.bloqueo:
+            self.trayectoriaBlanca = trayectoriaBlanca
+            self.trayectorias = trayectorias
 
     def actualizar_proporcion_interfaz(self, height, width):
-        self.height = height
-        self.width = width
+        with self.bloqueo:
+            self.height = height
+            self.width = width
 
-    def actualizar_roi(self, xiroi, yiroi,xdroi,ydroi):
-        self.xiroi = xiroi
-        self.yiroi = yiroi
-        self.xdroi = xdroi
-        self.ydroi = ydroi
+    def actualizar_roi(self, xiroi, yiroi, xdroi, ydroi):
+        with self.bloqueo:
+            self.xiroi = xiroi
+            self.yiroi = yiroi
+            self.xdroi = xdroi
+            self.ydroi = ydroi
 
     def ver_todas_trayectorias(self, verTodasTrayectorias):
-        self.verTodasTrayectorias = verTodasTrayectorias
+        with self.bloqueo:
+            self.verTodasTrayectorias = verTodasTrayectorias
 
     def detener_hilo(self):
         with self.bloqueo:
@@ -600,7 +612,7 @@ class VentanaVideo(QMainWindow):
         # self.label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         # endregion
 
-        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset, self.botonCargarPreset, self.botonSetearIDS, self.botonParametrosSimulacion = ventanaParametros.obtenerBotones()
+        self.botonProyectar, self.botonROI, self.botonPreprocesamientos, self.botonGuardarPreset, self.botonCargarPreset, self.botonParametrosSimulacion = ventanaParametros.obtenerBotones()
         self.comboCamaras = ventanaParametros.obtenerComboCamaras()
         self.comboMonitores = ventanaParametros.obtenerComboMonitores()
         #self.labelCamara = self.crear_label("Camara:", 1290, 5, 50, 30)
@@ -631,7 +643,7 @@ class VentanaVideo(QMainWindow):
         self.checkTrayectorias.stateChanged.connect(self.ver_todas_trayectorias)
         self.checkMesaAbierta = self.crear_checkbox(80,820,50,30)
         self.checkMesaAbierta.stateChanged.connect(self.mesa_abierta)
-        self.botonSetearIDS.clicked.connect(self.SetearIDS)
+        
 
         self.botonVerSimulacion = self.crear_boton("Ver Simulacion", 1290, 125, 100, 30)
         self.botonVerSimulacion.setEnabled = False
@@ -839,10 +851,7 @@ class VentanaVideo(QMainWindow):
         self.timer.timeout.connect(self.actualizar_video)
         self.timer.start(16)  # 30 ms (30 FPS)
 
-    def SetearIDS(self):
-        global setearIDS
-        setearIDS=True
-        print(f"Setear IDS {setearIDS}")
+
 
     #comprueba si el nombre con el que el usuario intenta guardar un preset es valido:
     def es_nombre_archivo_valido(self, texto):
@@ -1316,7 +1325,7 @@ class VentanaVideo(QMainWindow):
             print("No hay bola en mano")
         
     def ver_simulacion(self):
-        if(self.algunaEstaSeleccionada == True and self.botonVerSimulacion.isEnabled):
+        if(self.algunaEstaSeleccionada == True and self.botonVerSimulacion.isEnabled()):
            self.repetirSimulacion = True
 
     #en base al checkbox determina si hay o no dos tiros para el turno:
@@ -2189,9 +2198,9 @@ class VentanaVideo(QMainWindow):
                                 #if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
                                     #trayectoriasValidasBlanca.append(trayectoriasBlanca)
                                     #trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
-                       
-
-            if(self.repetirSimulacion == True and self.bolaSeleccionada is not None):
+            # Parte del if(testear si funciona bien sin la condicion)           
+            # and self.bolaSeleccionada is not None
+            if(self.repetirSimulacion == True ):
                 if (self.tiro_seleccionado==3):
                     if (self.repitiendo_simulacion == False): 
                         self.repitiendo_simulacion = True     
@@ -2288,9 +2297,7 @@ class VentanaVideo(QMainWindow):
                    
                     if(self.corregirFrame == False):
                         self.circles  = self.eliminar_circulos_repetidos(self.circles)
-                    for (x, y, r) in self.circles:
-                        if(setearIDS):
-                            self.agregar_o_actualizar_bola(x,y,r)
+                    for (x, y, r) in self.circles:                        
                         # se dibujan los circulos en la interfaz:
                         xCircle = x + self.XIROI 
                         yCircle = y + self.YIROI 

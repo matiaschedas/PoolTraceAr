@@ -430,11 +430,3 @@ class ParametrosSimulacionWindow(QMainWindow):
         self.radioTroneras_text.setText(str(self.radioTroneras))
         self.radioTroneras_slider.setValue(self.radioTroneras)
 
-def main():
-    app = QApplication(sys.argv)
-    window = ParametrosSimulacionWindow()
-    window.show()
-    sys.exit(app.exec_())
-
-if __name__ == "__main__":
-    main()
