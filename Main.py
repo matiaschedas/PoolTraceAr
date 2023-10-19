@@ -751,25 +751,20 @@ class VentanaVideo(QMainWindow):
         self.repetirSimulacion = False
         self.embocarNegra = False
         self.cursor_position = (0,0)
+
+        self.timer_clic_largo = QTimer()
+        self.timer_clic_largo.setSingleShot(True)
+        self.timer_clic_largo.timeout.connect(self.clic_largo)
+        self.tiempo_minimo_clic_largo = 2000  # 2 segundos
+
         inicioHilos()
         self.initCameras()
     
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
-            if(self.corregirFrame):
-                if(self.bolaSeleccionadaCorreccion is not None):
-                    if (self.borrandoSeleccionada()==False):
-                        x,y,r = self.bolaSeleccionadaCorreccion
-                        indice = self.encontrar_indice_por_coordenadas(x ,y)
-                        if indice != -1:
-                            del self.circles[indice]
-                            self.bolaSeleccionadaCorreccion = None
             print("La tecla Supr fue presionada")
         elif event.key() == Qt.Key_Plus:
-            if(self.corregirFrame):
-                if (self.bolaSeleccionadaCorreccion is None):
-                    x, y = self.cursor_position
-                    self.circles.append((x-self.XIROI, y-self.YIROI, radioMax))
+            print("La tecla + fue presionada")
         elif event.key() == Qt.Key_Q:
             if(self.corregirFrame):
                 print("La tecla 'q' fue presionada")
@@ -796,10 +791,13 @@ class VentanaVideo(QMainWindow):
         #     print("Simulando tiro...")
     def botonCalcularTiroConfirmarPressed(self):
         if(self.botonCalcularTiroConfirmar.text()=="Confirmar"):
+            global resaltarBolaCorreccion
             self.circles = self.eliminar_circulos_repetidos(self.circles)
             self.etiquetar = True
             self.botonCalcularTiroConfirmar.setText("Calcular tiro")
             self.botonCalcularTiroConfirmar.setDisabled(True)
+            self.bolaSeleccionadaCorreccion= None
+            resaltarBolaCorreccion = False
         else:
             self.corregirFrame = True
             self.botonCalcularTiroConfirmar.setText("Confirmar")
@@ -1385,79 +1383,97 @@ class VentanaVideo(QMainWindow):
             return False
         
 
+    def clic_largo(self):
+        #clic izquierdo manteniendo 2 segundos 
+        global clickEnBola
+        clickEnBola = True
+        (x,y) = self.cursor_position
+        self.bolaSeleccionada=(x,y,radioMax)
+        self.resaltar_bola_seleccionada()
+        print("Se fuerza seleccion de bola")
+
     #evento que se ejecuta cuando se hace click en cualquier lugar:
     #maneja: movimiento de troneras, movimiento del roi, seleccion de bola para el turno
     def mousePressEvent(self, event):
+        global resaltarBolaCorreccion
         self.cursor_position = (event.x(), event.y())
-        if(self.corregirFrame == False):
-            # Verificar si se hizo clic dentro de los vértices del ROI
-            self.verticeSeleccionado = None
-            self.moverVertices = False
-            clickEnBola = False
-            if self.verVerticesROI:
-                vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI)]
-                for i, vertice in enumerate(vertices):
-                    distancia = np.sqrt(
-                        (event.x() - vertice[0])**2 + (event.y() - vertice[1])**2)
-                    if distancia <= 10:  # Si la distancia es menor o igual a 10 píxeles, se considera seleccionado
-                        self.verticeSeleccionado = i
-                        self.moverVertices = True
-                        break           
+        if event.buttons() & Qt.RightButton:
+             if(self.corregirFrame):
+                self.bolaSeleccionadaCorreccion = None
+                resaltarBolaCorreccion = False
+                x, y = self.cursor_position
+                self.circles.append((x-self.XIROI, y-self.YIROI, radioMax))
+        else:
+            self.timer_clic_largo.start(self.tiempo_minimo_clic_largo)
+            if(self.corregirFrame == False):
+                # Verificar si se hizo clic dentro de los vértices del ROI
+                self.verticeSeleccionado = None
+                self.moverVertices = False
+                clickEnBola = False
+                if self.verVerticesROI:
+                    vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI)]
+                    for i, vertice in enumerate(vertices):
+                        distancia = np.sqrt(
+                            (event.x() - vertice[0])**2 + (event.y() - vertice[1])**2)
+                        if distancia <= 10:  # Si la distancia es menor o igual a 10 píxeles, se considera seleccionado
+                            self.verticeSeleccionado = i
+                            self.moverVertices = True
+                            break           
 
-                # Verificar si el click está dentro de alguna de las troneras
-                x, y = event.x(), event.y()
-                for i, tronera in enumerate(self.troneras):
-                    tronera_x, tronera_y = tronera
-                    distance = np.sqrt((x - tronera_x) ** 2 + (y - tronera_y) ** 2)
-                    if distance < self.radioTronera:  # Radio del círculo
-                        self.selected_tronera = i
-                        break
+                    # Verificar si el click está dentro de alguna de las troneras
+                    x, y = event.x(), event.y()
+                    for i, tronera in enumerate(self.troneras):
+                        tronera_x, tronera_y = tronera
+                        distance = np.sqrt((x - tronera_x) ** 2 + (y - tronera_y) ** 2)
+                        if distance < self.radioTronera:  # Radio del círculo
+                            self.selected_tronera = i
+                            break
 
-                #Verificar si el click está dentro de alguna de los puntos de paredes
-                x,y = event.x(), event.y()
-                for i, punto in enumerate(self.puntos_paredes):
-                    px, py = punto
-                    distance = np.sqrt((x - px) ** 2 + (y - py) ** 2)
-                    if distance <= 10:
-                        self.selected_punto = i
-                        break
+                    #Verificar si el click está dentro de alguna de los puntos de paredes
+                    x,y = event.x(), event.y()
+                    for i, punto in enumerate(self.puntos_paredes):
+                        px, py = punto
+                        distance = np.sqrt((x - px) ** 2 + (y - py) ** 2)
+                        if distance <= 10:
+                            self.selected_punto = i
+                            break
 
-            if self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
-                if self.circles is not None:
-                    for (x, y, r) in self.circles:
-                        x = (x+self.XIROI)
-                        y = (y+self.YIROI)
-                        distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
-                        if distancia <=10:
-                            print(f"bola {x},{y}")
-                            clickEnBola = True
-                            self.bolaSeleccionada=(x,y,r)
-                            self.resaltar_bola_seleccionada()
-                            # self.etiquetar=True
-                            self.tronerasPosibles = self.calcular_posibles_troneras()
-            if (self.etiquetando==True or self.calculandoTiro):
-                print("Espere por favor, se esta calculando el tiro")
+                if self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
+                    if self.circles is not None:
+                        for (x, y, r) in self.circles:
+                            x = (x+self.XIROI)
+                            y = (y+self.YIROI)
+                            distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
+                            if distancia <=10:
+                                print(f"bola {x},{y}")
+                                clickEnBola = True
+                                self.bolaSeleccionada=(x,y,r)
+                                self.resaltar_bola_seleccionada()
+                                # self.etiquetar=True
+                                self.tronerasPosibles = self.calcular_posibles_troneras()
+                if (self.etiquetando==True or self.calculandoTiro):
+                    print("Espere por favor, se esta calculando el tiro")
 
-            if clickEnBola == False and self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
-                if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
-                    self.deseleccionar_bola()
-        else:           
-            clickEnBola = False
-            if(self.moviendo_bola_correccion == False):
-                if self.circles is not None:
-                    for (x, y, r) in self.circles:
-                        x = (x+self.XIROI)
-                        y = (y+self.YIROI)
-                        distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
-                        if distancia <=10:
-                            print(f"bola {x},{y}")
-                            clickEnBola = True
-                            self.bolaSeleccionadaCorreccion=(x - self.XIROI,y - self.YIROI,r)
-                            self.resaltar_bola_seleccionada_correccion()
-            if clickEnBola == False and self.moviendo_bola_correccion == False:
-                print("entra aca")
-                if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
-                    self.deseleccionar_bola_correccion()
+                if clickEnBola == False and self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
+                    if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
+                        self.deseleccionar_bola()
+            else:           
+                clickEnBola = False
+                if(self.moviendo_bola_correccion == False):
+                    if self.circles is not None:
+                        for (x, y, r) in self.circles:
+                            x = (x+self.XIROI)
+                            y = (y+self.YIROI)
+                            distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
+                            if distancia <=10:
+                                print(f"bola {x},{y}")
+                                clickEnBola = True
+                                self.bolaSeleccionadaCorreccion=(x - self.XIROI,y - self.YIROI,r)
+                                self.resaltar_bola_seleccionada_correccion()
+                if clickEnBola == False and self.moviendo_bola_correccion == False:
+                    print("entra aca")
+                    if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
+                        self.deseleccionar_bola_correccion()
 
     def resaltar_bola_seleccionada_correccion(self):        
         global resaltarBolaCorreccion        
@@ -1476,6 +1492,10 @@ class VentanaVideo(QMainWindow):
         self.botonCalcularTiroConfirmar.setDisabled(False)
         if self.bolaSeleccionada is not None:
             resaltarBola = True
+            self.puntos_trayectoria_bola_blanca = None
+            self.puntos_trayectoria_bola_seleccionada = None
+            self.puntos_trayectorias_bolas = None
+
 
     def deseleccionar_bola(self):
         global resaltarBola
@@ -1642,9 +1662,9 @@ class VentanaVideo(QMainWindow):
             if distancia < radio + 1:
                 continue  
             centro_circulo = (x, y)
-            print("Circulo :"+ str(centro_circulo) +" "+ str(self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio)))
-            print("Vertices de trapecio " + str(trapecio_vertices) )
-            print("Radio: "+str(radio))
+            # print("Circulo :"+ str(centro_circulo) +" "+ str(self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio)))
+            # print("Vertices de trapecio " + str(trapecio_vertices) )
+            # print("Radio: "+str(radio))
             
             if self.esta_dentro_del_trapecio(trapecio_vertices,centro_circulo,radio):
                 trapecio_valido = False
@@ -1730,6 +1750,24 @@ class VentanaVideo(QMainWindow):
         # Calcula la distancia entre el punto (x, y) y la línea definida por los puntos (x1, y1) y (x2, y2)
         return abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1) / math.sqrt((y2 - y1)**2 + (x2 - x1)**2)
     
+    def mouseDoubleClickEvent(self, event):
+        if(self.corregirFrame):
+                if(self.bolaSeleccionadaCorreccion is not None):
+                    if (self.borrandoSeleccionada()==False):
+                        x,y,r = self.bolaSeleccionadaCorreccion
+                        indice = self.encontrar_indice_por_coordenadas(x ,y)
+                        if indice != -1:
+                            del self.circles[indice]
+                            self.bolaSeleccionadaCorreccion = None
+        print("Doble clic detectado")
+
+    def contextMenuEvent(self, event):
+        # if(self.corregirFrame):
+        #         if (self.bolaSeleccionadaCorreccion is None):
+        #             x, y = self.cursor_position
+        #             self.circles.append((x-self.XIROI, y-self.YIROI, radioMax))
+        print("Clic derecho detectado")
+    
     def mouseMoveEvent(self, event):
         if(self.corregirFrame == False):
             if self.moverVertices and self.verticeSeleccionado is not None:
@@ -1783,6 +1821,8 @@ class VentanaVideo(QMainWindow):
         self.selected_tronera = None
         self.selected_punto = None
         self.moviendo_bola_correccion = False
+        if event.button() == Qt.LeftButton:
+            self.timer_clic_largo.stop()
 
     def actualizar_roi(self):
         mitadMesa = self.distancia_media_entre_puntos(self.XIROI, self.XDROI)
@@ -2118,7 +2158,10 @@ class VentanaVideo(QMainWindow):
                             SingletonRespuesta.delete_instance()
                             print("fin calculo de trayectorias")
                             self.printUI("Calculo de trayectorias finalizado")
-                            self.botonCalcularTiroConfirmar.setDisabled(False)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.bolaSeleccionada = None
+                            resaltarBola = False
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
                             self.botonCancelar.setDisabled(True)
                             self.corregirFrame = False
                              
