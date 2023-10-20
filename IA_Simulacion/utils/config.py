@@ -12,7 +12,7 @@ TRAINING = True  # training or playing (fast dt)
 DRAW_SCREEN = False  # draw screen (will not affect if using image observation or not training)
 REWARD_BY_STEPS = True  # whether calculate reward based on steps or episodes
 OBSERVATION_TYPE = "none" # choose between ["none, "vector", "image"]
-VELOCITY_LIMIT = int(320* ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
+VELOCITY_LIMIT = int(277* ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
 
 # dimension of image observation if used
 IMAGE_WIDTH = 120
@@ -24,7 +24,7 @@ BALL_MASS = 10
 BALL_FRICTION = 0.9
 BALL_ELASTICITY = 0.95
 BALL_DAMPING_THRESHOLD = 9
-BALL_RADIUS = int(12* ZOOM_MULTIPLIER)
+BALL_RADIUS = int(13* ZOOM_MULTIPLIER)
 
 
 # ======== POCKETS ========#
@@ -37,20 +37,22 @@ else:
 POCKET_RADIUS = int(20* ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
-                np.array(
-                    [
-                    (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                    (WIDTH // 2, SIDE_POCKET_DIST),
-                    (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
-                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                    (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
-                    (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                    ]
-                )
-                * ZOOM_MULTIPLIER
-            ).astype(int)
+                        np.array(
+                            [
+                            (WIDTH // 2, SIDE_POCKET_DIST)
+                            ]
+                        )
+                        * ZOOM_MULTIPLIER
+                    ).astype(int)
 
-POCKET_LOCATION_RESTO = []
+POCKET_LOCATION_RESTO = (
+                        np.array(
+                            [
+                            (CORNER_POCKET_DIST, CORNER_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),(CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),(WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                            ]
+                        )
+                        * ZOOM_MULTIPLIER
+                    ).astype(int)
 
 POCKETS_COORDS = [
             (CORNER_POCKET_DIST, CORNER_POCKET_DIST),

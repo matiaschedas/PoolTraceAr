@@ -224,7 +224,7 @@ class VentanaProyeccion(QMainWindow):
 
     def dibujar_circulos(self, x, y, r, color, grosor, frameDestino):
         with self.frame_lock:
-            cv2.circle(frameDestino, (x, y), r, color, grosor)
+            #cv2.circle(frameDestino, (x, y), r, color, grosor)
             cv2.rectangle(frameDestino, (x - (r + 10), y + (r + 10)), (x + (r + 10), y - (r + 10)), color, grosor)
 
     def dibujar_ROI(self, puntoA, puntoB, color, grosor, frameDestino):
@@ -1404,11 +1404,12 @@ class VentanaVideo(QMainWindow):
     def clic_largo(self):
         #clic izquierdo manteniendo 2 segundos 
         global clickEnBola
-        clickEnBola = True
-        (x,y) = self.cursor_position
-        self.bolaSeleccionada=(x,y,radioMax)
-        self.resaltar_bola_seleccionada()
-        print("Se fuerza seleccion de bola")
+        if (self.corregirFrame == False):
+            clickEnBola = True
+            (x,y) = self.cursor_position
+            self.bolaSeleccionada=(x,y,radioMax)
+            self.resaltar_bola_seleccionada()
+            print("Se fuerza seleccion de bola")
 
     #evento que se ejecuta cuando se hace click en cualquier lugar:
     #maneja: movimiento de troneras, movimiento del roi, seleccion de bola para el turno
@@ -2036,6 +2037,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif(self.checkTiroFinal.isChecked() == False and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True):
                         print("Error, selecciono la bola negra pero no indico la tronera")
                         self.printUIError("Seleccione la tronera")
@@ -2044,6 +2048,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     # elif( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
                     #     print("Error, las bolas cambiaron de posicion.")
                     #     self.printUIError("Error, las bolas cambiaron de posicion.")
@@ -2060,6 +2067,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif( self.existe_la_negra(self.listaEtiquetada)==False):
                         print("El jugador anterior emboco la bola negra, fin del partido")
                         self.printUI("El jugador anterior emboco la bola negra, fin del partido")
@@ -2068,6 +2078,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif( self.hay_bola_blanca(self.listaEtiquetada)==False):
                         print("No hay bola blanca en la mesa")
                         self.printUIError("No hay bola blanca en la mesa")
@@ -2076,6 +2089,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif(self.solo_una_blanca(self.listaEtiquetada)==False):
                         print("Error, hay mas de una bola blanca en la mesa")
                         self.printUIError("Error, hay mas de una bola blanca en la mesa")
@@ -2084,6 +2100,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif(self.solo_una_negra(self.listaEtiquetada)==False):
                         print("Error, hay mas de una bola 8 en la mesa")
                         self.printUI("Error, hay mas de una bola 8 en la mesa")
@@ -2092,6 +2111,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif(self.maximo_rayadas_superado(self.listaEtiquetada)==True):
                         print("Error, hay mas de 7 bolas rayadas en la mesa")
                         self.printUIError("Error, hay mas de 7 bolas rayadas en la mesa")
@@ -2100,6 +2122,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif(self.maximo_lisas_superado(self.listaEtiquetada)==True):
                         print("Error, hay mas de 7 bolas lisas en la mesa")
                         self.printUIError("Error, hay mas de 7 bolas lisas en la mesa")
@@ -2108,6 +2133,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif(self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True and self.hayMesaAbierta == True):
                         print("Error, no se puede seleccionar la negra cuando hay mesa abierta")
                         self.printUIError("Error, no se puede seleccionar la negra cuando hay mesa abierta")
@@ -2116,6 +2144,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     elif(self.seleccion_de_negra_incorrecto(self.listaEtiquetada, self.bolaSeleccionada)==True):
                         print("Error, se selecciono la negra pero no es la ultima bola")
                         self.printUIError("Error, se selecciono la negra pero no es la ultima bola")
@@ -2124,6 +2155,9 @@ class VentanaVideo(QMainWindow):
                         self.listaEtiquetada = None
                         self.ultimaListaEtiquetada = None
                         self.repetirSimulacion = False
+                        self.botonCancelar.setDisabled(True)
+                        self.botonCalcularTiroConfirmar.setDisabled(True)
+                        self.corregirFrame = False
                     self.progressBar.setValue(100)
 
                 if(self.listaEtiquetada is not None):
