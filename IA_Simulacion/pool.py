@@ -309,14 +309,14 @@ class PoolEnv:
                 rail.color = pg.Color(TABLE_SIDE_COLOR)
                 rail.collision_type = 3
                 rail.elasticity = RAIL_ELASTICITY
-                if self.default == True:  
+                if self.default == True or self.verMesa == True:  
                     rail.friction = RAIL_FRICTION
                 else:
                     rail.friction = self.objetoVerMesa.friccion_railes
                 rail.filter = pm.ShapeFilter(categories=0b00001)
                 self.rails.append(rail) 
         else:
-            if self.default == True:
+            if self.default == True or self.verMesa == True:
                 for rail_poly in RAIL_POLY:
                     rail = pm.Poly(static_body, rail_poly)
                     rail.color = pg.Color(TABLE_SIDE_COLOR)
@@ -685,7 +685,7 @@ class PoolEnv:
         # 0 -> cue-ball, 1-7 --> solids, 8 --> 8-ball, 9-15 -- strips
         self.balls = []
         self.balls_copy = []
-        if self.default == False:
+        if self.default == False and self.verMesa == False:
             positions, cantLisas, cantRayadas = self.setear_bolas()
             return
         
@@ -697,7 +697,7 @@ class PoolEnv:
             ball_radius = BALL_MASS
             rail_distance = RAIL_DISTANCE
         for i in range(self.num_balls):
-                if self.default == True:
+                if self.default == True or self.verMesa == True:
                     intertia = pm.moment_for_circle(BALL_MASS, 0, ball_radius, offset=(0, 0))
                 else:
                     intertia = pm.moment_for_circle(BALL_MASS, 0, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))
@@ -715,7 +715,7 @@ class PoolEnv:
                 if self.verMesa:
                     auxRadio = int(self.objetoVerMesa.tam_bolas_simulacion * ZOOM_MULTIPLIER)
                 else:
-                    if self.default == True:
+                    if self.default == True or self.verMesa==True:
                         auxRadio = BALL_RADIUS
                     else:
                         auxRadio = int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER)
@@ -737,7 +737,7 @@ class PoolEnv:
                         ), random.randint(
                             rail_distance * 2, self.height - rail_distance * 2
                         )
-                if self.default == True:
+                if self.default == True or self.verMesa == True:
                     ball = pm.Circle(ball_body, ball_radius, offset=(0, 0))
                 else:
                     ball = pm.Circle(ball_body, int(self.singleton.tam_bolas_simulacion * ZOOM_MULTIPLIER), offset=(0, 0))

@@ -37,22 +37,20 @@ else:
 POCKET_RADIUS = int(20* ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
-                        np.array(
-                            [
-                            (WIDTH // 2, SIDE_POCKET_DIST)
-                            ]
-                        )
-                        * ZOOM_MULTIPLIER
-                    ).astype(int)
+                np.array(
+                    [
+                    (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (WIDTH // 2, SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    ]
+                )
+                * ZOOM_MULTIPLIER
+            ).astype(int)
 
-POCKET_LOCATION_RESTO = (
-                        np.array(
-                            [
-                            (CORNER_POCKET_DIST, CORNER_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),(CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),(WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                            ]
-                        )
-                        * ZOOM_MULTIPLIER
-                    ).astype(int)
+POCKET_LOCATION_RESTO = []
 
 POCKETS_COORDS = [
             (CORNER_POCKET_DIST, CORNER_POCKET_DIST),

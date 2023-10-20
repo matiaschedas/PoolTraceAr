@@ -379,7 +379,7 @@ class HiloProyeccion(threading.Thread):
         self.width = None
         self.trayectoriaBlanca = None
         self.trayectorias = None
-        self.verTodasTrayectorias = False
+        self.verTodasTrayectorias = True
         self.xiroi = 0  # Agrega estas líneas para evitar errores
         self.yiroi = 0
         self.xdroi = 0
@@ -581,7 +581,7 @@ class VentanaVideo(QMainWindow):
         # region Parametros de reglas de juego
         self.BolaEnMano = False
         self.Hay2Tiros = False
-        self.VerTodasTrayectorias = False
+        self.VerTodasTrayectorias = True
         self.hayMesaAbierta = False
         self.hayMovimiento = False
         self.bolaBlanca = None
@@ -644,6 +644,7 @@ class VentanaVideo(QMainWindow):
         self.check2Tiros = self.crear_checkbox(80,820,50,30)
         self.check2Tiros.stateChanged.connect(self.dos_tiros)
         self.checkTrayectorias=self.crear_checkbox(80,820,50,30)
+        self.checkTrayectorias.setChecked(True)
         self.checkTrayectorias.stateChanged.connect(self.ver_todas_trayectorias)
         self.checkMesaAbierta = self.crear_checkbox(80,820,50,30)
         self.checkMesaAbierta.stateChanged.connect(self.mesa_abierta)
@@ -2204,12 +2205,13 @@ class VentanaVideo(QMainWindow):
                             self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
                             self.velocidadRequerida = self.convertir_velocidad( self.respuesta_hiloTiro.velocidad)
                             print(f"velocidad de tiro requerida: {self.velocidadRequerida}")
-                            self.velocidadRequerida = -0.1
+                
                             self.attrs =  self.respuesta_hiloTiro.attrs
                             self.best_player =  self.respuesta_hiloTiro.best_player
                             SingletonRespuesta.delete_instance()
                             print("fin calculo de trayectorias")
-                            self.printUI("Calculo de trayectorias finalizado")
+                            self.printUI("Calculo de trayectorias finalizado, Potencia requerida: " + f"{self.velocidadRequerida:.1f}")
+                            self.velocidadRequerida = -0.1
                             self.botonCalcularTiroConfirmar.setDisabled(True)
                             self.bolaSeleccionada = None
                             resaltarBola = False
@@ -2264,7 +2266,7 @@ class VentanaVideo(QMainWindow):
                             self.hiloCalculoTiro.VerSimulacion(self.attrs, self.best_player)
                             self.repitiendo_simulacion = True
 
-                    self.hiloCalculoTiro.join(timeout=0.01)
+                    #self.hiloCalculoTiro.join(timeout=0.01)
 
                     if  self.hiloCalculoTiro.is_alive():
                         #aca se puede poner un spin en la interfaz:
