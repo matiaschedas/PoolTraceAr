@@ -16,6 +16,7 @@ from HiloEtiquetador import Etiquetar
 from Clases.ControlWindow import ControlWindow
 from Clases.ParametrosSimulacionWindow import ParametrosSimulacionWindow
 from Clases.PreprocesamientoWindow import PreprocesamientoWindow
+from Clases.AyudaWindow import AyudaWindow
 import win32con
 import win32gui
 import pyautogui
@@ -488,10 +489,11 @@ class VentanaContrasena(QWidget):
 
 
 class VentanaVideo(QMainWindow):
-    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow, ventanaParametrosSimulacion: ParametrosSimulacionWindow, ventanaContrasena: VentanaContrasena):
+    def __init__(self, ventanaProyeccion: VentanaProyeccion, ventanaParametros: ControlWindow, hiloProyeccion: HiloProyeccion, ventanaPreprocesamiento: PreprocesamientoWindow, ventanaParametrosSimulacion: ParametrosSimulacionWindow, ventanaContrasena: VentanaContrasena, ventanaAyuda: AyudaWindow):
         super().__init__()
         global script_dir
         self.ventanaContrasena = ventanaContrasena 
+        self.ventanaAyuda = ventanaAyuda
         self.circlesCopy = None
         self.roi = None
         self.hiloEtiquetador = None
@@ -619,12 +621,14 @@ class VentanaVideo(QMainWindow):
         #self.comboCamaras = self.crear_combobox(webcams, 1290, 35, 100, 30, 0)
 
         self.botonConfiguracion = self.crear_boton("Configuracion", 1290, 125, 100, 30)
+        self.botonAyuda = self.crear_boton("Ayuda", 1290,125,100,30)
         self.fpsText = QLineEdit(self)
         self.fpsText.setReadOnly(True)
         self.labelFps = self.crear_label("FPS: ", 5, 820, 100, 25)
         self.labelFps.setAlignment(Qt.AlignCenter)
 
         self.botonConfiguracion.clicked.connect(self.configurar)
+        self.botonAyuda.clicked.connect(self.ayuda)
         self.botonProyectar.clicked.connect(self.proyectar)
         self.comboCamaras.currentIndexChanged.connect(self.cambio_camara)
         self.comboMonitores.currentIndexChanged.connect(self.cambio_monitor)
@@ -689,6 +693,7 @@ class VentanaVideo(QMainWindow):
         self.widget2.setFixedHeight(tamPanelBotones)
         self.fpsText.setMaximumWidth(50)
         self.botonConfiguracion.setMaximumWidth(100)  # Ancho fijo
+        self.botonAyuda.setMaximumWidth(100)
         self.layout2.setSpacing(0)
 
         # Agregar los widgets al layout principal
@@ -698,6 +703,7 @@ class VentanaVideo(QMainWindow):
         # Agregar los widgets al layout1 y layout2 con sus respectivas posiciones
         self.layout1.addWidget(self.label, 0, 0, 1, 1, alignment=Qt.AlignTop | Qt.AlignLeft)
         self.layout2.addWidget(self.botonConfiguracion, 0, 0)
+        self.layout2.addWidget(self.botonAyuda,0 ,1)
         self.layout2.addWidget(self.labelBolaEnMano, 2, 0)
         self.layout2.addWidget(self.label2Tiros,2,1)
         self.layout2.addWidget(self.labelMesaAbierta, 2 ,2)
@@ -1297,6 +1303,9 @@ class VentanaVideo(QMainWindow):
     #abre la ventana de configuracion de parametros:
     def configurar(self):        
         self.ventanaContrasena.show()
+
+    def ayuda(self):
+       self.ventanaAyuda.show()
         
     def closeEvent(self, event):
         global cerrarProyeccion
@@ -2697,8 +2706,9 @@ if __name__ == "__main__":
     ventanaContrasena = VentanaContrasena(ventanaParametros)
     ventanaPreprocesamiento = PreprocesamientoWindow()
     ventanaParametrosSimulacion = ParametrosSimulacionWindow()
+    ventanaAyuda = AyudaWindow()
     hiloProyeccion = HiloProyeccion(bloqueo, ventanaProyeccion)
-    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion, ventanaPreprocesamiento, ventanaParametrosSimulacion,ventanaContrasena)
+    ventana = VentanaVideo(ventanaProyeccion, ventanaParametros, hiloProyeccion, ventanaPreprocesamiento, ventanaParametrosSimulacion,ventanaContrasena, ventanaAyuda)
 
     ventana.show()
     ventana.controlWindow.show()
