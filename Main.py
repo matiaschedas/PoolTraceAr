@@ -823,6 +823,10 @@ class VentanaVideo(QMainWindow):
             self.botonCancelar.setDisabled(False)
             if(self.circles is not None):
                 self.circlesCopy = self.circles.copy()
+            (xs,ys,rs) = self.bolaSeleccionada
+            indice = self.encontrar_indice_por_coordenadas(xs-self.XIROI,ys-self.YIROI)
+            if (indice == -1):
+                self.circlesCopy.append((xs-self.XIROI,ys-self.YIROI,rs))
 
     def botonCancelarPressed(self):
         global resaltarBolaCorreccion
@@ -1836,6 +1840,7 @@ class VentanaVideo(QMainWindow):
             if distancia <= r_circle:                
                     return i  # Devuelve el índice si encuentra coincidencia
         return -1  # Devuelve -1 si no encuentra coincidencia
+    
     
     def mouseReleaseEvent(self, event):
         self.selected_tronera = None
