@@ -127,7 +127,8 @@ frames_previos = 0
 def inicioHilos():
     # hilo1.start()
     #hilo que se encarga de dar la imagen para el proyector
-    hiloProyeccion.start()
+    #hiloProyeccion.start()
+    print("se iniciaron los hilos")
 
 
 def pararHilos():
@@ -384,7 +385,36 @@ class HiloProyeccion(threading.Thread):
         self.yiroi = 0
         self.xdroi = 0
         self.ydroi = 0
-  
+    
+    def noHilo(self):
+        try:
+            # limpiar ventana de proyeccion:
+            self.ventanaProyeccion.limpiar_circulos()
+
+            if self.circles is not None and self.height is not None and self.width is not None:
+                #Creamos un frame del tamaño del frame del video mostrado en ventanaVideo
+                self.frameAntesDeReescalar = np.zeros((self.height, self.width, 3), dtype=np.uint8)        
+
+                global minRadius, maxRadius
+                radioProm = int((minRadius+maxRadius)/2)                
+                for (x, y, r) in self.circles:
+                    # se dibujan los circulos en la interfaz: 
+                    self.ventanaProyeccion.dibujar_circulos(self.xiroi + x , self.yiroi + y , radioProm, (0, 255, 0), 2,self.frameAntesDeReescalar)
+                    self.ventanaProyeccion.dibujar_ROI((self.xiroi, self.yiroi),(self.xdroi, self.ydroi),(0, 255, 0),5,self.frameAntesDeReescalar)
+                self.ventanaProyeccion.dibujar_trayectorias(self.trayectoriaBlanca, self.trayectorias, self.xiroi, self.yiroi, self.verTodasTrayectorias,self.frameAntesDeReescalar)
+                
+
+                self.roi = self.frameAntesDeReescalar[self.yiroi:self.ydroi, self.xiroi:self.xdroi]
+                global aspectRatio
+                altoDestino = int(resXProy / aspectRatio)
+                medidaFranja = int((resYProy - altoDestino)/2)
+                self.roi = cv2.resize(self.roi, (resXProy, altoDestino), interpolation=cv2.INTER_LINEAR)
+                # Superpone el pedazo de frame en el frame principal en las coordenadas especificadas
+                self.ventanaProyeccion.frame[medidaFranja:altoDestino+medidaFranja, 0:resXProy] = self.roi
+            self.ventanaProyeccion.dibujar()
+
+        except Exception as e:
+            print("Error en hilo de proyeccion: ", str(e))
 
     def run(self):
         while not self.detener:
@@ -2439,6 +2469,8 @@ class VentanaVideo(QMainWindow):
                 self.label.setPixmap(QPixmap.fromImage(q_image))            
 
                 self.frame_count += 1
+
+                self.hiloProyeccion.noHilo()
         except Exception as e:
             print("Error de bucle principal:" + str(e))
 
