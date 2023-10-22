@@ -235,7 +235,7 @@ class ControlWindow(QMainWindow):
         self.botonParametrosSimulacion = self.crear_boton("Parametros Simulacion", 1290, 125, 100, 30)
         self.botonGuardarPreset = self.crear_boton("Guardar Preset", 1290,125,100,30)
         self.botonCargarPreset = self.crear_boton("Cargar Preset", 1290,125,100, 30)
-        self.botonSetearIDS = self.crear_boton("Setear IDS", 1290,125,100,30)
+        
 
         pos = 10
         layout.addWidget(self.labelCamara,pos,0)
@@ -243,7 +243,7 @@ class ControlWindow(QMainWindow):
         pos = pos + 1 
         layout.addWidget(self.textNombrePreset,pos,3)
         layout.addWidget(self.comboCamaras,pos,0)
-        layout.addWidget(self.botonSetearIDS,pos,1)
+        
 
         pos = pos + 1 
         layout.addWidget(self.botonProyectar, pos, 0)
@@ -270,7 +270,7 @@ class ControlWindow(QMainWindow):
         return self.comboMonitores
     
     def obtenerBotones(self):
-        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonSetearIDS, self.botonParametrosSimulacion
+        return self.botonProyectar, self.botonConfigurarROI, self.botonPreprocesamientos, self.botonGuardarPreset,  self.botonCargarPreset, self.botonParametrosSimulacion
 
     def crear_boton(self, texto, x, y, ancho, alto):
         boton = QPushButton(texto, self)
@@ -468,12 +468,3 @@ class ControlWindow(QMainWindow):
         self.minDist_text.setText(str(self.minDist))
         self.minDist_slider.setValue(self.minDist)
     
-    
-def main():
-    app = QApplication(sys.argv)
-    window = ControlWindow()
-    window.show()
-    sys.exit(app.exec_())
-
-if __name__ == "__main__":
-    main()

@@ -5,14 +5,14 @@ FPS = 500
 ZOOM_MULTIPLIER = 1  # change screen size, can boost fps
 TOTAL_FOUL_TIMES = 25  # amount of fouls before end the game
 #default: 1000,500
-WIDTH, HEIGHT = 1000,500
+WIDTH, HEIGHT = 568,268
 
 NUM_BALLS = 16  # number of balls generated on table (16 is a normal game)
 TRAINING = True  # training or playing (fast dt)
 DRAW_SCREEN = False  # draw screen (will not affect if using image observation or not training)
 REWARD_BY_STEPS = True  # whether calculate reward based on steps or episodes
 OBSERVATION_TYPE = "none" # choose between ["none, "vector", "image"]
-VELOCITY_LIMIT = int(277* ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
+VELOCITY_LIMIT = int(320* ZOOM_MULTIPLIER)  # max velocity of cue ball default: 420
 
 # dimension of image observation if used
 IMAGE_WIDTH = 120
@@ -24,17 +24,17 @@ BALL_MASS = 10
 BALL_FRICTION = 0.9
 BALL_ELASTICITY = 0.95
 BALL_DAMPING_THRESHOLD = 9
-BALL_RADIUS = int(12* ZOOM_MULTIPLIER)
+BALL_RADIUS = int(15* ZOOM_MULTIPLIER)
 
 
 # ======== POCKETS ========#
 if ZOOM_MULTIPLIER < 1:
-    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(-11* ZOOM_MULTIPLIER)
     CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
 else:
-    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(-11* ZOOM_MULTIPLIER)
     CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
-POCKET_RADIUS = int(20 * ZOOM_MULTIPLIER)
+POCKET_RADIUS = int(33* ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
                 np.array(

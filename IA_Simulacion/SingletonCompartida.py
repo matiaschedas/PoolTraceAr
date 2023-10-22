@@ -1,4 +1,5 @@
 import threading
+import math
 
 class SingletonCompartida:
     _instance = None
@@ -12,7 +13,7 @@ class SingletonCompartida:
                     cls._instance.init_singletonCompartida(*args, **kwargs)
         return cls._instance
     
-    def init_singletonCompartida(self, listaApareada=None, bolaSeleccionada=None, tamROI=None, embocarNegra=None, bolaEnMano=None, dosTiros=None, mesaAbierta=None, nroTronera=None, distancia_railes=None,  distancia_troneras_medias=None,distancia_troneras_esquinas=None,limite_velocidad=None, friccion_bolas=None, friccion_railes=None, ancho_mesa=None, tam_bolas_simulacion=None, alto_mesa = None):
+    def init_singletonCompartida(self, listaApareada=None, bolaSeleccionada=None, tamROI=None, embocarNegra=None, bolaEnMano=None, dosTiros=None, mesaAbierta=None, nroTronera=None, distancia_railes=None,  distancia_troneras_medias=None,distancia_troneras_esquinas=None,limite_velocidad=None, friccion_bolas=None, friccion_railes=None, ancho_mesa=None, tam_bolas_simulacion=None, alto_mesa = None, radio_troneras_ia=None):
         self.listaApareada = listaApareada
         self.bolaSeleccionada = bolaSeleccionada
         self.tamROI = tamROI
@@ -49,11 +50,13 @@ class SingletonCompartida:
             self.alto_mesa = alto_mesa
             
         self.tam_bolas_simulacion = tam_bolas_simulacion
+        self.radio_troneras_ia = radio_troneras_ia
     
     def obtenerEtiquetaSeleccionada(self, listaApareada, bolaSeleccionada):
         for (x,y,r),_,etiqueta in listaApareada:
             xs,ys,rs = bolaSeleccionada
-            if(x==xs and y==ys):
+            dist = math.sqrt((x-xs)**2 + (y-ys)**2)
+            if(dist <= rs):
                 return etiqueta
         return None
     
