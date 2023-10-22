@@ -501,10 +501,13 @@ class VentanaVideo(QMainWindow):
         self.etiquetar = False
         self.etiquetando = False
         self.calculandoTiro = False
-        self.circles = None
-        self.puntos_trayectoria_bola_blanca = None
+        self.hiloProyeccion = hiloProyeccion
+        with self.hiloProyeccion.bloqueo:
+            self.circles = None
+            self.puntos_trayectoria_bola_blanca = None
+            self.puntos_trayectorias_bolas = None
         self.puntos_trayectoria_bola_seleccionada = None
-        self.puntos_trayectorias_bolas = None
+        
         self.velocidadRequerida = -0.1
         self.attrs = None
         self.best_player = None
@@ -520,7 +523,7 @@ class VentanaVideo(QMainWindow):
         self.valorProgressBar = 0
         self.bolaSeleccionadaCorreccion = None
         self.moviendo_bola_correccion = False
-        self.hiloProyeccion = hiloProyeccion
+        
         self.setMaximumSize(screen_width, screen_height)
         self.resize(ResolucionX, ResolucionY)
         self.setWindowTitle("PoolTraceAR")
@@ -809,24 +812,24 @@ class VentanaVideo(QMainWindow):
         # if  self.hiloCalculoTiro.is_alive():
         #     print("Simulando tiro...")
     def botonCalcularTiroConfirmarPressed(self):
-        if(self.botonCalcularTiroConfirmar.text()=="Confirmar"):
-            global resaltarBolaCorreccion
-            self.circles = self.eliminar_circulos_repetidos(self.circles)
-            self.etiquetar = True
-            self.botonCalcularTiroConfirmar.setText("Calcular tiro")
-            self.botonCalcularTiroConfirmar.setDisabled(True)
-            self.bolaSeleccionadaCorreccion= None
-            resaltarBolaCorreccion = False
-        else:
-            self.corregirFrame = True
-            self.botonCalcularTiroConfirmar.setText("Confirmar")
-            self.botonCancelar.setDisabled(False)
-            if(self.circles is not None):
-                self.circlesCopy = self.circles.copy()
-            (xs,ys,rs) = self.bolaSeleccionada
-            indice = self.encontrar_indice_por_coordenadas(xs-self.XIROI,ys-self.YIROI)
-            if (indice == -1):
-                self.circlesCopy.append((xs-self.XIROI,ys-self.YIROI,rs))
+            if(self.botonCalcularTiroConfirmar.text()=="Confirmar"):
+                global resaltarBolaCorreccion
+                self.circles = self.eliminar_circulos_repetidos(self.circles)
+                self.etiquetar = True
+                self.botonCalcularTiroConfirmar.setText("Calcular tiro")
+                self.botonCalcularTiroConfirmar.setDisabled(True)
+                self.bolaSeleccionadaCorreccion= None
+                resaltarBolaCorreccion = False
+            else:
+                self.corregirFrame = True
+                self.botonCalcularTiroConfirmar.setText("Confirmar")
+                self.botonCancelar.setDisabled(False)
+                if(self.circles is not None):
+                    self.circlesCopy = self.circles.copy()
+                (xs,ys,rs) = self.bolaSeleccionada
+                indice = self.encontrar_indice_por_coordenadas(xs-self.XIROI,ys-self.YIROI)
+                if (indice == -1):
+                    self.circlesCopy.append((xs-self.XIROI,ys-self.YIROI,rs))
 
     def botonCancelarPressed(self):
         global resaltarBolaCorreccion
@@ -1419,85 +1422,85 @@ class VentanaVideo(QMainWindow):
     #evento que se ejecuta cuando se hace click en cualquier lugar:
     #maneja: movimiento de troneras, movimiento del roi, seleccion de bola para el turno
     def mousePressEvent(self, event):
-        global resaltarBolaCorreccion
-        self.cursor_position = (event.x(), event.y())
-        if event.buttons() & Qt.RightButton:
-             if(self.corregirFrame):
-                self.bolaSeleccionadaCorreccion = None
-                resaltarBolaCorreccion = False
-                x, y = self.cursor_position
-                self.circles.append((x-self.XIROI, y-self.YIROI, radioMax))
-        else:
-            self.timer_clic_largo.start(self.tiempo_minimo_clic_largo)
-            if(self.corregirFrame == False):
-                # Verificar si se hizo clic dentro de los vértices del ROI
-                self.verticeSeleccionado = None
-                self.moverVertices = False
-                clickEnBola = False
-                if self.verVerticesROI:
-                    vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI)]
-                    for i, vertice in enumerate(vertices):
-                        distancia = np.sqrt(
-                            (event.x() - vertice[0])**2 + (event.y() - vertice[1])**2)
-                        if distancia <= 10:  # Si la distancia es menor o igual a 10 píxeles, se considera seleccionado
-                            self.verticeSeleccionado = i
-                            self.moverVertices = True
-                            break           
+            global resaltarBolaCorreccion
+            self.cursor_position = (event.x(), event.y())
+            if event.buttons() & Qt.RightButton:
+                if(self.corregirFrame):
+                    self.bolaSeleccionadaCorreccion = None
+                    resaltarBolaCorreccion = False
+                    x, y = self.cursor_position
+                    self.circles.append((x-self.XIROI, y-self.YIROI, radioMax))
+            else:
+                self.timer_clic_largo.start(self.tiempo_minimo_clic_largo)
+                if(self.corregirFrame == False):
+                    # Verificar si se hizo clic dentro de los vértices del ROI
+                    self.verticeSeleccionado = None
+                    self.moverVertices = False
+                    clickEnBola = False
+                    if self.verVerticesROI:
+                        vertices = [(self.XIROI, self.YIROI), (self.XDROI, self.YDROI)]
+                        for i, vertice in enumerate(vertices):
+                            distancia = np.sqrt(
+                                (event.x() - vertice[0])**2 + (event.y() - vertice[1])**2)
+                            if distancia <= 10:  # Si la distancia es menor o igual a 10 píxeles, se considera seleccionado
+                                self.verticeSeleccionado = i
+                                self.moverVertices = True
+                                break           
 
-                    # Verificar si el click está dentro de alguna de las troneras
-                    x, y = event.x(), event.y()
-                    for i, tronera in enumerate(self.troneras):
-                        tronera_x, tronera_y = tronera
-                        distance = np.sqrt((x - tronera_x) ** 2 + (y - tronera_y) ** 2)
-                        if distance < self.radioTronera:  # Radio del círculo
-                            self.selected_tronera = i
-                            break
+                        # Verificar si el click está dentro de alguna de las troneras
+                        x, y = event.x(), event.y()
+                        for i, tronera in enumerate(self.troneras):
+                            tronera_x, tronera_y = tronera
+                            distance = np.sqrt((x - tronera_x) ** 2 + (y - tronera_y) ** 2)
+                            if distance < self.radioTronera:  # Radio del círculo
+                                self.selected_tronera = i
+                                break
 
-                    #Verificar si el click está dentro de alguna de los puntos de paredes
-                    x,y = event.x(), event.y()
-                    for i, punto in enumerate(self.puntos_paredes):
-                        px, py = punto
-                        distance = np.sqrt((x - px) ** 2 + (y - py) ** 2)
-                        if distance <= 10:
-                            self.selected_punto = i
-                            break
+                        #Verificar si el click está dentro de alguna de los puntos de paredes
+                        x,y = event.x(), event.y()
+                        for i, punto in enumerate(self.puntos_paredes):
+                            px, py = punto
+                            distance = np.sqrt((x - px) ** 2 + (y - py) ** 2)
+                            if distance <= 10:
+                                self.selected_punto = i
+                                break
 
-                if self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
-                    if self.circles is not None:
-                        for (x, y, r) in self.circles:
-                            x = (x+self.XIROI)
-                            y = (y+self.YIROI)
-                            distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
-                            if distancia <=10:
-                                print(f"bola {x},{y}")
-                                clickEnBola = True
-                                self.bolaSeleccionada=(x,y,r)
-                                self.resaltar_bola_seleccionada()
-                                # self.etiquetar=True
-                                self.tronerasPosibles = self.calcular_posibles_troneras()
-                if (self.etiquetando==True or self.calculandoTiro):
-                    print("Espere por favor, se esta calculando el tiro")
+                    if self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
+                        if self.circles is not None:
+                            for (x, y, r) in self.circles:
+                                x = (x+self.XIROI)
+                                y = (y+self.YIROI)
+                                distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
+                                if distancia <=10:
+                                    print(f"bola {x},{y}")
+                                    clickEnBola = True
+                                    self.bolaSeleccionada=(x,y,r)
+                                    self.resaltar_bola_seleccionada()
+                                    # self.etiquetar=True
+                                    self.tronerasPosibles = self.calcular_posibles_troneras()
+                    if (self.etiquetando==True or self.calculandoTiro):
+                        print("Espere por favor, se esta calculando el tiro")
 
-                if clickEnBola == False and self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
-                    if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
-                        self.deseleccionar_bola()
-            else:           
-                clickEnBola = False
-                if(self.moviendo_bola_correccion == False):
-                    if self.circles is not None:
-                        for (x, y, r) in self.circles:
-                            x = (x+self.XIROI)
-                            y = (y+self.YIROI)
-                            distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
-                            if distancia <=10:
-                                print(f"bola {x},{y}")
-                                clickEnBola = True
-                                self.bolaSeleccionadaCorreccion=(x - self.XIROI,y - self.YIROI,r)
-                                self.resaltar_bola_seleccionada_correccion()
-                if clickEnBola == False and self.moviendo_bola_correccion == False:
-                    print("entra aca")
-                    if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
-                        self.deseleccionar_bola_correccion()
+                    if clickEnBola == False and self.moverVertices == False and self.etiquetando==False and self.calculandoTiro == False:
+                        if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
+                            self.deseleccionar_bola()
+                else:           
+                    clickEnBola = False
+                    if(self.moviendo_bola_correccion == False):
+                        if self.circles is not None:
+                            for (x, y, r) in self.circles:
+                                x = (x+self.XIROI)
+                                y = (y+self.YIROI)
+                                distancia = np.sqrt( (event.x()-x)**2 + (event.y()- y)**2)
+                                if distancia <=10:
+                                    print(f"bola {x},{y}")
+                                    clickEnBola = True
+                                    self.bolaSeleccionadaCorreccion=(x - self.XIROI,y - self.YIROI,r)
+                                    self.resaltar_bola_seleccionada_correccion()
+                    if clickEnBola == False and self.moviendo_bola_correccion == False:
+                        print("entra aca")
+                        if self.point_inside_roi(event.x(),event.y(), self.XIROI, self.YIROI, self.XDROI,self.YDROI)==True:
+                            self.deseleccionar_bola_correccion()
 
     def resaltar_bola_seleccionada_correccion(self):        
         global resaltarBolaCorreccion        
@@ -1516,9 +1519,10 @@ class VentanaVideo(QMainWindow):
         self.botonCalcularTiroConfirmar.setDisabled(False)
         if self.bolaSeleccionada is not None:
             resaltarBola = True
-            self.puntos_trayectoria_bola_blanca = None
+            with self.hiloProyeccion.bloqueo:
+                self.puntos_trayectoria_bola_blanca = None
+                self.puntos_trayectorias_bolas = None
             self.puntos_trayectoria_bola_seleccionada = None
-            self.puntos_trayectorias_bolas = None
 
 
     def deseleccionar_bola(self):
@@ -1587,6 +1591,7 @@ class VentanaVideo(QMainWindow):
             puntos = puntos.reshape((-1, 1, 2))
 
             posible = self.revisar_circulos(verticesOrdenados,self.circles)
+
             puntos = np.array(verticesOrdenados, np.int32)
             puntos = puntos.reshape((-1, 1, 2))            
             if posible:
@@ -1793,45 +1798,45 @@ class VentanaVideo(QMainWindow):
         print("Clic derecho detectado")
     
     def mouseMoveEvent(self, event):
-        if(self.corregirFrame == False):
-            if self.moverVertices and self.verticeSeleccionado is not None:
-                print(f"moviendo vertice: {self.verticeSeleccionado}")
-                # Actualizar la posición del vértice seleccionado según la posición del mouse
-                if self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 and event.y() > 1 and event.x() > 1 and event.x() < ResolucionX and event.y() < ResolucionY:
-                    self.XIROI = event.x()
-                    self.YIROI = event.y()
-                elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() > 1 and event.x() < ResolucionX and event.y() < ResolucionY:
-                    self.XDROI = event.x()
-                    self.YDROI = event.y()
-                self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
-                self.actualizar_roi()
-            if self.selected_tronera is not None:
+            if(self.corregirFrame == False):
+                if self.moverVertices and self.verticeSeleccionado is not None:
+                    print(f"moviendo vertice: {self.verticeSeleccionado}")
+                    # Actualizar la posición del vértice seleccionado según la posición del mouse
+                    if self.verticeSeleccionado == 0 and event.x() < self.XDROI-10 and event.y() < self.YDROI-10 and event.y() > 1 and event.x() > 1 and event.x() < ResolucionX and event.y() < ResolucionY:
+                        self.XIROI = event.x()
+                        self.YIROI = event.y()
+                    elif self.verticeSeleccionado == 1 and event.x() > self.XIROI+10 and event.y() > self.YIROI+10 and event.x() > 1 and event.y() > 1 and event.x() < ResolucionX and event.y() < ResolucionY:
+                        self.XDROI = event.x()
+                        self.YDROI = event.y()
+                    self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
+                    self.actualizar_roi()
+                if self.selected_tronera is not None:
+                    x, y = event.x(), event.y()
+                    self.troneras[self.selected_tronera] = (x, y)
+                    self.update()
+                if self.selected_punto is not None: 
+                    x,y = event.x(), event.y()
+                    self.puntos_paredes[self.selected_punto] = (x,y)
+                    self.update()
+            else:           
                 x, y = event.x(), event.y()
-                self.troneras[self.selected_tronera] = (x, y)
-                self.update()
-            if self.selected_punto is not None: 
-                x,y = event.x(), event.y()
-                self.puntos_paredes[self.selected_punto] = (x,y)
-                self.update()
-        else:           
-            x, y = event.x(), event.y()
-            moviendoSeleccionada = False
-            if self.bolaSeleccionada is not None:
-                (xs,ys,rs) = self.bolaSeleccionada
-                dist = math.sqrt((xs-x)**2 + (ys-y)**2)
-                if(dist < rs*2):
-                    moviendoSeleccionada = True
-            indice = self.encontrar_indice_por_coordenadas(x- self.XIROI,y- self.YIROI)
-            if(indice != -1):
-                _,_,aux = self.circles[indice]
-                self.circles[indice] = (x - self.XIROI, y - self.YIROI,aux)                
-                self.moviendo_bola_correccion = True
-                self.bolaSeleccionadaCorreccion = (x - self.XIROI, y - self.YIROI, aux)
-                if moviendoSeleccionada:
-                    self.bolaSeleccionada = (x , y, aux)
-                global resaltarBolaCorreccion
-                resaltarBolaCorreccion = True
-                self.update()
+                moviendoSeleccionada = False
+                if self.bolaSeleccionada is not None:
+                    (xs,ys,rs) = self.bolaSeleccionada
+                    dist = math.sqrt((xs-x)**2 + (ys-y)**2)
+                    if(dist < rs*2):
+                        moviendoSeleccionada = True
+                indice = self.encontrar_indice_por_coordenadas(x- self.XIROI,y- self.YIROI)
+                if(indice != -1):
+                    _,_,aux = self.circles[indice]
+                    self.circles[indice] = (x - self.XIROI, y - self.YIROI,aux)                
+                    self.moviendo_bola_correccion = True
+                    self.bolaSeleccionadaCorreccion = (x - self.XIROI, y - self.YIROI, aux)
+                    if moviendoSeleccionada:
+                        self.bolaSeleccionada = (x , y, aux)
+                    global resaltarBolaCorreccion
+                    resaltarBolaCorreccion = True
+                    self.update()
 
     def encontrar_indice_por_coordenadas(self, x, y):
         for i, circle in enumerate(self.circlesCopy):
@@ -1897,27 +1902,28 @@ class VentanaVideo(QMainWindow):
         return image
 
     #deprecated
-    def agregar_o_actualizar_bola(self,x,y,r):
-        global bolas
-        actualizada = False
-        encontrada = False
-        for bola in bolas:
-            distancia = math.sqrt((bola.x- x)**2 + (bola.y-y)**2)
-            if distancia <= 30:
-                bola.actualizar_posicion(x,y,r)
-                actualizada = True
-                break
-        if actualizada==False:
-            bolas.append(Bola(x,y,r))
-        for bola in bolas:
-            for (xd,yd,rd) in self.circles:
-                distancia = math.sqrt((bola.x - xd)**2 + (bola.y - yd)**2)
-                if distancia <= 30:
-                    encontrada = True
-                    break
-            if encontrada == False:
-                 bolas.remove(bola)
-            encontrada = False
+    # def agregar_o_actualizar_bola(self,x,y,r):
+    #     with self.hiloProyeccion.bloqueo:
+    #         global bolas
+    #         actualizada = False
+    #         encontrada = False
+    #         for bola in bolas:
+    #             distancia = math.sqrt((bola.x- x)**2 + (bola.y-y)**2)
+    #             if distancia <= 30:
+    #                 bola.actualizar_posicion(x,y,r)
+    #                 actualizada = True
+    #                 break
+    #         if actualizada==False:
+    #             bolas.append(Bola(x,y,r))
+    #         for bola in bolas:
+    #             for (xd,yd,rd) in self.circles:
+    #                 distancia = math.sqrt((bola.x - xd)**2 + (bola.y - yd)**2)
+    #                 if distancia <= 30:
+    #                     encontrada = True
+    #                     break
+    #             if encontrada == False:
+    #                 bolas.remove(bola)
+    #             encontrada = False
 
 
     #deprecated
@@ -2207,8 +2213,9 @@ class VentanaVideo(QMainWindow):
                                 self.tiro_seleccionado = self.hiloCalculoTiro.tiroSeleccionado                           
 
                                 self.respuesta_hiloTiro = self.hiloCalculoTiro.respuesta
-                                self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
-                                self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
+                                with self.hiloProyeccion.bloqueo:
+                                    self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
+                                    self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
                                 self.velocidadRequerida = self.convertir_velocidad( self.respuesta_hiloTiro.velocidad)
                                 print(f"velocidad de tiro requerida: {self.velocidadRequerida}")
                     
@@ -2357,8 +2364,7 @@ class VentanaVideo(QMainWindow):
                             id = self.obtener_id_bola(x,y)
                             if id != -1:
                                 cv2.putText(self.frame, str(id),(xCircle,yCircle),cv2.FONT_HERSHEY_SIMPLEX, 2,(255,255,0),2)
-                        
-                                    
+                                                                
                                 # Dibujo de los trapecios posibles y no posibles:
                                 # if(self.poligonos is not None):
                                 #     for poligono in self.poligonos:                            
@@ -2384,8 +2390,8 @@ class VentanaVideo(QMainWindow):
                         if(self.algunaEstaSeleccionada == False):
                             self.bolaSeleccionada = None
                             self.puntos_trayectoria_bola_blanca = None
-                            self.puntos_trayectoria_bola_seleccionada = None
                             self.puntos_trayectorias_bolas = None
+                            self.puntos_trayectoria_bola_seleccionada = None
                             resaltarBola = False
                             self.botonVerSimulacion.setEnabled = False
 
@@ -2395,6 +2401,7 @@ class VentanaVideo(QMainWindow):
                 if self.frame_count % 7 == 0:
                     #print(f"movimiento: {self.hayMovimiento}")
                     global movimientoDetectado
+    
                     if circles_prev is not None and self.circles is not None:
                         movimientoDetectado = False
                         index = 0
@@ -2467,95 +2474,99 @@ class VentanaVideo(QMainWindow):
         return round(convertido,1)
 
     def graficar_trayectorias(self):
-        self.hiloProyeccion.actualizar_trayectorias(self.puntos_trayectoria_bola_blanca, self.puntos_trayectorias_bolas)
-        if(self.puntos_trayectoria_bola_blanca is not None):
-            for i in range(len(self.puntos_trayectoria_bola_blanca)):
-                if(i == len(self.puntos_trayectoria_bola_blanca) - 1):
-                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
-                        punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+        if (self.puntos_trayectoria_bola_blanca is not None and self.puntos_trayectorias_bolas is not None ):
+            self.hiloProyeccion.actualizar_trayectorias(self.puntos_trayectoria_bola_blanca.copy(), self.puntos_trayectorias_bolas.copy())
+        else: 
+            self.hiloProyeccion.actualizar_trayectorias(self.puntos_trayectoria_bola_blanca, self.puntos_trayectorias_bolas)
+        with self.hiloProyeccion.bloqueo:
+            if(self.puntos_trayectoria_bola_blanca is not None):
+                for i in range(len(self.puntos_trayectoria_bola_blanca)):
+                    if(i == len(self.puntos_trayectoria_bola_blanca) - 1):
+                        if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
+                            punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                        else:
+                            punto = self.puntos_trayectoria_bola_blanca[i].int_tuple
+                        x,y = punto
+                        x = x + self.XIROI
+                        y = y + self.YIROI
+                        cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
+                        break
+                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
+                        puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                    else:    
+                        puntoa = self.puntos_trayectoria_bola_blanca[i].int_tuple
+                    if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple):
+                        puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
                     else:
-                        punto = self.puntos_trayectoria_bola_blanca[i].int_tuple
-                    x,y = punto
-                    x = x + self.XIROI
-                    y = y + self.YIROI
-                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
-                    break
-                if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
-                    puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
-                else:    
-                    puntoa = self.puntos_trayectoria_bola_blanca[i].int_tuple
-                if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple):
-                    puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
-                else:
-                    puntob = self.puntos_trayectoria_bola_blanca[i+1].int_tuple
-                xa,ya = puntoa
-                xb,yb = puntob
-                xa = xa + self.XIROI
-                ya = ya + self.YIROI
-                xb = xb + self.XIROI
-                yb = yb + self.YIROI
-                if i == 0:
-                    cv2.line(self.frame,(xa,ya) , (xb,yb), (255,0,0), 2)
-                else:
-                    cv2.line(self.frame,(xa,ya) , (xb,yb), (0,255,0), 2)
-        if(self.puntos_trayectoria_bola_seleccionada is not None):
-            for i in range(len(self.puntos_trayectoria_bola_seleccionada)):
-                if(i == len(self.puntos_trayectoria_bola_seleccionada) - 1):
-                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
-                        punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                        puntob = self.puntos_trayectoria_bola_blanca[i+1].int_tuple
+                    xa,ya = puntoa
+                    xb,yb = puntob
+                    xa = xa + self.XIROI
+                    ya = ya + self.YIROI
+                    xb = xb + self.XIROI
+                    yb = yb + self.YIROI
+                    if i == 0:
+                        cv2.line(self.frame,(xa,ya) , (xb,yb), (255,0,0), 2)
                     else:
-                        punto = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
-                    x,y = punto
-                    x = x + self.XIROI
-                    y = y + self.YIROI
-                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (255,0,0),thickness=-1)
-                    break
-                if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
-                    puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
-                else:
-                    puntoa = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
-                if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple): 
-                    puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
-                else:
-                    puntob = self.puntos_trayectoria_bola_seleccionada[i+1].int_tuple
-                xa,ya = puntoa
-                xb,yb = puntob
-                xa = xa + self.XIROI
-                ya = ya + self.YIROI
-                xb = xb + self.XIROI
-                yb = yb + self.YIROI
-                cv2.line(self.frame, (xa,ya),(xb,yb), (255,0,0), 2)
-        if(self.VerTodasTrayectorias):
-            if(self.puntos_trayectorias_bolas is not None):
-                for i in range(len(self.puntos_trayectorias_bolas)):
-                    listaBola = self.puntos_trayectorias_bolas[i] 
-                    if(len(listaBola)>0):
-                        for x in range(len(listaBola)):
-                            if(x == len(listaBola)-1):
+                        cv2.line(self.frame,(xa,ya) , (xb,yb), (0,255,0), 2)
+            if(self.puntos_trayectoria_bola_seleccionada is not None):
+                for i in range(len(self.puntos_trayectoria_bola_seleccionada)):
+                    if(i == len(self.puntos_trayectoria_bola_seleccionada) - 1):
+                        if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
+                            punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                        else:
+                            punto = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
+                        x,y = punto
+                        x = x + self.XIROI
+                        y = y + self.YIROI
+                        cv2.circle(self.frame, (x,y), int(minRadius/2) , (255,0,0),thickness=-1)
+                        break
+                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
+                        puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                    else:
+                        puntoa = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
+                    if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple): 
+                        puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
+                    else:
+                        puntob = self.puntos_trayectoria_bola_seleccionada[i+1].int_tuple
+                    xa,ya = puntoa
+                    xb,yb = puntob
+                    xa = xa + self.XIROI
+                    ya = ya + self.YIROI
+                    xb = xb + self.XIROI
+                    yb = yb + self.YIROI
+                    cv2.line(self.frame, (xa,ya),(xb,yb), (255,0,0), 2)
+            if(self.VerTodasTrayectorias):
+                if(self.puntos_trayectorias_bolas is not None):
+                    for i in range(len(self.puntos_trayectorias_bolas)):
+                        listaBola = self.puntos_trayectorias_bolas[i] 
+                        if(len(listaBola)>0):
+                            for x in range(len(listaBola)):
+                                if(x == len(listaBola)-1):
+                                    if isinstance(listaBola[x], tuple):
+                                        punto = int(listaBola[x][0]), int(listaBola[x][1])
+                                    else:
+                                        punto = listaBola[x].int_tuple
+                                    x,y = punto
+                                    x = x + self.XIROI
+                                    y = y + self.YIROI
+                                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
+                                    break
                                 if isinstance(listaBola[x], tuple):
-                                    punto = int(listaBola[x][0]), int(listaBola[x][1])
+                                    puntoa = int(listaBola[x][0]), int(listaBola[x][1])
                                 else:
-                                    punto = listaBola[x].int_tuple
-                                x,y = punto
-                                x = x + self.XIROI
-                                y = y + self.YIROI
-                                cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
-                                break
-                            if isinstance(listaBola[x], tuple):
-                                puntoa = int(listaBola[x][0]), int(listaBola[x][1])
-                            else:
-                                puntoa = listaBola[x].int_tuple
-                            if isinstance(listaBola[x+1], tuple):
-                                puntob = int(listaBola[x+1][0]), int(listaBola[x+1][1])
-                            else:
-                                puntob = listaBola[x+1].int_tuple
-                            xa,ya = puntoa
-                            xb,yb = puntob
-                            xa = xa + self.XIROI
-                            ya = ya + self.YIROI
-                            xb = xb + self.XIROI
-                            yb = yb + self.YIROI
-                            cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
+                                    puntoa = listaBola[x].int_tuple
+                                if isinstance(listaBola[x+1], tuple):
+                                    puntob = int(listaBola[x+1][0]), int(listaBola[x+1][1])
+                                else:
+                                    puntob = listaBola[x+1].int_tuple
+                                xa,ya = puntoa
+                                xb,yb = puntob
+                                xa = xa + self.XIROI
+                                ya = ya + self.YIROI
+                                xb = xb + self.XIROI
+                                yb = yb + self.YIROI
+                                cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
 
     #determina si el usuario selecciono la bola blanca para embocar:
     def selecciono_la_blanca(self, listaEtiquetadas):
