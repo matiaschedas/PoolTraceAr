@@ -1957,480 +1957,483 @@ class VentanaVideo(QMainWindow):
     
     #bucle principal de ejecucion:
     def actualizar_video(self):
-        global resaltarBola, resaltarBolaCorreccion, minRadius, maxRadius
-        if not self.seguirActualizando:
-            return
-        if self.cap is not None and not is_frame_black(self.frame):
-            ret, self.frame = self.cap.read()
-        else:
-            ret = False
-            width, height = ResolucionX, ResolucionY
-            frame = np.zeros((height, width, 3), dtype=np.uint8)
-            h, w, ch = frame.shape
-            bytes_per_line = ch * w
-            q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            self.label.setPixmap(QPixmap.fromImage(q_image)) 
-        if ret and not is_frame_black(self.frame):
-            
-            if self.inicio:
-                self.XIROI, self.YIROI = 100, 100
-                self.XDROI, self.YDROI = 150, 150
-                self.inicio = False
-                self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
-                self.actualizar_roi()
-           
-            altura, ancho = self.frame.shape[:2]
-
-            # Calcular el centro del frame para utilizarlo como punto de rotación
-            centro = (ancho // 2, altura // 2)
-            matriz_rotacion = cv2.getRotationMatrix2D(centro, anguloRotar, 1.0)
-            self.frame = cv2.warpAffine(self.frame,matriz_rotacion,(ancho,altura))
-            self.roi = self.frame[self.YIROI:self.YDROI 
-                            , self.XIROI:self.XDROI]
-            
-            if self.etiquetar:
-                #se generan las imagenes de cada bola:
-                if self.etiquetando == False:
-                    fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    nombre_archivo = f"Mesa_{fecha_hora_actual}.png"
-                    ret, frame = self.cap.read()
-                    roi = frame[self.YIROI:self.YDROI 
-                            , self.XIROI:self.XDROI]
-                    carpeta = Path(script_dir + '\\Capturas\\')
-
-                    # Verificamos si la carpeta no existe
-                    if not carpeta.exists():
-                        # Creamos la carpeta
-                        carpeta.mkdir(parents=True, exist_ok=True)
-                        carpeta = Path(script_dir + '\\Capturas\\Bolas\\')
-                        carpeta.mkdir(parents=True, exist_ok=True)
-                        
-                    pathCaptura = script_dir + "\\Capturas\\" + nombre_archivo
-                    pathOutput = script_dir + "\\Capturas\\Bolas\\" 
-                    cv2.imwrite(pathCaptura, roi)
-                    ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
-
-                #se manda un hilo a etiquetar cada bola de las imagenes generadas:
-                if self.etiquetando == False:
-                    #en prod pasarle True para que borre las capturas que usa:
-                    self.hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada,True,True))
-                    self.hiloEtiquetador.start()
-                    self.etiquetando = True
+        try:
+            global resaltarBola, resaltarBolaCorreccion, minRadius, maxRadius
+            if not self.seguirActualizando:
+                return
+            if self.cap is not None and not is_frame_black(self.frame):
+                ret, self.frame = self.cap.read()
+            else:
+                ret = False
+                width, height = ResolucionX, ResolucionY
+                frame = np.zeros((height, width, 3), dtype=np.uint8)
+                h, w, ch = frame.shape
+                bytes_per_line = ch * w
+                q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                self.label.setPixmap(QPixmap.fromImage(q_image)) 
+            if ret and not is_frame_black(self.frame):
                 
-                self.hiloEtiquetador.join(timeout=0.01)
+                if self.inicio:
+                    self.XIROI, self.YIROI = 100, 100
+                    self.XDROI, self.YDROI = 150, 150
+                    self.inicio = False
+                    self.hiloProyeccion.actualizar_roi(xiroi=self.XIROI, yiroi=self.YIROI, xdroi=self.XDROI, ydroi=self.YDROI)
+                    self.actualizar_roi()
+            
+                altura, ancho = self.frame.shape[:2]
 
-                if  self.hiloEtiquetador.is_alive():
-                    #aca se puede poner un spin en la interfaz:
-                    print("etiquetando...")
-                    self.printUI("Ejecutando IA...")
-                    self.avanzarProgressBar(30)
-                else:
-                    print("fin de etiquetado")
-                    self.etiquetar = False
-                    self.etiquetando = False
-                    with variable_compartida_lock:
-                        self.listaEtiquetada = ListaApareadaConEtiquetas
-                        self.bolaBlanca = self.obtenerBolaBlanca(self.listaEtiquetada)
+                # Calcular el centro del frame para utilizarlo como punto de rotación
+                centro = (ancho // 2, altura // 2)
+                matriz_rotacion = cv2.getRotationMatrix2D(centro, anguloRotar, 1.0)
+                self.frame = cv2.warpAffine(self.frame,matriz_rotacion,(ancho,altura))
+                self.roi = self.frame[self.YIROI:self.YDROI 
+                                , self.XIROI:self.XDROI]
+                
+                if self.etiquetar:
+                    #se generan las imagenes de cada bola:
+                    if self.etiquetando == False:
+                        fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        nombre_archivo = f"Mesa_{fecha_hora_actual}.png"
+                        ret, frame = self.cap.read()
+                        roi = frame[self.YIROI:self.YDROI 
+                                , self.XIROI:self.XDROI]
+                        carpeta = Path(script_dir + '\\Capturas\\')
+
+                        # Verificamos si la carpeta no existe
+                        if not carpeta.exists():
+                            # Creamos la carpeta
+                            carpeta.mkdir(parents=True, exist_ok=True)
+                            carpeta = Path(script_dir + '\\Capturas\\Bolas\\')
+                            carpeta.mkdir(parents=True, exist_ok=True)
+                            
+                        pathCaptura = script_dir + "\\Capturas\\" + nombre_archivo
+                        pathOutput = script_dir + "\\Capturas\\Bolas\\" 
+                        cv2.imwrite(pathCaptura, roi)
+                        ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
+
+                    #se manda un hilo a etiquetar cada bola de las imagenes generadas:
+                    if self.etiquetando == False:
+                        #en prod pasarle True para que borre las capturas que usa:
+                        self.hiloEtiquetador = threading.Thread(target=Etiquetar, args=(pathOutput,ListaApareada,True,True))
+                        self.hiloEtiquetador.start()
+                        self.etiquetando = True
                     
-            if( self.listaEtiquetada is not None and self.etiquetando==False):
-                #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
-                if(self.calculandoTiro == False):
-                    if(self.checkTiroFinal.isChecked() and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==False):
-                        print("Error, no selecciono la bola negra para el tiro final")
-                        self.printUIError("Seleccione la bola negra para el tiro final")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif(self.checkTiroFinal.isChecked() == False and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True):
-                        print("Error, selecciono la bola negra pero no indico la tronera")
-                        self.printUIError("Seleccione la tronera")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    # elif( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
-                    #     print("Error, las bolas cambiaron de posicion.")
-                    #     self.printUIError("Error, las bolas cambiaron de posicion.")
-                    #     self.deseleccionar_bola()
-                    #     self.listaEtiquetada.clear()
-                    #     self.listaEtiquetada = None
-                    #     self.ultimaListaEtiquetada = None
-                    #     self.repetirSimulacion = False
-                    elif( self.selecciono_la_blanca(self.listaEtiquetada)):
-                        print ("Error, se selecciono la bola blanca para embocar")
-                        self.printUIError("Error, se selecciono la bola blanca para embocar")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif( self.existe_la_negra(self.listaEtiquetada)==False):
-                        print("El jugador anterior emboco la bola negra, fin del partido")
-                        self.printUI("El jugador anterior emboco la bola negra, fin del partido")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif( self.hay_bola_blanca(self.listaEtiquetada)==False):
-                        print("No hay bola blanca en la mesa")
-                        self.printUIError("No hay bola blanca en la mesa")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif(self.solo_una_blanca(self.listaEtiquetada)==False):
-                        print("Error, hay mas de una bola blanca en la mesa")
-                        self.printUIError("Error, hay mas de una bola blanca en la mesa")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif(self.solo_una_negra(self.listaEtiquetada)==False):
-                        print("Error, hay mas de una bola 8 en la mesa")
-                        self.printUI("Error, hay mas de una bola 8 en la mesa")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif(self.maximo_rayadas_superado(self.listaEtiquetada)==True):
-                        print("Error, hay mas de 7 bolas rayadas en la mesa")
-                        self.printUIError("Error, hay mas de 7 bolas rayadas en la mesa")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif(self.maximo_lisas_superado(self.listaEtiquetada)==True):
-                        print("Error, hay mas de 7 bolas lisas en la mesa")
-                        self.printUIError("Error, hay mas de 7 bolas lisas en la mesa")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif(self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True and self.hayMesaAbierta == True):
-                        print("Error, no se puede seleccionar la negra cuando hay mesa abierta")
-                        self.printUIError("Error, no se puede seleccionar la negra cuando hay mesa abierta")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    elif(self.seleccion_de_negra_incorrecto(self.listaEtiquetada, self.bolaSeleccionada)==True):
-                        print("Error, se selecciono la negra pero no es la ultima bola")
-                        self.printUIError("Error, se selecciono la negra pero no es la ultima bola")
-                        self.deseleccionar_bola()
-                        self.listaEtiquetada.clear()
-                        self.listaEtiquetada = None
-                        self.ultimaListaEtiquetada = None
-                        self.repetirSimulacion = False
-                        self.botonCancelar.setDisabled(True)
-                        self.botonCalcularTiroConfirmar.setDisabled(True)
-                        self.corregirFrame = False
-                    self.progressBar.setValue(100)
+                    self.hiloEtiquetador.join(timeout=0.01)
 
-                if(self.listaEtiquetada is not None):
-                    if self.bolaBlanca is not None:
-                        (xb, yb, rb) = self.bolaBlanca
-                        xb= xb + self.XIROI
-                        yb= yb + self.YIROI
-                        self.bolaBlanca = (xb,yb,rb)
+                    if  self.hiloEtiquetador.is_alive():
+                        #aca se puede poner un spin en la interfaz:
+                        #print("etiquetando...")
+                        self.printUI("Ejecutando IA...")
+                        self.avanzarProgressBar(30)
+                    else:
+                        print("fin de etiquetado")
+                        self.etiquetar = False
+                        self.etiquetando = False
+                        with variable_compartida_lock:
+                            self.listaEtiquetada = ListaApareadaConEtiquetas
+                            self.bolaBlanca = self.obtenerBolaBlanca(self.listaEtiquetada)
+                        
+                if( self.listaEtiquetada is not None and self.etiquetando==False):
+                    #si devuelve true, cambiaron de ubicacion las bolas -> no se puede continuar, caso contrario continuar
+                    if(self.calculandoTiro == False):
+                        if(self.checkTiroFinal.isChecked() and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==False):
+                            print("Error, no selecciono la bola negra para el tiro final")
+                            self.printUIError("Seleccione la bola negra para el tiro final")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif(self.checkTiroFinal.isChecked() == False and self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True):
+                            print("Error, selecciono la bola negra pero no indico la tronera")
+                            self.printUIError("Seleccione la tronera")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        # elif( self.cambiaron_bolas_previo_al_tiro( self.listaEtiquetada , self.circles ) ):
+                        #     print("Error, las bolas cambiaron de posicion.")
+                        #     self.printUIError("Error, las bolas cambiaron de posicion.")
+                        #     self.deseleccionar_bola()
+                        #     self.listaEtiquetada.clear()
+                        #     self.listaEtiquetada = None
+                        #     self.ultimaListaEtiquetada = None
+                        #     self.repetirSimulacion = False
+                        elif( self.selecciono_la_blanca(self.listaEtiquetada)):
+                            print ("Error, se selecciono la bola blanca para embocar")
+                            self.printUIError("Error, se selecciono la bola blanca para embocar")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif( self.existe_la_negra(self.listaEtiquetada)==False):
+                            print("El jugador anterior emboco la bola negra, fin del partido")
+                            self.printUI("El jugador anterior emboco la bola negra, fin del partido")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif( self.hay_bola_blanca(self.listaEtiquetada)==False):
+                            print("No hay bola blanca en la mesa")
+                            self.printUIError("No hay bola blanca en la mesa")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif(self.solo_una_blanca(self.listaEtiquetada)==False):
+                            print("Error, hay mas de una bola blanca en la mesa")
+                            self.printUIError("Error, hay mas de una bola blanca en la mesa")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif(self.solo_una_negra(self.listaEtiquetada)==False):
+                            print("Error, hay mas de una bola 8 en la mesa")
+                            self.printUI("Error, hay mas de una bola 8 en la mesa")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif(self.maximo_rayadas_superado(self.listaEtiquetada)==True):
+                            print("Error, hay mas de 7 bolas rayadas en la mesa")
+                            self.printUIError("Error, hay mas de 7 bolas rayadas en la mesa")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif(self.maximo_lisas_superado(self.listaEtiquetada)==True):
+                            print("Error, hay mas de 7 bolas lisas en la mesa")
+                            self.printUIError("Error, hay mas de 7 bolas lisas en la mesa")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif(self.selecciono_negra(self.listaEtiquetada,self.bolaSeleccionada)==True and self.hayMesaAbierta == True):
+                            print("Error, no se puede seleccionar la negra cuando hay mesa abierta")
+                            self.printUIError("Error, no se puede seleccionar la negra cuando hay mesa abierta")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        elif(self.seleccion_de_negra_incorrecto(self.listaEtiquetada, self.bolaSeleccionada)==True):
+                            print("Error, se selecciono la negra pero no es la ultima bola")
+                            self.printUIError("Error, se selecciono la negra pero no es la ultima bola")
+                            self.deseleccionar_bola()
+                            self.listaEtiquetada.clear()
+                            self.listaEtiquetada = None
+                            self.ultimaListaEtiquetada = None
+                            self.repetirSimulacion = False
+                            self.botonCancelar.setDisabled(True)
+                            self.botonCalcularTiroConfirmar.setDisabled(True)
+                            self.corregirFrame = False
+                        self.progressBar.setValue(100)
+
+                    if(self.listaEtiquetada is not None):
+                        if self.bolaBlanca is not None:
+                            (xb, yb, rb) = self.bolaBlanca
+                            xb= xb + self.XIROI
+                            yb= yb + self.YIROI
+                            self.bolaBlanca = (xb,yb,rb)
+                        
+                        if (self.bolaBlanca is not None and self.bolaSeleccionada is not None):
+                            tamROI = self.obtener_tam_ROI()
+                            trayectoriasValidasBlanca = []
+                            trayectoriasValidasSeleccionada = []
+                            #self.fisicas = Fisicas(False, False, False, self.listaEtiquetada, self.bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                            #self.fisicas.setear_pasos_tiempo(5)
+                            
+                            self.embocarNegra = False
+                            (xs,ys,rs) = self.bolaSeleccionada
+                            xs = xs - self.XIROI
+                            ys = ys - self.YIROI
+                            
+                            
+                            if(self.calculandoTiro == False):
+                                singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_mesa,tam_bolas_simulacion, alto_mesa, radio_troneras_IA)
+                                SingletonRespuesta.delete_instance()
+                                self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa, radio_troneras_IA)
+                                self.hiloCalculoTiro.start()
+                                self.calculandoTiro = True
+
+                            self.hiloCalculoTiro.join(timeout=0.01)
+
+                            if  self.hiloCalculoTiro.is_alive():
+                                #aca se puede poner un spin en la interfaz:6
+                                #print("Calculando tiro...")
+                                self.printUI("Calculando tiro...")
+                                self.avanzarProgressBar(95)
+                            else:
+                                self.calculandoTiro = False 
+                                
+                                self.tiro_seleccionado = self.hiloCalculoTiro.tiroSeleccionado                           
+
+                                self.respuesta_hiloTiro = self.hiloCalculoTiro.respuesta
+                                self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
+                                self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
+                                self.velocidadRequerida = self.convertir_velocidad( self.respuesta_hiloTiro.velocidad)
+                                print(f"velocidad de tiro requerida: {self.velocidadRequerida}")
                     
-                    if (self.bolaBlanca is not None and self.bolaSeleccionada is not None):
-                        tamROI = self.obtener_tam_ROI()
-                        trayectoriasValidasBlanca = []
-                        trayectoriasValidasSeleccionada = []
-                        #self.fisicas = Fisicas(False, False, False, self.listaEtiquetada, self.bolaSeleccionada, bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
-                        #self.fisicas.setear_pasos_tiempo(5)
-                        
-                        self.embocarNegra = False
-                        (xs,ys,rs) = self.bolaSeleccionada
-                        xs = xs - self.XIROI
-                        ys = ys - self.YIROI
-                        
-                        
-                        if(self.calculandoTiro == False):
-                            singletonCompartida = SingletonCompartida(self.listaEtiquetada.copy(), (xs,ys,rs), tamROI,self.embocarNegra, self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta,  self.troneraTiroFinal, distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes,ancho_mesa,tam_bolas_simulacion, alto_mesa, radio_troneras_IA)
-                            SingletonRespuesta.delete_instance()
-                            self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa, radio_troneras_IA)
-                            self.hiloCalculoTiro.start()
-                            self.calculandoTiro = True
+                                self.attrs =  self.respuesta_hiloTiro.attrs
+                                self.best_player =  self.respuesta_hiloTiro.best_player
+                                SingletonRespuesta.delete_instance()
+                                print("fin calculo de trayectorias")
+                                self.printUI("Calculo de trayectorias finalizado, Potencia requerida: " + f"{self.velocidadRequerida:.1f}")
+                                self.velocidadRequerida = -0.1
+                                self.botonCalcularTiroConfirmar.setDisabled(True)
+                                self.bolaSeleccionada = None
+                                resaltarBola = False
+                                self.botonCalcularTiroConfirmar.setDisabled(True)
+                                self.botonCancelar.setDisabled(True)
+                                self.corregirFrame = False
+                                
+                                # for i in range(0, 5):
+                                self.progressBar.setValue(100)
 
-                        self.hiloCalculoTiro.join(timeout=0.01)
+                                self.listaEtiquetada = None
+                                with variable_compartida_lock:
+                                    ListaApareadaConEtiquetas.clear()         
+                            
+                                # self.IA = IA_Handler()
+                                # self.IA.invocarIA()
+            
+                                    #print(f"calculando {i+1} de 100...")
+                                    #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
+                                    #self.velXBlanca = random.randint(10,100)
+                                    #self.velYBlanca = random.randint(10,100)
+                                    #self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
+                                    
+                                    #trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias = self.fisicas.simular()                                    
+                                    #self.puntos_trayectoria_bola_blanca = puntos_trayectoria_blanca    
+                                    #self.puntos_trayectoria_bola_seleccionada = puntos_trayectoria_seleccionada         
+                                    #self.puntos_trayectorias_bolas = puntos_trayectorias                       
+                                    #self.fisicas.reiniciar_simulacion()
+                                    #if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
+                                        #trayectoriasValidasBlanca.append(trayectoriasBlanca)
+                                        #trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
+                # Parte del if(testear si funciona bien sin la condicion)           
+                # and self.bolaSeleccionada is not None
+                if(self.repetirSimulacion == True ):
+                    if (self.tiro_seleccionado==3):
+                        if (self.repitiendo_simulacion == False): 
+                            self.repitiendo_simulacion = True     
+                            tamROI = self.obtener_tam_ROI()
+                            self.bolaBlanca = self.obtenerBolaBlanca(self.ultimaListaEtiquetada)
+                            self.fisicas = None
+                            self.fisicas = Fisicas(True, False, False, self.ultimaListaEtiquetada, self.bolaSeleccionada, self.bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
+                            self.fisicas.setear_pasos_tiempo(5)
+                            self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
+                            self.fisicas.simular()                                       
+                            self.fisicas.reiniciar_simulacion()
+                            self.repitiendo_simulacion = False
+
+                    elif ((self.tiro_seleccionado==1 or self.tiro_seleccionado==2) and self.best_player is not None and self.attrs is not None):
+                        if(self.repitiendo_simulacion == False):
+                                # self.hiloCalculoTiro = threading.Thread(target=VerSimulacion, args = (self.attrs, self.best_player))
+                                # self.hiloCalculoTiro.start()
+                                self.hiloCalculoTiro.VerSimulacion(self.attrs, self.best_player)
+                                self.repitiendo_simulacion = True
+
+                        #self.hiloCalculoTiro.join(timeout=0.01)
 
                         if  self.hiloCalculoTiro.is_alive():
-                            #aca se puede poner un spin en la interfaz:6
-                            print("Calculando tiro...")
-                            self.printUI("Calculando tiro...")
-                            self.avanzarProgressBar(95)
+                            #aca se puede poner un spin en la interfaz:
+                            print("Simulando tiro...")
+                            self.printUI("Simulando tiro...")
                         else:
-                            self.calculandoTiro = False 
-                            
-                            self.tiro_seleccionado = self.hiloCalculoTiro.tiroSeleccionado                           
+                            self.repitiendo_simulacion = False 
+                    
+                    self.repetirSimulacion = False
 
-                            self.respuesta_hiloTiro = self.hiloCalculoTiro.respuesta
-                            self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
-                            self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
-                            self.velocidadRequerida = self.convertir_velocidad( self.respuesta_hiloTiro.velocidad)
-                            print(f"velocidad de tiro requerida: {self.velocidadRequerida}")
-                
-                            self.attrs =  self.respuesta_hiloTiro.attrs
-                            self.best_player =  self.respuesta_hiloTiro.best_player
-                            SingletonRespuesta.delete_instance()
-                            print("fin calculo de trayectorias")
-                            self.printUI("Calculo de trayectorias finalizado, Potencia requerida: " + f"{self.velocidadRequerida:.1f}")
-                            self.velocidadRequerida = -0.1
-                            self.botonCalcularTiroConfirmar.setDisabled(True)
-                            self.bolaSeleccionada = None
-                            resaltarBola = False
-                            self.botonCalcularTiroConfirmar.setDisabled(True)
-                            self.botonCancelar.setDisabled(True)
-                            self.corregirFrame = False
-                             
-                            # for i in range(0, 5):
-                            self.progressBar.setValue(100)
+                if self.verROI == False:
+                    for tronera, label in zip(self.troneras, self.troneras_labels_usuario):
+                            x, y = tronera
+                            cv2.putText(self.frame, label, (x , y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
-                            self.listaEtiquetada = None
-                            with variable_compartida_lock:
-                                ListaApareadaConEtiquetas.clear()         
-                           
-                            # self.IA = IA_Handler()
-                            # self.IA.invocarIA()
-        
-                                #print(f"calculando {i+1} de 100...")
-                                #cuando hagamos algunos calculos tenemos que pasarle en vez de randoms algo mejor definido:
-                                #self.velXBlanca = random.randint(10,100)
-                                #self.velYBlanca = random.randint(10,100)
-                                #self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
-                                
-                                #trayectoriasBlanca, trayectoriasSeleccionada, tiroValido, entroBlanca, entroSeleccionada, entroNegra, puntos_trayectoria_blanca, puntos_trayectoria_seleccionada, puntos_trayectorias = self.fisicas.simular()                                    
-                                #self.puntos_trayectoria_bola_blanca = puntos_trayectoria_blanca    
-                                #self.puntos_trayectoria_bola_seleccionada = puntos_trayectoria_seleccionada         
-                                #self.puntos_trayectorias_bolas = puntos_trayectorias                       
-                                #self.fisicas.reiniciar_simulacion()
-                                #if(entroSeleccionada and entroNegra==False and entroBlanca== False and tiroValido):
-                                    #trayectoriasValidasBlanca.append(trayectoriasBlanca)
-                                    #trayectoriasValidasSeleccionada.append(trayectoriasSeleccionada)
-            # Parte del if(testear si funciona bien sin la condicion)           
-            # and self.bolaSeleccionada is not None
-            if(self.repetirSimulacion == True ):
-                if (self.tiro_seleccionado==3):
-                    if (self.repitiendo_simulacion == False): 
-                        self.repitiendo_simulacion = True     
-                        tamROI = self.obtener_tam_ROI()
-                        self.bolaBlanca = self.obtenerBolaBlanca(self.ultimaListaEtiquetada)
-                        self.fisicas = None
-                        self.fisicas = Fisicas(True, False, False, self.ultimaListaEtiquetada, self.bolaSeleccionada, self.bolaBlanca, tamROI, self.XIROI, self.YIROI,self.XDROI, self.YDROI, self.troneras, self.radioTronera, maxRadius, self.puntos_paredes,self.BolaEnMano, self.Hay2Tiros, self.hayMesaAbierta)
-                        self.fisicas.setear_pasos_tiempo(5)
-                        self.fisicas.setear_velocidad_inicial_blanca(self.velXBlanca,self.velYBlanca)
-                        self.fisicas.simular()                                       
-                        self.fisicas.reiniciar_simulacion()
-                        self.repitiendo_simulacion = False
-
-                elif ((self.tiro_seleccionado==1 or self.tiro_seleccionado==2) and self.best_player is not None and self.attrs is not None):
-                    if(self.repitiendo_simulacion == False):
-                            # self.hiloCalculoTiro = threading.Thread(target=VerSimulacion, args = (self.attrs, self.best_player))
-                            # self.hiloCalculoTiro.start()
-                            self.hiloCalculoTiro.VerSimulacion(self.attrs, self.best_player)
-                            self.repitiendo_simulacion = True
-
-                    #self.hiloCalculoTiro.join(timeout=0.01)
-
-                    if  self.hiloCalculoTiro.is_alive():
-                        #aca se puede poner un spin en la interfaz:
-                        print("Simulando tiro...")
-                        self.printUI("Simulando tiro...")
-                    else:
-                        self.repitiendo_simulacion = False 
-                
-                self.repetirSimulacion = False
-
-            if self.verROI == False:
-                for tronera, label in zip(self.troneras, self.troneras_labels_usuario):
+                if self.verROI:
+                    cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
+                                (self.XDROI, self.YDROI), (0, 255, 0), 2)
+                    #grafica los huecos (troneras):
+                    for tronera, label in zip(self.troneras, self.troneras_labels):
                         x, y = tronera
+                        cv2.circle(self.frame, (x, y), self.radioTronera, (255, 255, 0), 2)
                         cv2.putText(self.frame, label, (x , y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
-            if self.verROI:
-                cv2.rectangle(self.frame, (self.XIROI, self.YIROI),
-                              (self.XDROI, self.YDROI), (0, 255, 0), 2)
-                #grafica los huecos (troneras):
-                for tronera, label in zip(self.troneras, self.troneras_labels):
-                    x, y = tronera
-                    cv2.circle(self.frame, (x, y), self.radioTronera, (255, 255, 0), 2)
-                    cv2.putText(self.frame, label, (x , y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+                    #grafica los puntos de paredes:
+                    for punto, label in zip(self.puntos_paredes, self.puntos_paredes_labels):
+                        x,y = punto
+                        cv2.circle(self.frame, (x,y), 10 , (0,255,0),1)
+                        cv2.putText(self.frame, label, (x+5,y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
+                        x1 = x - 10
+                        y1 = y - 10
+                        x2 = x + 10
+                        y2 = y + 10
+                        cv2.line(self.frame, (x1, y1), (x2, y2), (0,255,0), thickness=1)
+                        cv2.line(self.frame, (x1, y2), (x2, y1), (0,255,0), thickness=1)
 
-                #grafica los puntos de paredes:
-                for punto, label in zip(self.puntos_paredes, self.puntos_paredes_labels):
-                    x,y = punto
-                    cv2.circle(self.frame, (x,y), 10 , (0,255,0),1)
-                    cv2.putText(self.frame, label, (x+5,y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
-                    x1 = x - 10
-                    y1 = y - 10
-                    x2 = x + 10
-                    y2 = y + 10
-                    cv2.line(self.frame, (x1, y1), (x2, y2), (0,255,0), thickness=1)
-                    cv2.line(self.frame, (x1, y2), (x2, y1), (0,255,0), thickness=1)
-
-            if self.verVerticesROI:
-                cv2.circle(self.frame, (self.XIROI, self.YIROI),int(radioMin/2), (0, 255, 0), 2)
-                cv2.circle(self.frame, (self.XDROI, self.YDROI),int(radioMin/2), (0, 255, 0), 2)
+                if self.verVerticesROI:
+                    cv2.circle(self.frame, (self.XIROI, self.YIROI),int(radioMin/2), (0, 255, 0), 2)
+                    cv2.circle(self.frame, (self.XDROI, self.YDROI),int(radioMin/2), (0, 255, 0), 2)
+                
+                image = cv2.cvtColor(self.roi, cv2.COLOR_BGR2GRAY)
+                image = self.aplicar_preprocesamientos(image)
             
-            image = cv2.cvtColor(self.roi, cv2.COLOR_BGR2GRAY)
-            image = self.aplicar_preprocesamientos(image)
-           
 
-            global Param1, Param2, hough
-            # Cargar el fotograma actual en el objeto cv2.cuda_GpuMat
-            if(computo == "GPU" and self.corregirFrame == False):
-                d_frame.upload(image)
-                self.circles = hough.detect(d_frame)
-            elif (computo == "CPU"):
-                self.circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
-            if(computo == "GPU" and self.corregirFrame == True):
-                self.circles = self.circlesCopy
-            global circles_prev
-           
-            self.hiloProyeccion.actualizar_circles([])
-            if self.circles is not None:
-                if(computo == "GPU" and self.corregirFrame == False ):
-                    self.circles = self.circles.download()
-                if(self.corregirFrame == True):
+                global Param1, Param2, hough
+                # Cargar el fotograma actual en el objeto cv2.cuda_GpuMat
+                if(computo == "GPU" and self.corregirFrame == False):
+                    d_frame.upload(image)
+                    self.circles = hough.detect(d_frame)
+                elif (computo == "CPU"):
+                    self.circles = cv2.HoughCircles(image, cv2.HOUGH_GRADIENT, 1, 15, param1=85, param2=11, minRadius=4, maxRadius=10)
+                if(computo == "GPU" and self.corregirFrame == True):
                     self.circles = self.circlesCopy
+                global circles_prev
+            
+                self.hiloProyeccion.actualizar_circles([])
                 if self.circles is not None:
-                    if(self.corregirFrame == False):
-                        self.circles = np.round(self.circles[0, :]).astype(int)
+                    if(computo == "GPU" and self.corregirFrame == False ):
+                        self.circles = self.circles.download()
+                    if(self.corregirFrame == True):
+                        self.circles = self.circlesCopy
+                    if self.circles is not None:
+                        if(self.corregirFrame == False):
+                            self.circles = np.round(self.circles[0, :]).astype(int)
 
-                    self.circlesProyeccion = self.circles
-                    self.hiloProyeccion.actualizar_circles(self.circles.copy())
+                        self.circlesProyeccion = self.circles
+                        self.hiloProyeccion.actualizar_circles(self.circles.copy())
 
+                        
+                        radioProm = int((minRadius+maxRadius)/2)
+
+                        i=0
                     
-                    radioProm = int((minRadius+maxRadius)/2)
+                        if(self.corregirFrame == False):
+                            self.circles  = self.eliminar_circulos_repetidos(self.circles)
+                        for (x, y, r) in self.circles:                        
+                            # se dibujan los circulos en la interfaz:
+                            xCircle = x + self.XIROI 
+                            yCircle = y + self.YIROI 
+                            cv2.circle(self.frame, (xCircle, yCircle),
+                                    radioProm, (0, 255, 0), 2)
+                            id = self.obtener_id_bola(x,y)
+                            if id != -1:
+                                cv2.putText(self.frame, str(id),(xCircle,yCircle),cv2.FONT_HERSHEY_SIMPLEX, 2,(255,255,0),2)
+                        
+                                    
+                                # Dibujo de los trapecios posibles y no posibles:
+                                # if(self.poligonos is not None):
+                                #     for poligono in self.poligonos:                            
+                                #         #Dibujamos el trapecio en la imagen
+                                #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
+                                # if(self.poligonosImposibles is not None):
+                                #     for poligono in self.poligonosImposibles:
+                                #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
+        
+                            i+=1
 
-                    i=0
-                   
-                    if(self.corregirFrame == False):
-                        self.circles  = self.eliminar_circulos_repetidos(self.circles)
-                    for (x, y, r) in self.circles:                        
-                        # se dibujan los circulos en la interfaz:
-                        xCircle = x + self.XIROI 
-                        yCircle = y + self.YIROI 
-                        cv2.circle(self.frame, (xCircle, yCircle),
-                                   radioProm, (0, 255, 0), 2)
-                        id = self.obtener_id_bola(x,y)
-                        if id != -1:
-                            cv2.putText(self.frame, str(id),(xCircle,yCircle),cv2.FONT_HERSHEY_SIMPLEX, 2,(255,255,0),2)
-                    
-                                 
-                            # Dibujo de los trapecios posibles y no posibles:
-                            # if(self.poligonos is not None):
-                            #     for poligono in self.poligonos:                            
-                            #         #Dibujamos el trapecio en la imagen
-                            #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 255, 0), thickness=2)
-                            # if(self.poligonosImposibles is not None):
-                            #     for poligono in self.poligonosImposibles:
-                            #         cv2.polylines(self.frame, [poligono], isClosed=True, color=(0, 0, 255), thickness=2)
-      
-                        i+=1
+                        if resaltarBola == True and self.bolaSeleccionada is not None:
+                                (xs,ys,rs) = self.bolaSeleccionada
+                                cv2.circle(self.frame, (xs, ys), radioMax + 15, (255, 0, 255), thickness=2)
+                                self.algunaEstaSeleccionada = True
 
-                    if resaltarBola == True and self.bolaSeleccionada is not None:
-                            (xs,ys,rs) = self.bolaSeleccionada
-                            cv2.circle(self.frame, (xs, ys), radioMax + 15, (255, 0, 255), thickness=2)
-                            self.algunaEstaSeleccionada = True
+                        if resaltarBolaCorreccion == True and self.bolaSeleccionadaCorreccion is not None:
+                                (xsc,ysc,rsc) = self.bolaSeleccionadaCorreccion
+                                xsc = xsc + self.XIROI
+                                ysc = ysc + self.YIROI
+                                cv2.rectangle(self.frame, (xsc-r, ysc+r), (xsc +r, ysc - r), (0, 255, 255), thickness=2)
 
-                    if resaltarBolaCorreccion == True and self.bolaSeleccionadaCorreccion is not None:
-                            (xsc,ysc,rsc) = self.bolaSeleccionadaCorreccion
-                            xsc = xsc + self.XIROI
-                            ysc = ysc + self.YIROI
-                            cv2.rectangle(self.frame, (xsc-r, ysc+r), (xsc +r, ysc - r), (0, 255, 255), thickness=2)
+                        if(self.algunaEstaSeleccionada == False):
+                            self.bolaSeleccionada = None
+                            self.puntos_trayectoria_bola_blanca = None
+                            self.puntos_trayectoria_bola_seleccionada = None
+                            self.puntos_trayectorias_bolas = None
+                            resaltarBola = False
+                            self.botonVerSimulacion.setEnabled = False
 
-                    if(self.algunaEstaSeleccionada == False):
-                        self.bolaSeleccionada = None
-                        self.puntos_trayectoria_bola_blanca = None
-                        self.puntos_trayectoria_bola_seleccionada = None
-                        self.puntos_trayectorias_bolas = None
-                        resaltarBola = False
-                        self.botonVerSimulacion.setEnabled = False
-
-                                
-            self.graficar_trayectorias()
-            # detectar si hay movimiento de alguna bola:
-            if self.frame_count % 7 == 0:
-                #print(f"movimiento: {self.hayMovimiento}")
-                global movimientoDetectado
-                if circles_prev is not None and self.circles is not None:
-                    movimientoDetectado = False
-                    index = 0
-                    for (x, y, r) in self.circles:
-                        for (prev_x, prev_y, prev_r) in circles_prev:
-                            distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
-                            if distance < minRadius/2:  # Umbral para considerar movimiento
-                                movimientoDetectado = False
-                                break
-                            else:
-                                movimientoDetectado = True  
-                        if(movimientoDetectado == True):
-                            break             
-                else:
-                    movimientoDetectado = False
-                if(self.circles is not None):
-                    circles_prev= self.circles.copy()
-                    circles_prev = self.circles
-            self.hay_movimiento(movimientoDetectado)
+                                    
+                self.graficar_trayectorias()
+                # detectar si hay movimiento de alguna bola:
+                if self.frame_count % 7 == 0:
+                    #print(f"movimiento: {self.hayMovimiento}")
+                    global movimientoDetectado
+                    if circles_prev is not None and self.circles is not None:
+                        movimientoDetectado = False
+                        index = 0
+                        for (x, y, r) in self.circles:
+                            for (prev_x, prev_y, prev_r) in circles_prev:
+                                distance = math.sqrt((x - prev_x) ** 2 + (y - prev_y) ** 2)
+                                if distance < minRadius/2:  # Umbral para considerar movimiento
+                                    movimientoDetectado = False
+                                    break
+                                else:
+                                    movimientoDetectado = True  
+                            if(movimientoDetectado == True):
+                                break             
+                    else:
+                        movimientoDetectado = False
+                    if(self.circles is not None):
+                        circles_prev= self.circles.copy()
+                        circles_prev = self.circles
+                self.hay_movimiento(movimientoDetectado)
 
 
-            # Calcular los FPS
-            global previous_time, frames_previos
-            current_time = time.time()
-            if current_time - previous_time >= 1:
-                fps_str = "{:.2f}".format(self.frame_count - frames_previos)
-                self.fpsText.setText(fps_str)
-                frames_previos = self.frame_count
-                previous_time = current_time
+                # Calcular los FPS
+                global previous_time, frames_previos
+                current_time = time.time()
+                if current_time - previous_time >= 1:
+                    fps_str = "{:.2f}".format(self.frame_count - frames_previos)
+                    self.fpsText.setText(fps_str)
+                    frames_previos = self.frame_count
+                    previous_time = current_time
 
-            frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-            h, w, ch = frame.shape
-            bytes_per_line = ch * w
-            q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            self.label.setPixmap(QPixmap.fromImage(q_image))            
+                frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = frame.shape
+                bytes_per_line = ch * w
+                q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                self.label.setPixmap(QPixmap.fromImage(q_image))            
 
-            self.frame_count += 1
+                self.frame_count += 1
+        except Exception as e:
+            print("Error de bucle principal:" + str(e))
 
     async def getCircles(self):
         return self.circlesProyeccion

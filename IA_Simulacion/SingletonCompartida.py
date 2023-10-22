@@ -1,4 +1,5 @@
 import threading
+import math
 
 class SingletonCompartida:
     _instance = None
@@ -54,7 +55,8 @@ class SingletonCompartida:
     def obtenerEtiquetaSeleccionada(self, listaApareada, bolaSeleccionada):
         for (x,y,r),_,etiqueta in listaApareada:
             xs,ys,rs = bolaSeleccionada
-            if(x==xs and y==ys):
+            dist = math.sqrt((x-xs)**2 + (y-ys)**2)
+            if(dist <= rs):
                 return etiqueta
         return None
     

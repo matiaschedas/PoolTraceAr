@@ -1271,8 +1271,8 @@ class PoolEnv:
         self.add_table()
         self.add_balls()
 
-        cant = self.cantidad_para_embocar()
-        resto = 7 - cant
+        # cant = self.cantidad_para_embocar()
+        # resto = 7 - cant
 
         self.reward = self.total_foul_times * 5
         self.episode_reward = []
