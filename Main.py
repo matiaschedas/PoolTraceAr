@@ -451,29 +451,24 @@ class HiloProyeccion(threading.Thread):
                 print("Error en hilo de proyeccion: ", str(e))
 
     def actualizar_circles(self, circles):
-        with self.bloqueo:
-            self.circles = circles
+        self.circles = circles
 
     def actualizar_trayectorias(self, trayectoriaBlanca, trayectorias):
-        with self.bloqueo:
-            self.trayectoriaBlanca = trayectoriaBlanca
-            self.trayectorias = trayectorias
+        self.trayectoriaBlanca = trayectoriaBlanca
+        self.trayectorias = trayectorias
 
     def actualizar_proporcion_interfaz(self, height, width):
-        with self.bloqueo:
-            self.height = height
-            self.width = width
+        self.height = height
+        self.width = width
 
     def actualizar_roi(self, xiroi, yiroi, xdroi, ydroi):
-        with self.bloqueo:
-            self.xiroi = xiroi
-            self.yiroi = yiroi
-            self.xdroi = xdroi
-            self.ydroi = ydroi
+        self.xiroi = xiroi
+        self.yiroi = yiroi
+        self.xdroi = xdroi
+        self.ydroi = ydroi
 
     def ver_todas_trayectorias(self, verTodasTrayectorias):
-        with self.bloqueo:
-            self.verTodasTrayectorias = verTodasTrayectorias
+        self.verTodasTrayectorias = verTodasTrayectorias
 
     def detener_hilo(self):
         with self.bloqueo:
@@ -532,10 +527,9 @@ class VentanaVideo(QMainWindow):
         self.etiquetando = False
         self.calculandoTiro = False
         self.hiloProyeccion = hiloProyeccion
-        with self.hiloProyeccion.bloqueo:
-            self.circles = None
-            self.puntos_trayectoria_bola_blanca = None
-            self.puntos_trayectorias_bolas = None
+        self.circles = None
+        self.puntos_trayectoria_bola_blanca = None
+        self.puntos_trayectorias_bolas = None
         self.puntos_trayectoria_bola_seleccionada = None
         
         self.velocidadRequerida = -0.1
@@ -1549,9 +1543,9 @@ class VentanaVideo(QMainWindow):
         self.botonCalcularTiroConfirmar.setDisabled(False)
         if self.bolaSeleccionada is not None:
             resaltarBola = True
-            with self.hiloProyeccion.bloqueo:
-                self.puntos_trayectoria_bola_blanca = None
-                self.puntos_trayectorias_bolas = None
+            
+            self.puntos_trayectoria_bola_blanca = None
+            self.puntos_trayectorias_bolas = None
             self.puntos_trayectoria_bola_seleccionada = None
 
 
@@ -1933,7 +1927,6 @@ class VentanaVideo(QMainWindow):
 
     #deprecated
     # def agregar_o_actualizar_bola(self,x,y,r):
-    #     with self.hiloProyeccion.bloqueo:
     #         global bolas
     #         actualizada = False
     #         encontrada = False
@@ -2243,9 +2236,8 @@ class VentanaVideo(QMainWindow):
                                 self.tiro_seleccionado = self.hiloCalculoTiro.tiroSeleccionado                           
 
                                 self.respuesta_hiloTiro = self.hiloCalculoTiro.respuesta
-                                with self.hiloProyeccion.bloqueo:
-                                    self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
-                                    self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
+                                self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
+                                self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
                                 self.velocidadRequerida = self.convertir_velocidad( self.respuesta_hiloTiro.velocidad)
                                 print(f"velocidad de tiro requerida: {self.velocidadRequerida}")
                     
@@ -2376,7 +2368,7 @@ class VentanaVideo(QMainWindow):
                             self.circles = np.round(self.circles[0, :]).astype(int)
 
                         self.circlesProyeccion = self.circles
-                        self.hiloProyeccion.actualizar_circles(self.circles.copy())
+                        self.hiloProyeccion.actualizar_circles(self.circles)
 
                         
                         radioProm = int((minRadius+maxRadius)/2)
@@ -2506,99 +2498,95 @@ class VentanaVideo(QMainWindow):
         return round(convertido,1)
 
     def graficar_trayectorias(self):
-        if (self.puntos_trayectoria_bola_blanca is not None and self.puntos_trayectorias_bolas is not None ):
-            self.hiloProyeccion.actualizar_trayectorias(self.puntos_trayectoria_bola_blanca.copy(), self.puntos_trayectorias_bolas.copy())
-        else: 
-            self.hiloProyeccion.actualizar_trayectorias(self.puntos_trayectoria_bola_blanca, self.puntos_trayectorias_bolas)
-        with self.hiloProyeccion.bloqueo:
-            if(self.puntos_trayectoria_bola_blanca is not None):
-                for i in range(len(self.puntos_trayectoria_bola_blanca)):
-                    if(i == len(self.puntos_trayectoria_bola_blanca) - 1):
-                        if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
-                            punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
-                        else:
-                            punto = self.puntos_trayectoria_bola_blanca[i].int_tuple
-                        x,y = punto
-                        x = x + self.XIROI
-                        y = y + self.YIROI
-                        cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
-                        break
-                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
-                        puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
-                    else:    
-                        puntoa = self.puntos_trayectoria_bola_blanca[i].int_tuple
-                    if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple):
-                        puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
+        self.hiloProyeccion.actualizar_trayectorias(self.puntos_trayectoria_bola_blanca, self.puntos_trayectorias_bolas)
+        if(self.puntos_trayectoria_bola_blanca is not None):
+            for i in range(len(self.puntos_trayectoria_bola_blanca)):
+                if(i == len(self.puntos_trayectoria_bola_blanca) - 1):
+                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
+                        punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
                     else:
-                        puntob = self.puntos_trayectoria_bola_blanca[i+1].int_tuple
-                    xa,ya = puntoa
-                    xb,yb = puntob
-                    xa = xa + self.XIROI
-                    ya = ya + self.YIROI
-                    xb = xb + self.XIROI
-                    yb = yb + self.YIROI
-                    if i == 0:
-                        cv2.line(self.frame,(xa,ya) , (xb,yb), (255,0,0), 2)
+                        punto = self.puntos_trayectoria_bola_blanca[i].int_tuple
+                    x,y = punto
+                    x = x + self.XIROI
+                    y = y + self.YIROI
+                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,255,0),thickness=-1)
+                    break
+                if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
+                    puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                else:    
+                    puntoa = self.puntos_trayectoria_bola_blanca[i].int_tuple
+                if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple):
+                    puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
+                else:
+                    puntob = self.puntos_trayectoria_bola_blanca[i+1].int_tuple
+                xa,ya = puntoa
+                xb,yb = puntob
+                xa = xa + self.XIROI
+                ya = ya + self.YIROI
+                xb = xb + self.XIROI
+                yb = yb + self.YIROI
+                if i == 0:
+                    cv2.line(self.frame,(xa,ya) , (xb,yb), (255,0,0), 2)
+                else:
+                    cv2.line(self.frame,(xa,ya) , (xb,yb), (0,255,0), 2)
+        if(self.puntos_trayectoria_bola_seleccionada is not None):
+            for i in range(len(self.puntos_trayectoria_bola_seleccionada)):
+                if(i == len(self.puntos_trayectoria_bola_seleccionada) - 1):
+                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
+                        punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
                     else:
-                        cv2.line(self.frame,(xa,ya) , (xb,yb), (0,255,0), 2)
-            if(self.puntos_trayectoria_bola_seleccionada is not None):
-                for i in range(len(self.puntos_trayectoria_bola_seleccionada)):
-                    if(i == len(self.puntos_trayectoria_bola_seleccionada) - 1):
-                        if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):  
-                            punto = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
-                        else:
-                            punto = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
-                        x,y = punto
-                        x = x + self.XIROI
-                        y = y + self.YIROI
-                        cv2.circle(self.frame, (x,y), int(minRadius/2) , (255,0,0),thickness=-1)
-                        break
-                    if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
-                        puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
-                    else:
-                        puntoa = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
-                    if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple): 
-                        puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
-                    else:
-                        puntob = self.puntos_trayectoria_bola_seleccionada[i+1].int_tuple
-                    xa,ya = puntoa
-                    xb,yb = puntob
-                    xa = xa + self.XIROI
-                    ya = ya + self.YIROI
-                    xb = xb + self.XIROI
-                    yb = yb + self.YIROI
-                    cv2.line(self.frame, (xa,ya),(xb,yb), (255,0,0), 2)
-            if(self.VerTodasTrayectorias):
-                if(self.puntos_trayectorias_bolas is not None):
-                    for i in range(len(self.puntos_trayectorias_bolas)):
-                        listaBola = self.puntos_trayectorias_bolas[i] 
-                        if(len(listaBola)>0):
-                            for x in range(len(listaBola)):
-                                if(x == len(listaBola)-1):
-                                    if isinstance(listaBola[x], tuple):
-                                        punto = int(listaBola[x][0]), int(listaBola[x][1])
-                                    else:
-                                        punto = listaBola[x].int_tuple
-                                    x,y = punto
-                                    x = x + self.XIROI
-                                    y = y + self.YIROI
-                                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
-                                    break
+                        punto = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
+                    x,y = punto
+                    x = x + self.XIROI
+                    y = y + self.YIROI
+                    cv2.circle(self.frame, (x,y), int(minRadius/2) , (255,0,0),thickness=-1)
+                    break
+                if isinstance(self.puntos_trayectoria_bola_blanca[i], tuple):
+                    puntoa = int(self.puntos_trayectoria_bola_blanca[i][0]), int(self.puntos_trayectoria_bola_blanca[i][1])
+                else:
+                    puntoa = self.puntos_trayectoria_bola_seleccionada[i].int_tuple
+                if isinstance(self.puntos_trayectoria_bola_blanca[i+1], tuple): 
+                    puntob = int(self.puntos_trayectoria_bola_blanca[i+1][0]), int(self.puntos_trayectoria_bola_blanca[i+1][1])
+                else:
+                    puntob = self.puntos_trayectoria_bola_seleccionada[i+1].int_tuple
+                xa,ya = puntoa
+                xb,yb = puntob
+                xa = xa + self.XIROI
+                ya = ya + self.YIROI
+                xb = xb + self.XIROI
+                yb = yb + self.YIROI
+                cv2.line(self.frame, (xa,ya),(xb,yb), (255,0,0), 2)
+        if(self.VerTodasTrayectorias):
+            if(self.puntos_trayectorias_bolas is not None):
+                for i in range(len(self.puntos_trayectorias_bolas)):
+                    listaBola = self.puntos_trayectorias_bolas[i] 
+                    if(len(listaBola)>0):
+                        for x in range(len(listaBola)):
+                            if(x == len(listaBola)-1):
                                 if isinstance(listaBola[x], tuple):
-                                    puntoa = int(listaBola[x][0]), int(listaBola[x][1])
+                                    punto = int(listaBola[x][0]), int(listaBola[x][1])
                                 else:
-                                    puntoa = listaBola[x].int_tuple
-                                if isinstance(listaBola[x+1], tuple):
-                                    puntob = int(listaBola[x+1][0]), int(listaBola[x+1][1])
-                                else:
-                                    puntob = listaBola[x+1].int_tuple
-                                xa,ya = puntoa
-                                xb,yb = puntob
-                                xa = xa + self.XIROI
-                                ya = ya + self.YIROI
-                                xb = xb + self.XIROI
-                                yb = yb + self.YIROI
-                                cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
+                                    punto = listaBola[x].int_tuple
+                                x,y = punto
+                                x = x + self.XIROI
+                                y = y + self.YIROI
+                                cv2.circle(self.frame, (x,y), int(minRadius/2) , (0,0,255),thickness=-1)
+                                break
+                            if isinstance(listaBola[x], tuple):
+                                puntoa = int(listaBola[x][0]), int(listaBola[x][1])
+                            else:
+                                puntoa = listaBola[x].int_tuple
+                            if isinstance(listaBola[x+1], tuple):
+                                puntob = int(listaBola[x+1][0]), int(listaBola[x+1][1])
+                            else:
+                                puntob = listaBola[x+1].int_tuple
+                            xa,ya = puntoa
+                            xb,yb = puntob
+                            xa = xa + self.XIROI
+                            ya = ya + self.YIROI
+                            xb = xb + self.XIROI
+                            yb = yb + self.YIROI
+                            cv2.line(self.frame, (xa,ya),(xb,yb), (0,0,255), 2)
 
     #determina si el usuario selecciono la bola blanca para embocar:
     def selecciono_la_blanca(self, listaEtiquetadas):
