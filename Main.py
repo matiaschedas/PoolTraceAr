@@ -422,7 +422,6 @@ class HiloProyeccion(threading.Thread):
                 time.sleep(0.0167)
                 # limpiar ventana de proyeccion:
                 self.ventanaProyeccion.limpiar_circulos()
-
                 if self.circles is not None and self.height is not None and self.width is not None:
                     #Creamos un frame del tamaño del frame del video mostrado en ventanaVideo
                     self.frameAntesDeReescalar = np.zeros((self.height, self.width, 3), dtype=np.uint8)        
@@ -854,6 +853,8 @@ class VentanaVideo(QMainWindow):
                 indice = self.encontrar_indice_por_coordenadas(xs-self.XIROI,ys-self.YIROI)
                 if (indice == -1):
                     self.circlesCopy.append((xs-self.XIROI,ys-self.YIROI,rs))
+                else:
+                    self.circlesCopy[indice] = (xs-self.XIROI,ys-self.YIROI,radioMax)
 
     def botonCancelarPressed(self):
         global resaltarBolaCorreccion
@@ -1439,7 +1440,7 @@ class VentanaVideo(QMainWindow):
         if (self.corregirFrame == False):
             clickEnBola = True
             (x,y) = self.cursor_position
-            self.bolaSeleccionada=(x,y,radioMax)
+            self.bolaSeleccionada=(x,y,maxRadius)
             self.resaltar_bola_seleccionada()
             print("Se fuerza seleccion de bola")
 
@@ -1857,7 +1858,7 @@ class VentanaVideo(QMainWindow):
                     self.moviendo_bola_correccion = True
                     self.bolaSeleccionadaCorreccion = (x - self.XIROI, y - self.YIROI, aux)
                     if moviendoSeleccionada:
-                        self.bolaSeleccionada = (x , y, aux)
+                        self.bolaSeleccionada = (x , y, maxRadius)
                     global resaltarBolaCorreccion
                     resaltarBolaCorreccion = True
                     self.update()
@@ -2400,7 +2401,7 @@ class VentanaVideo(QMainWindow):
 
                         if resaltarBola == True and self.bolaSeleccionada is not None:
                                 (xs,ys,rs) = self.bolaSeleccionada
-                                cv2.circle(self.frame, (xs, ys), radioMax + 15, (255, 0, 255), thickness=2)
+                                cv2.circle(self.frame, (xs, ys), rs + 5, (255, 0, 255), thickness=2)
                                 self.algunaEstaSeleccionada = True
 
                         if resaltarBolaCorreccion == True and self.bolaSeleccionadaCorreccion is not None:
