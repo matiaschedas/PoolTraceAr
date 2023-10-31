@@ -854,7 +854,7 @@ class VentanaVideo(QMainWindow):
                 if (indice == -1):
                     self.circlesCopy.append((xs-self.XIROI,ys-self.YIROI,rs))
                 else:
-                    self.circlesCopy[indice] = (xs-self.XIROI,ys-self.YIROI,radioMax)
+                    self.circlesCopy[indice] = (xs-self.XIROI,ys-self.YIROI,maxRadius)
 
     def botonCancelarPressed(self):
         global resaltarBolaCorreccion
@@ -1454,7 +1454,7 @@ class VentanaVideo(QMainWindow):
                     self.bolaSeleccionadaCorreccion = None
                     resaltarBolaCorreccion = False
                     x, y = self.cursor_position
-                    self.circles.append((x-self.XIROI, y-self.YIROI, radioMax))
+                    self.circles.append((x-self.XIROI, y-self.YIROI, maxRadius))
             else:
                 self.timer_clic_largo.start(self.tiempo_minimo_clic_largo)
                 if(self.corregirFrame == False):
