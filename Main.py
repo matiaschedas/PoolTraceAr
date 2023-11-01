@@ -860,6 +860,7 @@ class VentanaVideo(QMainWindow):
 
                 
 
+
     def botonCancelarPressed(self):
         global resaltarBolaCorreccion
         self.corregirFrame = False
