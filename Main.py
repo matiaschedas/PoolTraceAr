@@ -853,8 +853,12 @@ class VentanaVideo(QMainWindow):
                 indice = self.encontrar_indice_por_coordenadas(xs-self.XIROI,ys-self.YIROI)
                 if (indice == -1):
                     self.circlesCopy.append((xs-self.XIROI,ys-self.YIROI,rs))
+                    self.indiceBolaSeleccionada = len(self.circlesCopy) - 1 
                 else:
                     self.circlesCopy[indice] = (xs-self.XIROI,ys-self.YIROI,maxRadius)
+                    self.indiceBolaSeleccionada = indice
+
+                
 
     def botonCancelarPressed(self):
         global resaltarBolaCorreccion
@@ -1470,7 +1474,7 @@ class VentanaVideo(QMainWindow):
                             if distancia <= 10:  # Si la distancia es menor o igual a 10 píxeles, se considera seleccionado
                                 self.verticeSeleccionado = i
                                 self.moverVertices = True
-                                break           
+                                break
 
                         # Verificar si el click está dentro de alguna de las troneras
                         x, y = event.x(), event.y()
@@ -1502,7 +1506,7 @@ class VentanaVideo(QMainWindow):
                                     self.bolaSeleccionada=(x,y,r)
                                     self.resaltar_bola_seleccionada()
                                     # self.etiquetar=True
-                                    self.tronerasPosibles = self.calcular_posibles_troneras()
+                                    # self.tronerasPosibles = self.calcular_posibles_troneras()
                     if (self.etiquetando==True or self.calculandoTiro):
                         print("Espere por favor, se esta calculando el tiro")
 
@@ -1852,12 +1856,13 @@ class VentanaVideo(QMainWindow):
                     if(dist < rs*2):
                         moviendoSeleccionada = True
                 indice = self.encontrar_indice_por_coordenadas(x- self.XIROI,y- self.YIROI)
+                
                 if(indice != -1):
                     _,_,aux = self.circles[indice]
-                    self.circles[indice] = (x - self.XIROI, y - self.YIROI,aux)                
+                    self.circles[indice] = (x - self.XIROI, y - self.YIROI,aux)
                     self.moviendo_bola_correccion = True
                     self.bolaSeleccionadaCorreccion = (x - self.XIROI, y - self.YIROI, aux)
-                    if moviendoSeleccionada:
+                    if moviendoSeleccionada and indice == self.indiceBolaSeleccionada:                        
                         self.bolaSeleccionada = (x , y, maxRadius)
                     global resaltarBolaCorreccion
                     resaltarBolaCorreccion = True
