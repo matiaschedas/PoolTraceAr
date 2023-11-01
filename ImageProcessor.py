@@ -1,44 +1,44 @@
 from PIL import Image, ImageDraw
 import os
+import cv2
 from datetime import datetime
 
-def crop_circles(image_path, coordinates, output_dir):
-        # Cargamos la imagen original
-        image = Image.open(image_path)
-        margin = 3
-        id=0
-        listaApareada = []
-        # Iteramos sobre las coordenadas para recortar círculos
-        for i, (x, y, r) in enumerate(coordinates):
-            left = x - r - margin
-            top = y - r - margin
-            right = x + r + margin
-            bottom = y + r + margin
+def crop_circles(image, coordinates, output_dir):
+    margin = 3
+    id = 0
+    listaApareada = []
+    image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
-            # Recortamos el círculo
-            crop = image.crop((left, top, right, bottom))
+    # Iterar sobre las coordenadas para recortar círculos
+    for i, (x, y, r) in enumerate(coordinates):
+        # Ajustar las coordenadas para garantizar que el recorte sea simétrico
+        left = int(x - r - margin)
+        top = int(y - r - margin)
+        right = int(x + r + margin)
+        bottom = int(y + r + margin)
+        # Recortar el círculo
+        crop = image.crop((left, top, right, bottom))
 
-            # Creamos una máscara de círculo
-            mask = Image.new('L', crop.size, 0)
-            draw_mask = ImageDraw.Draw(mask)
-            draw_mask.ellipse((0, 0, 2 * r + 2 * margin, 2 * r + 2 * margin), fill=255)
+        # Crear una máscara rectangular
+        mask = Image.new('L', crop.size, 0)
+        draw_mask = ImageDraw.Draw(mask)
+        draw_mask.rectangle((0, 0, crop.width, crop.height), fill=255)
 
-            # Aplicamos la máscara al recorte
-            crop.putalpha(mask)
+        # Aplicar la máscara al recorte
+        crop.putalpha(mask)
 
-            # Guardamos el recorte como una imagen individual
-            fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
-            id=id+1
-            nombreBola = "crop_"+ str(id)+ "_" + fecha_hora_actual + ".png"
-            output_path = f"{output_dir}/" + nombreBola
-            if crop.mode == "RGBA":
-                crop = crop.convert("RGB")
-            crop.save(output_path)
-            listaApareada.append(((x,y,r), nombreBola))
+        # Guardar el recorte como una imagen individual
+        fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+        id = id + 1
+        nombreBola = f"crop_{id}_{fecha_hora_actual}.png"
+        output_path = os.path.join(output_dir, nombreBola)
+        if crop.mode == "RGBA":
+            crop = crop.convert("RGB")
+        crop.save(output_path)
+        listaApareada.append(((x, y, r), nombreBola))
 
-        print("Círculos recortados y guardados como imágenes individuales en:", output_dir)
-        os.remove(image_path)
-        return listaApareada
+    print("Círculos recortados y guardados como imágenes individuales en:", output_dir)
+    return listaApareada
 
 
 

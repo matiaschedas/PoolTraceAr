@@ -838,11 +838,11 @@ class VentanaVideo(QMainWindow):
             if(self.botonCalcularTiroConfirmar.text()=="Confirmar"):
                 global resaltarBolaCorreccion
                 self.circles = self.eliminar_circulos_repetidos(self.circles)
-                self.etiquetar = True
                 self.botonCalcularTiroConfirmar.setText("Calcular tiro")
                 self.botonCalcularTiroConfirmar.setDisabled(True)
                 self.bolaSeleccionadaCorreccion= None
                 resaltarBolaCorreccion = False
+                self.etiquetar = True
             else:
                 self.corregirFrame = True
                 self.botonCalcularTiroConfirmar.setText("Confirmar")
@@ -2023,10 +2023,6 @@ class VentanaVideo(QMainWindow):
                     #se generan las imagenes de cada bola:
                     if self.etiquetando == False:
                         fecha_hora_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        nombre_archivo = f"Mesa_{fecha_hora_actual}.png"
-                        ret, frame = self.cap.read()
-                        roi = frame[self.YIROI:self.YDROI 
-                                , self.XIROI:self.XDROI]
                         carpeta = Path(script_dir + '\\Capturas\\')
 
                         # Verificamos si la carpeta no existe
@@ -2035,11 +2031,8 @@ class VentanaVideo(QMainWindow):
                             carpeta.mkdir(parents=True, exist_ok=True)
                             carpeta = Path(script_dir + '\\Capturas\\Bolas\\')
                             carpeta.mkdir(parents=True, exist_ok=True)
-                            
-                        pathCaptura = script_dir + "\\Capturas\\" + nombre_archivo
                         pathOutput = script_dir + "\\Capturas\\Bolas\\" 
-                        cv2.imwrite(pathCaptura, roi)
-                        ListaApareada = ImageProcessor.crop_circles(pathCaptura,self.circles,pathOutput)
+                        ListaApareada = ImageProcessor.crop_circles(self.roi,self.circles.copy(),pathOutput)
 
                     #se manda un hilo a etiquetar cada bola de las imagenes generadas:
                     if self.etiquetando == False:

@@ -5,7 +5,7 @@ FPS = 500
 ZOOM_MULTIPLIER = 1  # change screen size, can boost fps
 TOTAL_FOUL_TIMES = 25  # amount of fouls before end the game
 #default: 1000,500
-WIDTH, HEIGHT = 568,268
+WIDTH, HEIGHT = 1000,500
 
 NUM_BALLS = 16  # number of balls generated on table (16 is a normal game)
 TRAINING = True  # training or playing (fast dt)
@@ -24,35 +24,33 @@ BALL_MASS = 10
 BALL_FRICTION = 0.9
 BALL_ELASTICITY = 0.95
 BALL_DAMPING_THRESHOLD = 9
-BALL_RADIUS = int(15* ZOOM_MULTIPLIER)
+BALL_RADIUS = int(12* ZOOM_MULTIPLIER)
 
 
 # ======== POCKETS ========#
 if ZOOM_MULTIPLIER < 1:
-    SIDE_POCKET_DIST = int(-13* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
     CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
 else:
-    SIDE_POCKET_DIST = int(-13* ZOOM_MULTIPLIER)
+    SIDE_POCKET_DIST = int(-21* ZOOM_MULTIPLIER)
     CORNER_POCKET_DIST = int(-2* ZOOM_MULTIPLIER)
-POCKET_RADIUS = int(26* ZOOM_MULTIPLIER)
+POCKET_RADIUS = int(20* ZOOM_MULTIPLIER)
 
 POCKET_LOCATION = (
-                        np.array(
-                            [
-                            (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST)
-                            ]
-                        )
-                        * ZOOM_MULTIPLIER
-                    ).astype(int)
+                np.array(
+                    [
+                    (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (WIDTH // 2, SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, CORNER_POCKET_DIST),
+                    (CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    (WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),
+                    (WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
+                    ]
+                )
+                * ZOOM_MULTIPLIER
+            ).astype(int)
 
-POCKET_LOCATION_RESTO = (
-                        np.array(
-                            [
-                            (CORNER_POCKET_DIST, CORNER_POCKET_DIST),(WIDTH // 2, SIDE_POCKET_DIST),(CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),(WIDTH // 2, HEIGHT - SIDE_POCKET_DIST),(WIDTH - CORNER_POCKET_DIST, HEIGHT - CORNER_POCKET_DIST),
-                            ]
-                        )
-                        * ZOOM_MULTIPLIER
-                    ).astype(int)
+POCKET_LOCATION_RESTO = []
 
 POCKETS_COORDS = [
             (CORNER_POCKET_DIST, CORNER_POCKET_DIST),
