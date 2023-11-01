@@ -34,9 +34,13 @@ def crop_circles(image, coordinates, output_dir):
         output_path = os.path.join(output_dir, nombreBola)
         if crop.mode == "RGBA":
             crop = crop.convert("RGB")
-        crop.save(output_path)
-        listaApareada.append(((x, y, r), nombreBola))
+        # Redimensionar la imagen
+        resized_img = crop.resize((50,50))
 
+        # Guardar la imagen redimensionada en la carpeta de salida
+        resized_img.save(output_path)
+        listaApareada.append(((x, y, r), nombreBola))
+    
     print("Círculos recortados y guardados como imágenes individuales en:", output_dir)
     return listaApareada
 
