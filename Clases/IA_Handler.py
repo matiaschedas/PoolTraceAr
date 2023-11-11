@@ -117,11 +117,10 @@ class IA_Handler ():
         singleton = SingletonCompartida()
 
         response = None
-
         if singleton.bolaEnMano == True:
             response = self.genetic2.iniciar() 
         else:
-            response = self.genetic.iniciar()
+            response= self.genetic.iniciar()
         self.genetic = None
         self.genetic2 = None
         return response

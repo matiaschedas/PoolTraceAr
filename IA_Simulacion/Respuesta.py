@@ -19,3 +19,5 @@ class Respuesta:
 
     def obtener_velocidad(self, velX, velY):
         return math.sqrt(velX**2 + velY**2)
+    def set_balls(self,balls):
+        self.balls = balls

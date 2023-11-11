@@ -727,6 +727,11 @@ class VentanaVideo(QMainWindow):
         layoutPrincipal.addWidget(self.widget1)
         layoutPrincipal.addWidget(self.widget2)
 
+        # Crear labels para los puntajes de los jugadores
+        self.labelPuntajeJugador1 = QLabel("Puntaje Jugador 1: 0", self)
+
+        self.labelPuntajeJugador2 = QLabel("Puntaje Jugador 2: 0", self)
+
         # Agregar los widgets al layout1 y layout2 con sus respectivas posiciones
         self.layout1.addWidget(self.label, 0, 0, 1, 1, alignment=Qt.AlignTop | Qt.AlignLeft)
         self.layout2.addWidget(self.botonConfiguracion, 0, 0)
@@ -743,10 +748,9 @@ class VentanaVideo(QMainWindow):
         self.layout2.addWidget(self.checkTiroFinal, 3, 4)
         self.layout2.addWidget(self.comboTroneraTiroFinal, 3, 5)
         self.layout2.addWidget(self.progressBar, 4, 0, 1, 5)
-        self.layout2.addWidget(self.botonVerSimulacion, 4, 5, 1, 2)
-        self.layout2.addWidget(self.botonCalcularTiroConfirmar, 5, 5, 1, 1)
-        self.layout2.addWidget(self.botonCancelar, 5, 6, 1, 1)
-        
+        self.layout2.addWidget(self.botonVerSimulacion, 5, 5, 1, 2)
+        self.layout2.addWidget(self.botonCalcularTiroConfirmar, 6, 5, 1, 1)
+        self.layout2.addWidget(self.botonCancelar, 6, 6, 1, 1)     
         self.layout2.addWidget(self.textBrowser, 5, 0, 2, 5)
 
         self.comboTroneraTiroFinal.hide()
@@ -2222,6 +2226,7 @@ class VentanaVideo(QMainWindow):
                                 self.hiloCalculoTiro = miHilo(distancia_railes, distancia_troneras_medias, distancia_troneras_esquinas,limite_velocidad, friccion_bolas, friccion_railes, ancho_mesa,tam_bolas_simulacion, alto_mesa, radio_troneras_IA)
                                 self.hiloCalculoTiro.start()
                                 self.calculandoTiro = True
+                                self.beforeShoot = self.listaEtiquetada.copy()
 
                             self.hiloCalculoTiro.join(timeout=0.01)
 
@@ -2231,11 +2236,27 @@ class VentanaVideo(QMainWindow):
                                 self.printUI("Calculando tiro...")
                                 self.avanzarProgressBar(95)
                             else:
+
                                 self.calculandoTiro = False 
+                                self.respuesta_hiloTiro = self.hiloCalculoTiro.respuesta
+
+                                etiquetas = ['Lisa', 'Rayada', 'Blanca', 'Negra']
+
+                                # Inicializar un diccionario para realizar el seguimiento de la cuenta
+                                cuenta_etiquetas = {etiqueta: 0 for etiqueta in etiquetas}
+
+                                # Contar la cantidad de cada etiqueta en la lista
+                                for elemento in self.respuesta_hiloTiro.balls:
+                                    etiqueta = elemento['etiqueta']  # Ajusta esto según la estructura real de tus elementos
+                                    if etiqueta in cuenta_etiquetas:
+                                        cuenta_etiquetas[etiqueta] += 1
+
+                                # Imprimir los resultados
+                                for etiqueta, cantidad in cuenta_etiquetas.items():
+                                    print(f"{etiqueta}: {cantidad}")
                                 
                                 self.tiro_seleccionado = self.hiloCalculoTiro.tiroSeleccionado                           
 
-                                self.respuesta_hiloTiro = self.hiloCalculoTiro.respuesta
                                 self.puntos_trayectoria_bola_blanca =  self.respuesta_hiloTiro.trayectoriaBlanca  
                                 self.puntos_trayectorias_bolas =  self.respuesta_hiloTiro.trayectorias   
                                 self.velocidadRequerida = self.convertir_velocidad( self.respuesta_hiloTiro.velocidad)
