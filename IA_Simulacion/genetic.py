@@ -159,9 +159,7 @@ class Genetic():
         
         pool.apply_attrs(attrs)
         respuesta = pool.step(best_player)[4]
-        balls = [elemento for elemento in respuesta.attrs['balls_attrs'] if elemento['number'] in respuesta.attrs['pocket_tracking']['potted_balls']]
-        respuesta.set_balls(balls)
-
+        
         pool.close()
         pool = None
         trainer = None
